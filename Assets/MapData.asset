@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a7e7498fcad06d4fa7303255ddacc80, type: 3}
+  m_Name: MapData
+  m_EditorClassIdentifier: 
+  mapItems:
+  - mapNodeId: enemy1
+    mapType: 0
+    position: {x: 0, y: 0}
+    connectionId:
+    - enemy2
+    - enemy3
+  - mapNodeId: enemy2
+    mapType: 0
+    position: {x: 50, y: 50}
+    connectionId:
+    - enemy4
+  - mapNodeId: enemy3
+    mapType: 0
+    position: {x: -50, y: 50}
+    connectionId:
+    - enemy4
+  - mapNodeId: enemy4
+    mapType: 0
+    position: {x: 0, y: 100}
+    connectionId: []
