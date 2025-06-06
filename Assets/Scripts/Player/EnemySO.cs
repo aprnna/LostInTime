@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Player
 {
-    [CreateAssetMenu(menuName = "Enemy Data", fileName = "Enemy/Stats")]
+    [CreateAssetMenu(menuName = "Stats/Enemy", fileName = "Enemy Data")]
     public class EnemySO:ScriptableObject
     {
         [SerializeField] private string _name;

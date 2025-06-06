@@ -7,29 +7,37 @@ namespace Player
     {
         [SerializeField] private EnemySO _enemyData;
         private EnemyModel _enemyModel;
-        
-        private int Health
+        public event Action OnChangeHealth;
+        public event Action OnChangeDamage;
+        public void Start()
+        {
+            _enemyModel = new EnemyModel(_enemyData);
+        }
+        public int Health
         {
             get => _enemyModel.Health;
-            set
+            private set
             {
                 _enemyModel.Health = value ;
+                OnChangeHealth?.Invoke();
             }
         }
-        private int MaxHealth
+        public int MaxHealth
         {
             get => _enemyModel.MaxHealth;
-            set
+            private set
             {
                 _enemyModel.MaxHealth = value;
+                OnChangeHealth?.Invoke();
             }
         }
-        private int BaseDamage
+        public int BaseDamage
         {
             get => _enemyModel.BaseDamage;
-            set
+            private set
             {
                 _enemyModel.BaseDamage = value;
+                OnChangeDamage?.Invoke();
             }
         }
         public int MinDamage()
@@ -40,10 +48,6 @@ namespace Player
         {
             return BaseDamage + _enemyModel.IntervalDamage;
         }
-        public void Start()
-        {
-            _enemyModel = new EnemyModel(_enemyData);
-        }
         public void GetHit(int value)
         {
             if(Health - value > 0) Health -= value;
@@ -51,7 +55,13 @@ namespace Player
             {
                 Health = 0;
                 Debug.Log("You Died");
+                Destroy(gameObject);
             }
+        }
+
+        public bool IsAlive()
+        {
+            return Health > 0;
         }
     }
 }

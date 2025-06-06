@@ -2,12 +2,16 @@ public class FiniteStateMachine<T> where T : IState
 {
     private T _currentState;
     private T _previousState;
-
+    public T CurrentState => _currentState;
     public FiniteStateMachine(T entry)
     {
         _currentState = entry;
     }
-
+    public void Init()
+    {
+        _currentState.OnEnter();
+    }
+    
     public void ChangeState(T newState)
     {
         if (ReferenceEquals(newState, _currentState))
