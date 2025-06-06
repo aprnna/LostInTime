@@ -20,7 +20,7 @@ MonoBehaviour:
     - shop1
     - enemy3
   - mapNodeId: shop1
-    mapType: 0
+    mapType: 3
     position: {x: 16, y: 16}
     connectionId:
     - enemy4

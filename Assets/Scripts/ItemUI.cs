@@ -16,6 +16,16 @@ public class ItemUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
     public void OnPointerClick(PointerEventData eventData)
     {
         Debug.Log("You clicked " + itemSO.itemName);
+        switch (itemSO.consumableType)
+        {
+            case ConsumableType.Health:
+            
+                break;
+            case ConsumableType.Shield:
+                break;
+            default:
+                break;
+        }
         Destroy(gameObject);
     }
 
