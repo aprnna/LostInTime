@@ -8,6 +8,8 @@ public class MapNode
     public string mapNodeId;
     public MapType mapType;
     public Vector2 position;
+    
+
     public string[] connectionId;
     [NonSerialized]
     public bool isVisited;

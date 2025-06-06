@@ -1,19 +1,22 @@
 fileFormatVersion: 2
-guid: 45f1f2a302d8c7146b2a8d9f46402f28
+guid: 750c2b3b73c2d6b449855674209382c6
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 4095481381330262850
-    second: Raptor Sprite Sheet_0
+      213: 6778024294979679928
+    second: Gun Effect Sprite Sheet_0
   - first:
-      213: 6789053620917493343
-    second: Raptor Sprite Sheet_1
+      213: 115691996643778331
+    second: Gun Effect Sprite Sheet_1
   - first:
-      213: 6637865211349477659
-    second: Raptor Sprite Sheet_2
+      213: 7301797323168221021
+    second: Gun Effect Sprite Sheet_2
   - first:
-      213: 2513725494412270192
-    second: Raptor Sprite Sheet_3
+      213: -5072568712167721175
+    second: Gun Effect Sprite Sheet_3
+  - first:
+      213: -8310709385598799543
+    second: Gun Effect Sprite Sheet_4
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -148,7 +151,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Raptor Sprite Sheet_0
+      name: Gun Effect Sprite Sheet_0
       rect:
         serializedVersion: 2
         x: 0
@@ -163,14 +166,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 24b9a661e9216d830800000000000000
-      internalID: 4095481381330262850
+      spriteID: 8b63b3d4f21601e50800000000000000
+      internalID: 6778024294979679928
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Raptor Sprite Sheet_1
+      name: Gun Effect Sprite Sheet_1
       rect:
         serializedVersion: 2
         x: 64
@@ -185,14 +188,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f5edddb5c40973e50800000000000000
-      internalID: 6789053620917493343
+      spriteID: b1fde4b02450b9100800000000000000
+      internalID: 115691996643778331
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Raptor Sprite Sheet_2
+      name: Gun Effect Sprite Sheet_2
       rect:
         serializedVersion: 2
         x: 128
@@ -207,14 +210,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: b19a865ad3f6e1c50800000000000000
-      internalID: 6637865211349477659
+      spriteID: d5707559af1355560800000000000000
+      internalID: 7301797323168221021
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Raptor Sprite Sheet_3
+      name: Gun Effect Sprite Sheet_3
       rect:
         serializedVersion: 2
         x: 192
@@ -229,8 +232,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 07a5945d40c82e220800000000000000
-      internalID: 2513725494412270192
+      spriteID: 9277b74c1ad9a99b0800000000000000
+      internalID: -5072568712167721175
       vertices: []
       indices: 
       edges: []
@@ -239,7 +242,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 86801d316ba7cda4d8574b26ea24e89b
+    spriteID: e96ca02ad51c3964c82b94683c0b94f2
     internalID: 0
     vertices: []
     indices: 
@@ -249,10 +252,10 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Raptor Sprite Sheet_0: 4095481381330262850
-      Raptor Sprite Sheet_1: 6789053620917493343
-      Raptor Sprite Sheet_2: 6637865211349477659
-      Raptor Sprite Sheet_3: 2513725494412270192
+      Gun Effect Sprite Sheet_0: 6778024294979679928
+      Gun Effect Sprite Sheet_1: 115691996643778331
+      Gun Effect Sprite Sheet_2: 7301797323168221021
+      Gun Effect Sprite Sheet_3: -5072568712167721175
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

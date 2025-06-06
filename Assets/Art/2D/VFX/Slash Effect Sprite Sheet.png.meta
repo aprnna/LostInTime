@@ -1,19 +1,25 @@
 fileFormatVersion: 2
-guid: 45f1f2a302d8c7146b2a8d9f46402f28
+guid: d0ccab657f13eef40b26ac3ac707aa25
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 4095481381330262850
-    second: Raptor Sprite Sheet_0
+      213: 7870525772292222823
+    second: Slash Effect Sprite Sheet_0
   - first:
-      213: 6789053620917493343
-    second: Raptor Sprite Sheet_1
+      213: 5371771427713082352
+    second: Slash Effect Sprite Sheet_1
   - first:
-      213: 6637865211349477659
-    second: Raptor Sprite Sheet_2
+      213: 2254385508021020992
+    second: Slash Effect Sprite Sheet_2
   - first:
-      213: 2513725494412270192
-    second: Raptor Sprite Sheet_3
+      213: -6774302845263565594
+    second: Slash Effect Sprite Sheet_3
+  - first:
+      213: -5570522829418037046
+    second: Slash Effect Sprite Sheet_4
+  - first:
+      213: -4331556016437882952
+    second: Slash Effect Sprite Sheet_5
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -148,7 +154,95 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Raptor Sprite Sheet_0
+      name: Slash Effect Sprite Sheet_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 64
+        width: 64
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 76fe8057d79b93d60800000000000000
+      internalID: 7870525772292222823
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Slash Effect Sprite Sheet_1
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 64
+        width: 64
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0f36e6317ad5c8a40800000000000000
+      internalID: 5371771427713082352
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Slash Effect Sprite Sheet_2
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 64
+        width: 64
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 049a160ecaf294f10800000000000000
+      internalID: 2254385508021020992
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Slash Effect Sprite Sheet_3
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 64
+        width: 64
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6eca52b3477dcf1a0800000000000000
+      internalID: -6774302845263565594
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Slash Effect Sprite Sheet_4
       rect:
         serializedVersion: 2
         x: 0
@@ -163,14 +257,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 24b9a661e9216d830800000000000000
-      internalID: 4095481381330262850
+      spriteID: ac08553200781b2b0800000000000000
+      internalID: -5570522829418037046
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Raptor Sprite Sheet_1
+      name: Slash Effect Sprite Sheet_5
       rect:
         serializedVersion: 2
         x: 64
@@ -185,14 +279,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f5edddb5c40973e50800000000000000
-      internalID: 6789053620917493343
+      spriteID: 8bf838ba0c833e3c0800000000000000
+      internalID: -4331556016437882952
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Raptor Sprite Sheet_2
+      name: Slash Effect Sprite Sheet_6
       rect:
         serializedVersion: 2
         x: 128
@@ -205,16 +299,16 @@ TextureImporter:
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: b19a865ad3f6e1c50800000000000000
-      internalID: 6637865211349477659
+      spriteID: 3a3866794ef77d84f9b43247afe8c08b
+      internalID: -1746408190
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Raptor Sprite Sheet_3
+      name: Slash Effect Sprite Sheet_7
       rect:
         serializedVersion: 2
         x: 192
@@ -227,10 +321,10 @@ TextureImporter:
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 07a5945d40c82e220800000000000000
-      internalID: 2513725494412270192
+      spriteID: b6f788cd5e3f5294683d05142fa90019
+      internalID: -134326842
       vertices: []
       indices: 
       edges: []
@@ -239,7 +333,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 86801d316ba7cda4d8574b26ea24e89b
+    spriteID: fbfecd8ce81aeca408571be2f899b249
     internalID: 0
     vertices: []
     indices: 
@@ -249,10 +343,14 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Raptor Sprite Sheet_0: 4095481381330262850
-      Raptor Sprite Sheet_1: 6789053620917493343
-      Raptor Sprite Sheet_2: 6637865211349477659
-      Raptor Sprite Sheet_3: 2513725494412270192
+      Slash Effect Sprite Sheet_0: 7870525772292222823
+      Slash Effect Sprite Sheet_1: 5371771427713082352
+      Slash Effect Sprite Sheet_2: 2254385508021020992
+      Slash Effect Sprite Sheet_3: -6774302845263565594
+      Slash Effect Sprite Sheet_4: -5570522829418037046
+      Slash Effect Sprite Sheet_5: -4331556016437882952
+      Slash Effect Sprite Sheet_6: -1746408190
+      Slash Effect Sprite Sheet_7: -134326842
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

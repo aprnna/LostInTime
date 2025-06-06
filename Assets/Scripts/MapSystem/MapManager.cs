@@ -67,8 +67,8 @@ public class MapManager : MonoBehaviour
         lineUI.startNode = startNode;
         lineUI.endNode = endNode;
 
-        Vector2 startPos = new Vector2(startNode.position.x, startNode.position.y + 10);
-        Vector2 endPos = new Vector2(endNode.position.x, endNode.position.y - 15);
+        Vector2 startPos = new Vector2(startNode.position.x, startNode.position.y);
+        Vector2 endPos = new Vector2(endNode.position.x, endNode.position.y);
 
         Vector2 direction = endPos - startPos;
         float distance = direction.magnitude;
@@ -78,7 +78,7 @@ public class MapManager : MonoBehaviour
 
         lineRect.rotation = Quaternion.Euler(0, 0, angle);
 
-        lineRect.sizeDelta = new Vector2(distance, 5f); // 5f is example thickness
+        lineRect.sizeDelta = new Vector2(distance, 2f); // 5f is example thickness
     }
 
 
@@ -89,7 +89,15 @@ public class MapManager : MonoBehaviour
             CurrentPlayerMapNode.isVisited = true;
             OnPlayerMoved.Invoke(CurrentPlayerMapNode, mapNode);
             CurrentPlayerMapNode = mapNode;
-            // SceneManager.LoadScene("");
+            switch (mapNode.mapType)
+            {
+                case MapType.Shop:
+                    SceneManager.LoadSceneAsync("ShopScene", LoadSceneMode.Additive);
+                    break;
+                default:
+                    break;
+            }
+            HideMap();
             Debug.Log("Moved to " + mapNode.mapNodeId + " map");
         }
         else
@@ -114,7 +122,6 @@ public class MapManager : MonoBehaviour
         return result;
     }
 
-
     public MapNode getNode(String mapId)
     {
         MapNode node = null;
@@ -131,4 +138,15 @@ public class MapManager : MonoBehaviour
         return node;
     }
 
+    public void ShowMap()
+    {
+        mapContainer.gameObject.SetActive(true);
+        lineContainer.gameObject.SetActive(true);
+    }
+
+    public void HideMap()
+    {
+        mapContainer.gameObject.SetActive(false);
+        lineContainer.gameObject.SetActive(false);
+    }
 }

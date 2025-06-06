@@ -17,19 +17,19 @@ MonoBehaviour:
     mapType: 0
     position: {x: 0, y: 0}
     connectionId:
-    - enemy2
+    - shop1
     - enemy3
-  - mapNodeId: enemy2
-    mapType: 0
-    position: {x: 50, y: 50}
+  - mapNodeId: shop1
+    mapType: 3
+    position: {x: 16, y: 16}
     connectionId:
     - enemy4
   - mapNodeId: enemy3
     mapType: 0
-    position: {x: -50, y: 50}
+    position: {x: -16, y: 16}
     connectionId:
     - enemy4
   - mapNodeId: enemy4
     mapType: 0
-    position: {x: 0, y: 100}
+    position: {x: 0, y: 32}
     connectionId: []
