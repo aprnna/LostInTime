@@ -1,66 +1,96 @@
+using System;
 using UnityEngine;
 
 namespace Player
 {
-    public class PlayerStats:MonoBehaviour
+    public class PlayerStats:PersistentSingleton<PlayerStats>
     {
         [SerializeField] private PlayerSO _playerData;
+        public event Action OnHealthStatsChange;
+        public event Action OnShieldStatsChange;
+        public event Action OnBaseDamageChange;
+        public event Action OnExpStatsChange;
+        public event Action OnCoinStatsChange;
 
-        private string Name
+        public string Name
         {
             get => _playerData.PlayerName;
-            set
+            private set
             {
                 _playerData.SetName(value);
             }
         }
-        private int Health
+        public int Health
         {
             get => _playerData.Health;
-            set
+            private set
             {
                 _playerData.SetHealth(value);
+                OnHealthStatsChange?.Invoke();
             }
         }
-        private int MaxHealth
+        public int MaxHealth
         {
             get => _playerData.MaxHealth;
-            set
+            private set
             {
                 _playerData.SetMaxHealth(value);
+                OnHealthStatsChange?.Invoke();
             }
         }
-        private int BaseDamage
+        public int Shield
+        {
+            get => _playerData.Shield;
+            private set
+            {
+                _playerData.SetShield(value);
+                OnShieldStatsChange?.Invoke();
+            }
+        }
+        public int MaxShield
+        {
+            get => _playerData.MaxShield;
+            private set
+            {
+                _playerData.SetMaxShield(value);
+                OnShieldStatsChange?.Invoke();
+            }
+        }
+        public int BaseDamage
         {
             get => _playerData.BaseDamage;
-            set
+            private set
             {
                 _playerData.SetBaseDamage(value);
+                OnBaseDamageChange?.Invoke();
             }
         }
-        private int MaxExp
+        public int MaxExp
         {
             get => _playerData.MaxExp;
-            set
+            private set
             {
                 _playerData.SetMaxExp(value);
+                OnExpStatsChange?.Invoke();
             }
         }
-        private int Exp
+        public int Exp
         {
             get => _playerData.Exp;
-            set
+            private set
             {
                 _playerData.SetExp(value);
+                OnExpStatsChange?.Invoke();
             }
         }
 
-        private int Coin
+        public int Coin
         {
             get => _playerData.Coin;
-            set
+            private set
             {
                 _playerData.SetCoin(value);
+                OnCoinStatsChange?.Invoke();
             }
         }
 
@@ -74,7 +104,7 @@ namespace Player
             return BaseDamage + _playerData.IntervalDamage;
         }
 
-        private void GetHit(int takeDamage)
+        public void GetHit(int takeDamage)
         {
             if (Health - takeDamage > 0)
             {
@@ -87,6 +117,11 @@ namespace Player
                 Debug.Log("You Died");
             }
             
+        }
+
+        public bool IsAlive()
+        {
+            return Health > 0;
         }
 
         public void Heal(int value)
@@ -128,9 +163,9 @@ namespace Player
             _playerData.ResetData();
         }
 
-        public void InitializeStats(string playerName, int health,int maxHealth, int baseDamage, int exp, int maxExp,int coin)
+        public void InitializeStats(string playerName, int health,int maxHealth,int shield,int maxShield, int baseDamage, int exp, int maxExp,int coin)
         {
-            _playerData.InitializePlayerData(playerName, health, maxHealth,baseDamage, exp, maxExp,coin);
+            _playerData.InitializePlayerData(playerName, health, maxHealth,shield, maxShield,baseDamage, exp, maxExp,coin);
         }
 
     }
