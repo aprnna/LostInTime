@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Caveman
   m_EditorClassIdentifier: 
   _name: Caveman
-  _enemyPotrait: {fileID: 6154300076672560124, guid: 1bf3b9e7baddedd48b47997ee5f8cecb, type: 3}
+  _enemyPotrait: {fileID: -859674422154207028, guid: a95d808fa6102f14cb33b6926380c813, type: 3}
   _health: 100
   _maxHealth: 100
   _baseDamage: 20

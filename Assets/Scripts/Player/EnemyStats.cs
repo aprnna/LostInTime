@@ -59,6 +59,10 @@ namespace Player
             }
         }
 
+        public Sprite GetPotrait()
+        {
+            return _enemyData.EnemyPortrait;
+        }
         public bool IsAlive()
         {
             return Health > 0;

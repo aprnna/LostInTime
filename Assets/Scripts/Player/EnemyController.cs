@@ -1,7 +1,6 @@
-using System;
+using System.Collections;
 using Manager;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Player
 {
@@ -22,7 +21,7 @@ namespace Player
 
         public void PlayAnim(string stateName)
         {
-            AnimEnemy.Play(stateName);
+            AnimEnemy.SetTrigger(stateName);
         }
         public void OnChangeMarker(bool value)
         {

@@ -13,6 +13,7 @@ namespace Player
         [SerializeField] private int _intervalDamage;
         [SerializeField] private GameObject _prefab;
         public string EnemyName => _name;
+        public Sprite EnemyPortrait => _enemyPotrait;
         public int Health => _health;
         public int MaxHealth => _maxHealth;
         public int BaseDamage => _baseDamage;

@@ -13,13 +13,14 @@ namespace Player.Item
         [SerializeField] private bool _defend;
         [SerializeField] private int _minDefend;
         [SerializeField] private int _maxDefend;
+        [SerializeField] private GameObject _vfx;
         public int MinDefend => _minDefend;
         public int MaxDefend => _maxDefend;
         public int BaseDamage { get; private set; }
         public int MinDamage { get; private set; }
         public int MaxDamage { get; private set; }
         public bool IsDefend => _defend;
-        
+        public GameObject VFX => _vfx;
         public void InitializeDamage(int baseDamagePlayer)
         {
             BaseDamage = baseDamagePlayer * (_percentageDamage / 100);

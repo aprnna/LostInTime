@@ -4,6 +4,7 @@ using Player;
 using Player.Item;
 using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.UI;
 
 namespace Manager
 {
@@ -98,6 +99,15 @@ namespace Manager
             }
         }
 
+        public GameObject InstantiateVFX(GameObject vfx)
+        {
+            return Instantiate(vfx, SelectedTarget.transform);
+        }
+
+        public void ClearVfx(GameObject vfx)
+        {
+            Destroy(vfx);
+        }
         public void SetPlayerDefend(int value)
         {
             PlayerDefend = value;
@@ -122,7 +132,8 @@ namespace Manager
             if (StateMachine.CurrentState == SelectEnemyState)
             {
                 SelectedTarget = enemyUnit;
-                SetEnemyStats(enemyUnit.EnemyStats, true);
+                SetEnemyStats(enemyUnit.EnemyStats);
+                SetEnemyPanel(true);
                 StateMachine.ChangeState(DamageRouletteState);
             }
           
@@ -133,8 +144,9 @@ namespace Manager
         }
         public void OnHoverEnemy(EnemyStats enemyUnit, bool active)
         {
-            
-            SetEnemyStats(enemyUnit, active);
+            SetEnemyPanel(active);
+            SetEnemyPortrait(enemyUnit.GetPotrait());
+            SetEnemyStats(enemyUnit);
         }
 
         public void SetActionButton(bool value)
@@ -156,11 +168,14 @@ namespace Manager
         {
             BattleResult = result;
         }
-        public void SetEnemyStats(EnemyStats enemyUnit, bool active)
+        public void SetEnemyStats(EnemyStats enemyUnit)
         {
-            _uiManager.SetEnemyStats(enemyUnit, active);
+            _uiManager.SetEnemyStats(enemyUnit);
         }
-
+        public void SetEnemyPortrait(Sprite image)
+        {
+            _uiManager.SetEnemyPortrait(image);
+        }
         public void SetMap(bool value)
         {
             _uiManagerGeneral.SetMap(value);
@@ -169,6 +184,11 @@ namespace Manager
         public void SetBattleResult(bool value)
         {
             _uiManager.SetBattleResult(value);
+        }
+
+        public void SetEnemyPanel(bool value)
+        {
+            _uiManager.SetEnemyPanel(value);
         }
 
         public void ClearTarget()

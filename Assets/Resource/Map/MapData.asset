@@ -28,27 +28,27 @@ MonoBehaviour:
       _icon: {fileID: -1382870731, guid: 0a7a42e161ac9b543b76a7965893456e, type: 3}
       _amount: 30
     connectionId:
-    - Shop
-    - Rest
-  - mapNodeId: Shop
+    - Shop1
+    - Rest1
+  - mapNodeId: Shop1
     mapType: 3
     position: {x: 16, y: 16}
     enemies: []
     DropItems: []
     connectionId:
-    - Boss
-  - mapNodeId: Rest
+    - Boss1
+  - mapNodeId: Rest1
     mapType: 2
     position: {x: -16, y: 16}
     enemies: []
     DropItems: []
     connectionId:
-    - Boss
-  - mapNodeId: Boss
+    - Boss1
+  - mapNodeId: Boss1
     mapType: 1
     position: {x: 0, y: 32}
     enemies:
-    - {fileID: 11400000, guid: 35edda41120e83845a419186421e7ad6, type: 2}
+    - {fileID: 11400000, guid: b009365bcda6857408fcc635ad4859c3, type: 2}
     DropItems:
     - _type: 4
       _icon: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}

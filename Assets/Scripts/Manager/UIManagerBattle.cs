@@ -5,11 +5,13 @@ using Roulette;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.UI;
 
 namespace Manager
 {
     public class UIManagerBattle:MonoBehaviour
     {
+        [SerializeField] private GameObject _enemyPortrait;
         [SerializeField] private EnemyStatsUIController _enemyStats;
         [SerializeField] private GameObject _actionsPanel;
         [SerializeField] private RouletteController _roulette;
@@ -20,6 +22,17 @@ namespace Manager
         [SerializeField] private TMP_Text _actionDescription;
         public EnemyStatsUIController EnemyStatsUI => _enemyStats;
 
+        public void SetEnemyPanel(bool value)
+        {
+            _enemyStats.transform.parent.gameObject.SetActive(value);
+        }
+        public void SetEnemyPortrait(Sprite image)
+        {
+            var imageComp = _enemyPortrait.GetComponent<Image>();
+            imageComp.sprite = image;
+            imageComp.type = Image.Type.Simple;
+            imageComp.preserveAspect = true;
+        }
         public void SetActionsButton(bool value)
         {
             _actionsPanel.SetActive(value);
@@ -44,9 +57,8 @@ namespace Manager
                 Destroy(child.gameObject);
             }
         }
-        public void SetEnemyStats(EnemyStats enemyStats, bool active)
+        public void SetEnemyStats(EnemyStats enemyStats)
         {
-            _enemyStats.gameObject.SetActive(active);
             _enemyStats.InitializeStats(enemyStats);
         }
 

@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 774ee12efb2f42fc843a2a2b23c24b89, type: 3}
-  m_Name: Sabertooth
+  m_Name: Triceratops
   m_EditorClassIdentifier: 
-  _name: Sabertooth
-  _enemyPotrait: {fileID: -7595668472593801052, guid: a95d808fa6102f14cb33b6926380c813, type: 3}
+  _name: Triceratops
+  _enemyPotrait: {fileID: 2385461822859493598, guid: a95d808fa6102f14cb33b6926380c813, type: 3}
   _health: 100
   _maxHealth: 100
   _baseDamage: 20
-  _intervalDamage: 3
-  _prefab: {fileID: 1220821942254667986, guid: 71e4fdb3440fc704a83a55d18860f367, type: 3}
+  _intervalDamage: 5
+  _prefab: {fileID: 6445276588713408054, guid: d94bc720307edf44e921565b2dc48769, type: 3}

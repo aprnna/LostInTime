@@ -39,9 +39,11 @@ namespace Manager
                 var min = _battleSystem.SelectedAction.MinDamage;
                 var max =_battleSystem.SelectedAction.MaxDamage;
                 var roulette = Random.Range(min, max);
+                _battleSystem.SelectedTarget.PlayAnim("isDamaged");
+                yield return PlayVFX(); 
                 Debug.Log("Damage dealt: " + roulette);
                 _battleSystem.SelectedTarget.EnemyStats.GetHit(roulette);
-                _battleSystem.SetEnemyStats(_battleSystem.SelectedTarget.EnemyStats, true);
+                _battleSystem.SetEnemyStats(_battleSystem.SelectedTarget.EnemyStats);
             }
 
             yield return new WaitForSeconds(2f);
@@ -53,6 +55,18 @@ namespace Manager
                 _battleSystem.StateMachine.ChangeState(_battleSystem.ResultBattleState);
             }
             
+        }
+        private IEnumerator PlayVFX()
+        {
+            var vfx = _battleSystem.SelectedAction.VFX;
+            var objectVfx = _battleSystem.InstantiateVFX(vfx);
+            var animator = objectVfx.GetComponent<Animator>();
+            yield return null;
+            while (animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1f || animator.IsInTransition(0))
+            {
+                yield return null;
+            }
+            _battleSystem.ClearVfx(objectVfx);
         }
 
         private bool EnemiesAvailable()
@@ -73,7 +87,8 @@ namespace Manager
         {
             _battleSystem.SelectedTarget.OnChangeMarker(false);
             _battleSystem.SetRouletteButton(false, null);
-            _battleSystem.SetEnemyStats(_battleSystem.SelectedTarget.EnemyStats, false);
+            _battleSystem.SetEnemyPanel(false);
+            _battleSystem.SetEnemyStats(_battleSystem.SelectedTarget.EnemyStats);
             _battleSystem.ClearTarget();
             _battleSystem.ClearAction();
 
