@@ -16,20 +16,41 @@ MonoBehaviour:
   - mapNodeId: enemy1
     mapType: 0
     position: {x: 0, y: 0}
+    enemies:
+    - {fileID: 11400000, guid: 6576621216ed83f46ac772b72e36768e, type: 2}
+    - {fileID: 11400000, guid: da3e560b9b593c744bfe282ce44f0da8, type: 2}
+    - {fileID: 11400000, guid: 35edda41120e83845a419186421e7ad6, type: 2}
+    DropItems:
+    - _type: 0
+      _icon: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+      _amount: 20
+    - _type: 3
+      _icon: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+      _amount: 30
     connectionId:
-    - shop1
-    - enemy3
-  - mapNodeId: shop1
+    - Shop
+    - Rest
+  - mapNodeId: Shop
     mapType: 3
     position: {x: 16, y: 16}
+    enemies: []
+    DropItems: []
     connectionId:
-    - enemy4
-  - mapNodeId: enemy3
-    mapType: 0
+    - Boss
+  - mapNodeId: Rest
+    mapType: 2
     position: {x: -16, y: 16}
+    enemies: []
+    DropItems: []
     connectionId:
-    - enemy4
-  - mapNodeId: enemy4
-    mapType: 0
+    - Boss
+  - mapNodeId: Boss
+    mapType: 1
     position: {x: 0, y: 32}
+    enemies:
+    - {fileID: 11400000, guid: 35edda41120e83845a419186421e7ad6, type: 2}
+    DropItems:
+    - _type: 4
+      _icon: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+      _amount: 20
     connectionId: []

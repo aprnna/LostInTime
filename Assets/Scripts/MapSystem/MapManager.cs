@@ -21,7 +21,7 @@ public class MapManager : MonoBehaviour
     }
 
     public MapData mapData;
-
+    public GameObject Maps;
     public MapItemUI mapItemUIPrefab;
     public GameObject linePrefab;
     public Transform mapContainer;
@@ -40,6 +40,11 @@ public class MapManager : MonoBehaviour
 
     void Start()
     {
+        InitializeMap();
+    }
+
+    private void InitializeMap()
+    {
         for (int i = 0; i < mapData.mapItems.Count(); i++)
         {
             mapItemUIPrefab = Instantiate(mapItemUIPrefab, mapContainer);
@@ -53,10 +58,9 @@ public class MapManager : MonoBehaviour
             if (i == 0)
             {
                 CurrentPlayerMapNode = mapData.mapItems[i];
+                SceneManager.LoadSceneAsync(CurrentPlayerMapNode.mapType.ToString(), LoadSceneMode.Additive);
             }
         }
-
-
     }
 
     private void DrawLine(MapNode startNode, MapNode endNode)
@@ -86,17 +90,11 @@ public class MapManager : MonoBehaviour
     {
         if (CheckConnection(mapNode))
         {
+            SceneManager.UnloadSceneAsync(CurrentPlayerMapNode.mapType.ToString());
             CurrentPlayerMapNode.isVisited = true;
             OnPlayerMoved.Invoke(CurrentPlayerMapNode, mapNode);
             CurrentPlayerMapNode = mapNode;
-            switch (mapNode.mapType)
-            {
-                case MapType.Shop:
-                    SceneManager.LoadSceneAsync("ShopScene", LoadSceneMode.Additive);
-                    break;
-                default:
-                    break;
-            }
+            SceneManager.LoadSceneAsync(mapNode.mapType.ToString(), LoadSceneMode.Additive);
             HideMap();
             Debug.Log("Moved to " + mapNode.mapNodeId + " map");
         }
@@ -140,13 +138,11 @@ public class MapManager : MonoBehaviour
 
     public void ShowMap()
     {
-        mapContainer.gameObject.SetActive(true);
-        lineContainer.gameObject.SetActive(true);
+        Maps.SetActive(true);
     }
 
     public void HideMap()
     {
-        mapContainer.gameObject.SetActive(false);
-        lineContainer.gameObject.SetActive(false);
+        Maps.SetActive(false);
     }
 }

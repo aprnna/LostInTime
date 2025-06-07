@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 774ee12efb2f42fc843a2a2b23c24b89, type: 3}
-  m_Name: EnemyData1
+  m_Name: Caveman
   m_EditorClassIdentifier: 
-  _name: Sabertooth1
-  _enemyPotrait: {fileID: 2951435625430557195, guid: 00cfd42ead98c6141b73a2a369f21f12, type: 3}
+  _name: Caveman
+  _enemyPotrait: {fileID: 6154300076672560124, guid: 1bf3b9e7baddedd48b47997ee5f8cecb, type: 3}
   _health: 100
   _maxHealth: 100
   _baseDamage: 20
   _intervalDamage: 2
-  _prefab: {fileID: 1220821942254667986, guid: 71e4fdb3440fc704a83a55d18860f367, type: 3}
+  _prefab: {fileID: 4308996190831432236, guid: 8c5dd8776af743b44bbc567de21c9fea, type: 3}

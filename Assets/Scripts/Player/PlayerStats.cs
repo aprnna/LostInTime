@@ -23,7 +23,7 @@ namespace Player
         public int Health
         {
             get => _playerData.Health;
-            private set
+            set
             {
                 _playerData.SetHealth(value);
                 OnHealthStatsChange?.Invoke();
@@ -41,7 +41,7 @@ namespace Player
         public int Shield
         {
             get => _playerData.Shield;
-            private set
+            set
             {
                 _playerData.SetShield(value);
                 OnShieldStatsChange?.Invoke();
@@ -77,7 +77,7 @@ namespace Player
         public int Exp
         {
             get => _playerData.Exp;
-            private set
+            set
             {
                 _playerData.SetExp(value);
                 OnExpStatsChange?.Invoke();
@@ -87,7 +87,7 @@ namespace Player
         public int Coin
         {
             get => _playerData.Coin;
-            private set
+            set
             {
                 _playerData.SetCoin(value);
                 OnCoinStatsChange?.Invoke();

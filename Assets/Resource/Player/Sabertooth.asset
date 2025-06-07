@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 774ee12efb2f42fc843a2a2b23c24b89, type: 3}
-  m_Name: EnemyData2
+  m_Name: Sabertooth
   m_EditorClassIdentifier: 
-  _name: Sabertooth2
+  _name: Sabertooth
   _enemyPotrait: {fileID: 2951435625430557195, guid: 00cfd42ead98c6141b73a2a369f21f12, type: 3}
   _health: 100
   _maxHealth: 100

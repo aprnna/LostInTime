@@ -5,12 +5,12 @@ namespace Manager
     public class DamageRouletteState: GameState
     {
         private bool _isRouletteStarted = false;
-        public DamageRouletteState(GameManager gameManager, MonoBehaviour coroutineRunner): base(gameManager, coroutineRunner)
+        public DamageRouletteState(BattleSystem battleSystem, MonoBehaviour coroutineRunner): base(battleSystem, coroutineRunner)
         {
         }
         public override void OnEnter()
         {
-            _gameManager.SetRouletteButton(true, OnStartButtonPressed);
+            _battleSystem.SetRouletteButton(true, OnStartButtonPressed);
         }
         private void OnStartButtonPressed()
         {
@@ -26,28 +26,28 @@ namespace Manager
         private IEnumerator RouletteRoutine()
         {
             yield return new WaitForSeconds(2f);
-            var min = _gameManager.SelectedAction.MinDamage;
-            var max =_gameManager.SelectedAction.MaxDamage;
+            var min = _battleSystem.SelectedAction.MinDamage;
+            var max =_battleSystem.SelectedAction.MaxDamage;
             var roulette = Random.Range(min, max);
             Debug.Log("Damage dealt: " + roulette);
 
-            _gameManager.SelectedTarget.GetHit(roulette);
-            Debug.Log(_gameManager.SelectedTarget.Health);
-            _gameManager.SetEnemyStats(_gameManager.SelectedTarget, true);
+            _battleSystem.SelectedTarget.GetHit(roulette);
+            Debug.Log(_battleSystem.SelectedTarget.Health);
+            _battleSystem.SetEnemyStats(_battleSystem.SelectedTarget, true);
             yield return new WaitForSeconds(2f);
             _isRouletteStarted = false;
-            if(EnemiesAvailable())_gameManager.StateMachine.ChangeState(_gameManager.EnemyTurnState);
+            if(EnemiesAvailable())_battleSystem.StateMachine.ChangeState(_battleSystem.EnemyTurnState);
             else
             {
-                _gameManager.ChangeBattleResult(BattleResult.PlayerWin);
-                _gameManager.StateMachine.ChangeState(_gameManager.ResultBattleState);
+                _battleSystem.ChangeBattleResult(BattleResult.PlayerWin);
+                _battleSystem.StateMachine.ChangeState(_battleSystem.ResultBattleState);
             }
             
         }
 
         private bool EnemiesAvailable()
         {
-            foreach (var e in _gameManager.Enemies)
+            foreach (var e in _battleSystem.Enemies)
             {
                 if (e.IsAlive())
                 {
@@ -61,10 +61,10 @@ namespace Manager
         }
         public override void OnExit()
         {
-            _gameManager.SetRouletteButton(false, null);
-            _gameManager.SetEnemyStats(_gameManager.SelectedTarget, false);
-            _gameManager.ClearTarget();
-            _gameManager.ClearAction();
+            _battleSystem.SetRouletteButton(false, null);
+            _battleSystem.SetEnemyStats(_battleSystem.SelectedTarget, false);
+            _battleSystem.ClearTarget();
+            _battleSystem.ClearAction();
 
         }
     }

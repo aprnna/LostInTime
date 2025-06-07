@@ -6,14 +6,23 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 8c9cfa26abfee488c85f1582747f6a02
+    path: Assets/Scenes/FixScene/BaseScene.unity
+    guid: dfbc550fefc51ef428b3e17e928ba4e0
   - enabled: 1
-    path: Assets/Scenes/BaseScene.unity
-    guid: 3b5f4a99afc67af4ca9f861d5cd1199e
+    path: Assets/Scenes/FixScene/Enemy.unity
+    guid: 70e9bb0bd9bf82c49a360d4b08857177
   - enabled: 1
-    path: Assets/Scenes/ShopScene.unity
-    guid: 6df550a76dbb41d41a16b1f53711f3a5
+    path: Assets/Scenes/FixScene/Shop.unity
+    guid: fd168949a6b1ec14abebb7a90f29b400
+  - enabled: 1
+    path: Assets/Scenes/FixScene/Rest.unity
+    guid: c89d179c504bffd4b9ac5189f3a0a8b4
+  - enabled: 1
+    path: Assets/Scenes/FixScene/Boss.unity
+    guid: f10f885c3315393489359938cdad1c8e
+  - enabled: 1
+    path: Assets/Scenes/FixScene/MainMenu.unity
+    guid: 903d9c301596e174d956a01f6808037e
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0
