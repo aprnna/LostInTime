@@ -4,12 +4,12 @@ namespace Manager
 {
     public abstract class GameState : IState
     {
-        protected GameManager _gameManager;
+        protected BattleSystem _battleSystem;
         protected MonoBehaviour _monoBehaviour;
 
-        public GameState(GameManager gameManager, MonoBehaviour monoBehaviour)
+        public GameState(BattleSystem battleSystem, MonoBehaviour monoBehaviour)
         {
-            _gameManager = gameManager;
+            _battleSystem = battleSystem;
             _monoBehaviour = monoBehaviour;
         }
         public abstract void OnEnter();

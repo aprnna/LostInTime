@@ -4,16 +4,16 @@ namespace Manager
 {
     public class SelectEnemyState: GameState
     {
-        public SelectEnemyState(GameManager gameManager, MonoBehaviour monoBehaviour):base(gameManager, monoBehaviour)
+        public SelectEnemyState(BattleSystem battleSystem, MonoBehaviour monoBehaviour):base(battleSystem, monoBehaviour)
         {
           
         }
         public override void OnEnter()
         {
             Debug.Log("Select Enemy");
-            if ((_gameManager).SelectedAction == null)
+            if ((_battleSystem).SelectedAction == null)
             {
-                _gameManager.StateMachine.ChangeState(_gameManager.PlayerTurnState);
+                _battleSystem.StateMachine.ChangeState(_battleSystem.PlayerTurnState);
                 return;
             }
         }

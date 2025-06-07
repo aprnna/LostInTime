@@ -4,7 +4,7 @@ namespace Manager
 {
     public class SelectMapState : GameState
     {
-        public SelectMapState(GameManager gameManager, MonoBehaviour monoBehaviour) : base(gameManager, monoBehaviour)
+        public SelectMapState(BattleSystem battleSystem, MonoBehaviour monoBehaviour) : base(battleSystem, monoBehaviour)
         {
             
         }

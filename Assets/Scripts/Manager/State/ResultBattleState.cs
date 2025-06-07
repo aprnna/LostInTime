@@ -1,10 +1,11 @@
+using System.Collections;
 using UnityEngine;
 
 namespace Manager
 {
     public class ResultBattleState:GameState
     {
-        public ResultBattleState(GameManager gameManager, MonoBehaviour monoBehaviour) : base(gameManager,
+        public ResultBattleState(BattleSystem battleSystem, MonoBehaviour monoBehaviour) : base(battleSystem,
             monoBehaviour)
         {
             
@@ -12,12 +13,19 @@ namespace Manager
         public override void OnEnter()
         {
             Debug.Log("Battle Result ");
-            if (_gameManager.BattleResult == BattleResult.PlayerWin)
+            _monoBehaviour.StartCoroutine(BattleResultRuntime());
+        }
+
+        private IEnumerator BattleResultRuntime()
+        {
+            if (_battleSystem.BattleResult == BattleResult.PlayerWin)
             {
-                _gameManager.SetMap(true);
+                _battleSystem.DropItems();
+                yield return new WaitForSeconds(2f);
+                _battleSystem.SetMap(true);
             }else 
             {
-                _gameManager.SetBattleResult(true);
+                _battleSystem.SetBattleResult(true);
             }
         }
         public override void OnUpdate()

@@ -5,7 +5,14 @@ public class TestAdditive : MonoBehaviour
 {
     public void changeScene()
     {
-        SceneManager.LoadSceneAsync("ShopScene", LoadSceneMode.Additive);
+        if (!SceneManager.GetSceneByName("ShopScene").isLoaded)
+        {
+            SceneManager.LoadSceneAsync("ShopScene", LoadSceneMode.Additive);
+        }
+        else
+        {
+            Debug.Log("ShopScene sudah dimuat.");
+        }
     }
 
     public void testToko()
