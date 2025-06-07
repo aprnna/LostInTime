@@ -42,7 +42,7 @@ public class ShopManager : MonoBehaviour
         //show map
         MapManager.Instance.ShowMap();
         //unload the scene
-        SceneManager.UnloadSceneAsync("ShopScene");
+        SceneManager.UnloadSceneAsync("Shop");
 
     }
 

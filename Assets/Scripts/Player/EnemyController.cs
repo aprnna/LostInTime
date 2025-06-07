@@ -6,28 +6,28 @@ namespace Player
 {
     public class EnemyController:MonoBehaviour
     {
-        private GameManager _gameManager;
+        private BattleSystem _battleSystem;
         private EnemyStats _enemyStats;
         private void Start()
         {
-            _gameManager = GameManager.Instance;
+            _battleSystem = BattleSystem.Instance;
             _enemyStats = GetComponent<EnemyStats>();
         }
 
         void OnMouseEnter()
         {
-            _gameManager.OnHoverEnemy(_enemyStats, true);
+            _battleSystem.OnHoverEnemy(_enemyStats, true);
         }
 
         private void OnMouseExit()
         {
-            if(_gameManager.SelectedTarget != null) return;
-            _gameManager.OnHoverEnemy(_enemyStats, false);
+            if(_battleSystem.SelectedTarget != null) return;
+            _battleSystem.OnHoverEnemy(_enemyStats, false);
         }
 
         void OnMouseDown()
         {
-            _gameManager.OnEnemyButtonClicked(_enemyStats);
+            _battleSystem.OnEnemyButtonClicked(_enemyStats);
         }
     }
 }

@@ -3,5 +3,8 @@ using UnityEngine;
 public enum ConsumableType
 {
     Health,
-    Shield
+    Shield,
+    Coin,
+    Exp,
+    SparePart
 }

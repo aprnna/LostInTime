@@ -6,37 +6,37 @@ namespace Manager
 {
     public class EnemyTurnState: GameState
     {
-        public EnemyTurnState(GameManager gameManager, MonoBehaviour coroutineRunner) : base(gameManager, coroutineRunner)
+        public EnemyTurnState(BattleSystem battleSystem, MonoBehaviour coroutineRunner) : base(battleSystem, coroutineRunner)
         {
         }
 
         public override void OnEnter()
         {
             Debug.Log("Enemy Turn");
-            _gameManager.StartCoroutine(ExecuteEnemyAI());
+            _battleSystem.StartCoroutine(ExecuteEnemyAI());
         }
         private IEnumerator ExecuteEnemyAI()
         {
             yield return new WaitForSeconds(1f);
 
-            foreach (var e in _gameManager.Enemies)
+            foreach (var e in _battleSystem.Enemies)
             {
                 if (e.IsAlive())
                 {
                     int roll = Random.Range(e.MinDamage(), e.MaxDamage() + 1);
                     Debug.Log($"{e.name} menyerangmu {roll} dmg!");
-                    _gameManager.PlayerStats.GetHit(roll);
-                    if(!_gameManager.PlayerStats.IsAlive())
+                    _battleSystem.PlayerStats.GetHit(roll);
+                    if(!_battleSystem.PlayerStats.IsAlive())
                     {
-                        _gameManager.ChangeBattleResult(BattleResult.EnemiesWin);
-                        _gameManager.StateMachine.ChangeState(_gameManager.ResultBattleState);
+                        _battleSystem.ChangeBattleResult(BattleResult.EnemiesWin);
+                        _battleSystem.StateMachine.ChangeState(_battleSystem.ResultBattleState);
                         yield break;
                     }
                 }
             }
 
             yield return new WaitForSeconds(1f);
-            _gameManager.StateMachine.ChangeState(_gameManager.PlayerTurnState);
+            _battleSystem.StateMachine.ChangeState(_battleSystem.PlayerTurnState);
         }
         public override void OnUpdate()
         {

@@ -4,16 +4,16 @@ namespace Manager
 {
     public class PlayerTurnState:GameState
     {
-        public PlayerTurnState(GameManager gameManager, MonoBehaviour coroutineRunner): base(gameManager,coroutineRunner)
+        public PlayerTurnState(BattleSystem battleSystem, MonoBehaviour coroutineRunner): base(battleSystem,coroutineRunner)
         {
         }
 
         public override void OnEnter()
         {
             Debug.Log("Player Turn");
-            _gameManager.SetActionButton(false);
-            if(!_gameManager.PlayerStats.IsAlive()) _gameManager.StateMachine.ChangeState(_gameManager.ResultBattleState);
-            else _gameManager.StateMachine.ChangeState(_gameManager.SelectActionState);
+            _battleSystem.SetActionButton(false);
+            if(!_battleSystem.PlayerStats.IsAlive()) _battleSystem.StateMachine.ChangeState(_battleSystem.ResultBattleState);
+            else _battleSystem.StateMachine.ChangeState(_battleSystem.SelectActionState);
         }
 
         public override void OnUpdate()
@@ -21,7 +21,7 @@ namespace Manager
         }
         public override void OnExit()
         {
-            _gameManager.SetActionButton(false);
+            _battleSystem.SetActionButton(false);
         }
     }
 }
