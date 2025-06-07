@@ -26,14 +26,24 @@ namespace Manager
         private IEnumerator RouletteRoutine()
         {
             yield return new WaitForSeconds(2f);
-            var min = _battleSystem.SelectedAction.MinDamage;
-            var max =_battleSystem.SelectedAction.MaxDamage;
-            var roulette = Random.Range(min, max);
-            Debug.Log("Damage dealt: " + roulette);
+            if (_battleSystem.SelectedAction.IsDefend)
+            {
+                var min = _battleSystem.SelectedAction.MinDefend;
+                var max =_battleSystem.SelectedAction.MaxDefend;
+                var roulette = Random.Range(min, max);
+                Debug.Log("Defend: " + roulette);
+                _battleSystem.SetPlayerDefend(roulette);
+            }
+            else
+            {
+                var min = _battleSystem.SelectedAction.MinDamage;
+                var max =_battleSystem.SelectedAction.MaxDamage;
+                var roulette = Random.Range(min, max);
+                Debug.Log("Damage dealt: " + roulette);
+                _battleSystem.SelectedTarget.EnemyStats.GetHit(roulette);
+                _battleSystem.SetEnemyStats(_battleSystem.SelectedTarget.EnemyStats, true);
+            }
 
-            _battleSystem.SelectedTarget.GetHit(roulette);
-            Debug.Log(_battleSystem.SelectedTarget.Health);
-            _battleSystem.SetEnemyStats(_battleSystem.SelectedTarget, true);
             yield return new WaitForSeconds(2f);
             _isRouletteStarted = false;
             if(EnemiesAvailable())_battleSystem.StateMachine.ChangeState(_battleSystem.EnemyTurnState);
@@ -49,7 +59,7 @@ namespace Manager
         {
             foreach (var e in _battleSystem.Enemies)
             {
-                if (e.IsAlive())
+                if (e.EnemyStats.IsAlive())
                 {
                     return true;
                 }
@@ -61,8 +71,9 @@ namespace Manager
         }
         public override void OnExit()
         {
+            _battleSystem.SelectedTarget.OnChangeMarker(false);
             _battleSystem.SetRouletteButton(false, null);
-            _battleSystem.SetEnemyStats(_battleSystem.SelectedTarget, false);
+            _battleSystem.SetEnemyStats(_battleSystem.SelectedTarget.EnemyStats, false);
             _battleSystem.ClearTarget();
             _battleSystem.ClearAction();
 

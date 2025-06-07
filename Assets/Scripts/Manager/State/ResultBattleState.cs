@@ -5,6 +5,7 @@ namespace Manager
 {
     public class ResultBattleState:GameState
     {
+        public bool isContinueClicked  = false;
         public ResultBattleState(BattleSystem battleSystem, MonoBehaviour monoBehaviour) : base(battleSystem,
             monoBehaviour)
         {
@@ -21,7 +22,8 @@ namespace Manager
             if (_battleSystem.BattleResult == BattleResult.PlayerWin)
             {
                 _battleSystem.DropItems();
-                yield return new WaitForSeconds(2f);
+                yield return new WaitUntil(() => isContinueClicked);
+                _battleSystem.ClearDropItem();
                 _battleSystem.SetMap(true);
             }else 
             {

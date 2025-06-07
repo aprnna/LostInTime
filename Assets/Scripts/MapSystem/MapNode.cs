@@ -25,7 +25,7 @@ public class DropItem
     [SerializeField] private ConsumableType _type;
     [SerializeField] private Sprite _icon;
     [SerializeField] private int _amount;
-
+    public ConsumableType Type=> _type;
     public Sprite Icon => _icon;
     public int Amount => _amount;
     public void AppliedToPlayerStats(PlayerStats playerStats)
@@ -33,16 +33,16 @@ public class DropItem
         switch (_type)
         {
             case ConsumableType.Health:
-                playerStats.Health += _amount;
+                playerStats.Heal(_amount);
                 break;
             case ConsumableType.Exp:
-                playerStats.Exp += _amount;
+                playerStats.AddExp(_amount); ;
                 break;
             case ConsumableType.Shield:
-                playerStats.Shield += _amount;
+                playerStats.AddShield(_amount);
                 break;
             case ConsumableType.Coin:
-                playerStats.Coin += _amount;
+                playerStats.CollectCoin(_amount);;
                 break;
             default:
                 Debug.Log("Type not match");

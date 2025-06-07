@@ -55,7 +55,7 @@ namespace Player
             {
                 Health = 0;
                 Debug.Log("You Died");
-                Destroy(gameObject);
+                gameObject.SetActive(false);
             }
         }
 

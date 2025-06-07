@@ -11,6 +11,10 @@ namespace Player.Item
         [SerializeField] private int _percentageDamage;
         [SerializeField] private int _interval;
         [SerializeField] private bool _defend;
+        [SerializeField] private int _minDefend;
+        [SerializeField] private int _maxDefend;
+        public int MinDefend => _minDefend;
+        public int MaxDefend => _maxDefend;
         public int BaseDamage { get; private set; }
         public int MinDamage { get; private set; }
         public int MaxDamage { get; private set; }

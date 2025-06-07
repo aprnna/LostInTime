@@ -22,10 +22,10 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 35edda41120e83845a419186421e7ad6, type: 2}
     DropItems:
     - _type: 0
-      _icon: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+      _icon: {fileID: 2808546238655701393, guid: 0a7a42e161ac9b543b76a7965893456e, type: 3}
       _amount: 20
     - _type: 3
-      _icon: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+      _icon: {fileID: -1382870731, guid: 0a7a42e161ac9b543b76a7965893456e, type: 3}
       _amount: 30
     connectionId:
     - Shop

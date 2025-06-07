@@ -1,33 +1,49 @@
 using System;
 using Manager;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Player
 {
     public class EnemyController:MonoBehaviour
     {
+        [SerializeField] private GameObject _marker;
         private BattleSystem _battleSystem;
-        private EnemyStats _enemyStats;
+        public EnemyStats EnemyStats { get; private set; }
+        public Animator AnimEnemy { get; private set; }
+
         private void Start()
         {
             _battleSystem = BattleSystem.Instance;
-            _enemyStats = GetComponent<EnemyStats>();
+            EnemyStats = GetComponent<EnemyStats>();
+            AnimEnemy = GetComponent<Animator>();
+            _marker.SetActive(false);
         }
 
+        public void PlayAnim(string stateName)
+        {
+            AnimEnemy.Play(stateName);
+        }
+        public void OnChangeMarker(bool value)
+        {
+            _marker.SetActive(value);
+        }
         void OnMouseEnter()
         {
-            _battleSystem.OnHoverEnemy(_enemyStats, true);
+            OnChangeMarker(true);
+            _battleSystem.OnHoverEnemy(EnemyStats, true);
         }
 
         private void OnMouseExit()
         {
             if(_battleSystem.SelectedTarget != null) return;
-            _battleSystem.OnHoverEnemy(_enemyStats, false);
+            OnChangeMarker(false);
+            _battleSystem.OnHoverEnemy(EnemyStats, false);
         }
 
         void OnMouseDown()
         {
-            _battleSystem.OnEnemyButtonClicked(_enemyStats);
+            _battleSystem.OnEnemyButtonClicked(this);
         }
     }
 }

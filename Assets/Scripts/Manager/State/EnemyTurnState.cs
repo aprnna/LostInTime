@@ -21,11 +21,11 @@ namespace Manager
 
             foreach (var e in _battleSystem.Enemies)
             {
-                if (e.IsAlive())
+                if (e.EnemyStats.IsAlive())
                 {
-                    int roll = Random.Range(e.MinDamage(), e.MaxDamage() + 1);
+                    int roll = Random.Range(e.EnemyStats.MinDamage(), e.EnemyStats.MaxDamage() + 1);
                     Debug.Log($"{e.name} menyerangmu {roll} dmg!");
-                    _battleSystem.PlayerStats.GetHit(roll);
+                    _battleSystem.PlayerStats.GetHit(roll - _battleSystem.PlayerDefend);
                     if(!_battleSystem.PlayerStats.IsAlive())
                     {
                         _battleSystem.ChangeBattleResult(BattleResult.EnemiesWin);
@@ -44,7 +44,7 @@ namespace Manager
         }
         public override void OnExit()
         {
-
+            _battleSystem.SetPlayerDefend(0);
         }
     }
 }

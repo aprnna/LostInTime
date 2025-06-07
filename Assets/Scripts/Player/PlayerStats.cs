@@ -23,7 +23,7 @@ namespace Player
         public int Health
         {
             get => _playerData.Health;
-            set
+            private set
             {
                 _playerData.SetHealth(value);
                 OnHealthStatsChange?.Invoke();
@@ -41,7 +41,7 @@ namespace Player
         public int Shield
         {
             get => _playerData.Shield;
-            set
+            private set
             {
                 _playerData.SetShield(value);
                 OnShieldStatsChange?.Invoke();
@@ -140,18 +140,29 @@ namespace Player
             Coin += value;
         }
 
+        public void AddShield(int value)
+        {
+            if (Shield + value <= MaxShield) Shield += value;
+            else
+            {
+                Shield = MaxShield;
+                Debug.Log("Max Shield");
+                
+            }
+        }
         public void AddExp(int value)
         {
             if (Exp + value <= MaxExp) Exp += value;
             else
             {
-                var remaining = Exp - value - MaxExp;
+                var remaining = Exp + value - MaxExp;
                 LevelUp(10, 50, remaining, 50, 10);
             };
         }
 
         public void LevelUp(int health,int maxHealth, int exp,int maxExp, int baseDamage)
         {
+            Debug.Log("You Level Up");
             Health += health;
             MaxHealth += maxHealth;
             Exp += exp;
@@ -163,9 +174,14 @@ namespace Player
             _playerData.ResetData();
         }
 
-        public void InitializeStats(string playerName, int health,int maxHealth,int shield,int maxShield, int baseDamage, int exp, int maxExp,int coin)
+        public void InitializeStats(string playerName, int health,int maxHealth,int shield,int maxShield, int baseDamage, int exp, int maxExp,int coin, int interval)
         {
-            _playerData.InitializePlayerData(playerName, health, maxHealth,shield, maxShield,baseDamage, exp, maxExp,coin);
+            _playerData.InitializePlayerData(playerName, health, maxHealth,shield, maxShield,baseDamage, exp, maxExp,coin, interval);
+            OnHealthStatsChange?.Invoke();
+            OnCoinStatsChange?.Invoke();
+            OnExpStatsChange?.Invoke();
+            OnBaseDamageChange?.Invoke();
+            OnShieldStatsChange?.Invoke();
         }
 
     }

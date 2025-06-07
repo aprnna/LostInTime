@@ -11,12 +11,12 @@ namespace Manager
     {
         public static BattleSystem Instance;
         [SerializeField] private UIManagerBattle _uiManager;
-        [SerializeField] private List<EnemyStats> _enemies = new List<EnemyStats>();
+        [SerializeField] private List<EnemyController> _enemies = new List<EnemyController>();
         [SerializeField] private Transform[] _enemiesPos;
         public PlayerStats PlayerStats { get; private set; }
-        public EnemyStats SelectedTarget { get; private set; }
+        public EnemyController SelectedTarget { get; private set; }
         public BaseAction SelectedAction { get; private set; }
-        public List<EnemyStats> Enemies => _enemies;
+        public List<EnemyController> Enemies => _enemies;
         public PlayerTurnState PlayerTurnState { get; private set; }
         public SelectActionState SelectActionState{ get; private set; }
         public SelectEnemyState SelectEnemyState { get; private set; }
@@ -28,6 +28,7 @@ namespace Manager
         public BattleResult BattleResult { get; private set; }
         private UIManager _uiManagerGeneral;
         private GameManager _gameManager;
+        public int PlayerDefend { get; private set; }
 
         public void Awake()
         {
@@ -45,7 +46,17 @@ namespace Manager
             PlayerStats = PlayerStats.Instance;
             _gameManager = GameManager.Instance;
             _uiManagerGeneral = _gameManager.UIManager;
-            PlayerStats.InitializeStats("Kamikaze",100,100, 3, 3, 20,0,20,0);
+            PlayerStats.InitializeStats(
+                "Kamikaze",
+                100,
+                100, 
+                3, 
+                3, 
+                20,
+                0,
+                20,
+                0,
+                3);
 
             PlayerTurnState      = new PlayerTurnState(this, this);
             SelectActionState    = new SelectActionState(this, this);
@@ -71,43 +82,58 @@ namespace Manager
             for (int i = 0; i < enemies.Length; i++)
             {
                 var enemy=Instantiate(enemies[i].Prefab, _enemiesPos[i]);
-                _enemies.Add(enemy.GetComponent<EnemyStats>());
+                _enemies.Add(enemy.GetComponent<EnemyController>());
             }
         }
 
         public void DropItems()
         {
+            _uiManager.SetDropItemPanel(true);
             var dropItems = _gameManager.GetDropItems();
             foreach (var item in dropItems)
             {
                 _uiManager.InstantiateDropItem(item.Icon, item.Amount);
+                Debug.Log($"Get {item.Type} {item.Amount}");
                 item.AppliedToPlayerStats(PlayerStats);
             }
+        }
+
+        public void SetPlayerDefend(int value)
+        {
+            PlayerDefend = value;
+        }
+        public void ClearDropItem()
+        {
+            _uiManager.SetDropItemPanel(false);
+            _uiManager.ClearDropItem();
         }
         public void OnActionButtonClicked(BaseAction action)
         {
             if (StateMachine.CurrentState == SelectActionState)
             {
                 SelectedAction = action;
-                SelectedAction.InitializeDamage(PlayerStats.BaseDamage);
-                if(action.IsDefend) StateMachine.ChangeState(EnemyTurnState);
+                if(action.IsDefend) StateMachine.ChangeState(DamageRouletteState);
                 else StateMachine.ChangeState(SelectEnemyState);
             }
         }
 
-        public void OnEnemyButtonClicked(EnemyStats enemyUnit)
+        public void OnEnemyButtonClicked(EnemyController enemyUnit)
         {
             if (StateMachine.CurrentState == SelectEnemyState)
             {
                 SelectedTarget = enemyUnit;
-                SetEnemyStats(enemyUnit, true);
+                SetEnemyStats(enemyUnit.EnemyStats, true);
                 StateMachine.ChangeState(DamageRouletteState);
             }
           
         }
-
+        public void OnContinueClicked()
+        {
+            ResultBattleState.isContinueClicked = true;
+        }
         public void OnHoverEnemy(EnemyStats enemyUnit, bool active)
         {
+            
             SetEnemyStats(enemyUnit, active);
         }
 
@@ -119,6 +145,11 @@ namespace Manager
         public void SetRouletteButton(bool value, System.Action callback)
         {
             _uiManager.SetRouletteButton(value, callback);
+        }
+
+        public void OnChangeActionDescription(string value)
+        {
+            _uiManager.SetActionDescription(value);
         }
 
         public void ChangeBattleResult(BattleResult result)

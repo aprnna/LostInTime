@@ -19,6 +19,7 @@ namespace Manager
         public override void OnExit()
         {
             _battleSystem.SetActionButton(false);
+            _battleSystem.OnChangeActionDescription("");
         }
     }
 }

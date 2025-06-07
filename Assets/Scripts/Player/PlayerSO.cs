@@ -26,7 +26,7 @@ namespace Player
         public int MaxExp => _maxExp;
         public int Coin => _coin;
         public int IntervalDamage => _intervalDamage;
-        public void InitializePlayerData(string playerName, int health,int maxHealth, int shield, int maxShield,int baseDamage, int exp, int maxExp, int coin)
+        public void InitializePlayerData(string playerName, int health,int maxHealth, int shield, int maxShield,int baseDamage, int exp, int maxExp, int coin, int interval)
         {
             _name = playerName;
             _health = health;
@@ -37,6 +37,7 @@ namespace Player
             _exp = exp;
             _maxExp = maxExp;
             _coin = coin;
+            _intervalDamage = interval;
         }
 
         public void ResetData()

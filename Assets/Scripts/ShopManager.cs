@@ -39,11 +39,7 @@ public class ShopManager : MonoBehaviour
 
     public void Leave()
     {
-        //show map
         MapManager.Instance.ShowMap();
-        //unload the scene
-        SceneManager.UnloadSceneAsync("Shop");
-
     }
 
     public void ChangeDescription(string description)
