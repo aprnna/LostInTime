@@ -30,6 +30,7 @@ MonoBehaviour:
     connectionId:
     - Shop1
     - Rest1
+    isVisited: 0
   - mapNodeId: Shop1
     mapType: 3
     position: {x: 16, y: 16}
@@ -37,6 +38,7 @@ MonoBehaviour:
     DropItems: []
     connectionId:
     - Boss1
+    isVisited: 0
   - mapNodeId: Rest1
     mapType: 2
     position: {x: -16, y: 16}
@@ -44,6 +46,7 @@ MonoBehaviour:
     DropItems: []
     connectionId:
     - Boss1
+    isVisited: 0
   - mapNodeId: Boss1
     mapType: 1
     position: {x: 0, y: 32}
@@ -54,3 +57,4 @@ MonoBehaviour:
       _icon: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
       _amount: 20
     connectionId: []
+    isVisited: 0

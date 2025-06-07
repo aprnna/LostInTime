@@ -138,6 +138,11 @@ namespace Manager
             }
           
         }
+
+        public void ChangeStatusMap(bool value)
+        {
+            _gameManager.ChangeStatusMap(value);
+        }
         public void OnContinueClicked()
         {
             ResultBattleState.isContinueClicked = true;

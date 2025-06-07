@@ -22,6 +22,7 @@ namespace Manager
             if (_battleSystem.BattleResult == BattleResult.PlayerWin)
             {
                 _battleSystem.DropItems();
+                _battleSystem.ChangeStatusMap(true);
                 yield return new WaitUntil(() => isContinueClicked);
                 _battleSystem.ClearDropItem();
                 _battleSystem.SetMap(true);

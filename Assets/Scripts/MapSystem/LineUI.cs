@@ -7,7 +7,7 @@ public class LineUI : MonoBehaviour
     public MapNode endNode;
 
     private Image image;
-
+    private MapManager _mapManager;
     void Start()
     {
         image = GetComponent<Image>();
@@ -15,12 +15,13 @@ public class LineUI : MonoBehaviour
 
     private void OnEnable()
     {
-        MapManager.OnPlayerMoved += ChangeState;
+        _mapManager = MapManager.Instance;
+        _mapManager.OnPlayerMoved += ChangeState;
     }
 
     private void OnDisable()
     {
-        MapManager.OnPlayerMoved -= ChangeState;
+        _mapManager.OnPlayerMoved -= ChangeState;
     }
     
     private void ChangeState(MapNode startNode, MapNode endNode)

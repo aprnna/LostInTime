@@ -20,47 +20,64 @@ public class MapItemUI : MonoBehaviour, IPointerClickHandler
     [HideInInspector]
     public MapNode mapItemData;
 
-    private void Start()
+    private MapManager _mapManager;
+    public void Init(MapNode node, MapManager manager)
     {
-        image = GetComponent<Image>();
+        mapItemData = node;
+        _mapManager = manager;
 
+        image = GetComponent<Image>();
         transform.localPosition = mapItemData.position;
 
         switch (mapItemData.mapType)
         {
-            case MapType.Enemy:
-                image.sprite = enemySprite;
-                break;
-            case MapType.Shop:
-                image.sprite = shopSprite;
-                break;
-            case MapType.Rest:
-                image.sprite = restSprite;
-                break;
-            case MapType.Boss:
-                image.sprite = bossSprite;
-                break;
-            default:
-                break;
+            case MapType.Enemy: image.sprite = enemySprite; break;
+            case MapType.Shop: image.sprite = shopSprite; break;
+            case MapType.Rest: image.sprite = restSprite; break;
+            case MapType.Boss: image.sprite = bossSprite; break;
+        }
+
+        _mapManager.OnPlayerMoved += ChangeState;
+        _mapManager.OnMapItemChange += ChangeMapStatus;
+    }
+       
+    private void OnDestroy()
+    {
+        if (_mapManager != null)
+        {
+            _mapManager.OnPlayerMoved -= ChangeState;
+            _mapManager.OnMapItemChange -= ChangeMapStatus;
         }
     }
-
     public void OnPointerClick(PointerEventData eventData)
     {
         MapManager.Instance.MovePlayerToNode(mapItemData);
     }
 
-    private void OnEnable()
+
+    private void ChangeMapStatus()
     {
-        MapManager.OnPlayerMoved += ChangeState;
+        if (mapItemData.isVisited)
+        {
+            switch (mapItemData.mapType)
+            {
+                case MapType.Enemy:
+                    image.sprite = enemySpriteActive;
+                    break;
+                case MapType.Shop:
+                    image.sprite = shopSpriteActive;
+                    break;
+                case MapType.Rest:
+                    image.sprite = restSpriteActive;
+                    break;
+                case MapType.Boss:
+                    image.sprite = bossSpriteActive;
+                    break;
+                default:
+                    break;
+            }
+        }
     }
-
-    private void OnDisable()
-    {
-        MapManager.OnPlayerMoved -= ChangeState;
-    }
-
-
     private void ChangeState(MapNode startNode, MapNode endNode)
     {
         if (mapItemData.isVisited)

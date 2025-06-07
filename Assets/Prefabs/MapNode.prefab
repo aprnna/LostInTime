@@ -133,10 +133,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b08efbd4639fd246b027152003d77ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spriteVisited: {fileID: 7482667652216324306, guid: 75f5f34dc1b5347e0b8351032682f224, type: 3}
-  defaultSprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
+  enemySprite: {fileID: 4979217427391852589, guid: 0a7a42e161ac9b543b76a7965893456e, type: 3}
+  enemySpriteActive: {fileID: 8221520895567412062, guid: 0a7a42e161ac9b543b76a7965893456e, type: 3}
+  shopSprite: {fileID: -1673659752, guid: 0a7a42e161ac9b543b76a7965893456e, type: 3}
+  shopSpriteActive: {fileID: -2038607369, guid: 0a7a42e161ac9b543b76a7965893456e, type: 3}
+  restSprite: {fileID: 1374632336, guid: 0a7a42e161ac9b543b76a7965893456e, type: 3}
+  restSpriteActive: {fileID: 158378170, guid: 0a7a42e161ac9b543b76a7965893456e, type: 3}
+  bossSprite: {fileID: 8074960907884851791, guid: 0a7a42e161ac9b543b76a7965893456e, type: 3}
+  bossSpriteActive: {fileID: -1501144170558875666, guid: 0a7a42e161ac9b543b76a7965893456e, type: 3}
   mapItemData:
     mapNodeId: 
     mapType: 0
     position: {x: 0, y: 0}
+    enemies: []
+    DropItems: []
     connectionId: []

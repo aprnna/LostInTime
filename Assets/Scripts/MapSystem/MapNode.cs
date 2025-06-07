@@ -15,7 +15,6 @@ public class MapNode
     
 
     public string[] connectionId;
-    [NonSerialized]
     public bool isVisited;
 }
 

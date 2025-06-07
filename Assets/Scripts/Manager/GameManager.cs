@@ -10,7 +10,7 @@ namespace Manager
         [SerializeField] private MapManager _mapManager;
         [SerializeField] private PlayerStats _playerStats;
         public UIManager UIManager => _uiManager;
-
+        
         private void Start()
         {
             if(_mapManager.CurrentPlayerMapNode.mapType == MapType.Enemy)
@@ -27,6 +27,11 @@ namespace Manager
         public DropItem[] GetDropItems()
         {
             return _mapManager.CurrentPlayerMapNode.DropItems;
+        }
+
+        public void ChangeStatusMap(bool value)
+        {
+            _mapManager.TriggerChangeStatusMap(value);
         }
     }
 }

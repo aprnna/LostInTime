@@ -29,11 +29,10 @@ public class MapManager : MonoBehaviour
 
     [HideInInspector]
     public MapNode CurrentPlayerMapNode;
+    public event Action<MapNode, MapNode> OnPlayerMoved;
+    public event Action OnMapItemChange; 
 
-
-    public static event Action<MapNode, MapNode> OnPlayerMoved;
-
-    public static void TriggerPlayerMoved(MapNode startNode, MapNode endNode)
+    public void TriggerPlayerMoved(MapNode startNode, MapNode endNode)
     {
         OnPlayerMoved?.Invoke(startNode, endNode);
     }
@@ -48,8 +47,8 @@ public class MapManager : MonoBehaviour
         for (int i = 0; i < mapData.mapItems.Count(); i++)
         {
             mapItemUIPrefab = Instantiate(mapItemUIPrefab, mapContainer);
-            mapItemUIPrefab.mapItemData = mapData.mapItems[i];
-
+            mapItemUIPrefab.Init(mapData.mapItems[i], this);
+            mapData.mapItems[i].isVisited = false;
             foreach (string item in mapData.mapItems[i].connectionId)
             {
                 DrawLine(mapData.mapItems[i], getNode(item));
@@ -63,6 +62,11 @@ public class MapManager : MonoBehaviour
         }
     }
 
+    public void TriggerChangeStatusMap(bool value)
+    {
+        CurrentPlayerMapNode.isVisited = value;
+        OnMapItemChange?.Invoke();
+    }
     private void DrawLine(MapNode startNode, MapNode endNode)
     {
         GameObject line = Instantiate(linePrefab, lineContainer);
@@ -92,7 +96,7 @@ public class MapManager : MonoBehaviour
         {
             SceneManager.UnloadSceneAsync(CurrentPlayerMapNode.mapType.ToString());
             CurrentPlayerMapNode.isVisited = true;
-            OnPlayerMoved.Invoke(CurrentPlayerMapNode, mapNode);
+            OnPlayerMoved?.Invoke(CurrentPlayerMapNode, mapNode);
             CurrentPlayerMapNode = mapNode;
             SceneManager.LoadSceneAsync(mapNode.mapType.ToString(), LoadSceneMode.Additive);
             HideMap();

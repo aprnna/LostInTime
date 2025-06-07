@@ -1,3 +1,4 @@
+using Manager;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -10,7 +11,7 @@ public class ShopManager : MonoBehaviour
     public ItemUI itemPrefab;
     public Transform itemContainer;
     public Text itemTextDescription;
-
+    private GameManager _gameManager;
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -26,6 +27,7 @@ public class ShopManager : MonoBehaviour
     void Start()
     {
         ShowItem();
+        _gameManager = GameManager.Instance;
     }
 
     public void ShowItem()
@@ -40,6 +42,7 @@ public class ShopManager : MonoBehaviour
     public void Leave()
     {
         MapManager.Instance.ShowMap();
+        _gameManager.ChangeStatusMap(true);
     }
 
     public void ChangeDescription(string description)
