@@ -148,6 +148,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2efa08bf041189e4083b0ea8c7e6deec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  MainCanvas: {fileID: 2039925978}
   itemList:
   - {fileID: 11400000, guid: 74c8b7373ed168649a11958fae80df33, type: 2}
   - {fileID: 11400000, guid: 10c4bd0432378a3448d23682d0e25beb, type: 2}

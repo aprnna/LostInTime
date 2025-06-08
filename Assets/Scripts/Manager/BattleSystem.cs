@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using Player;
 using Player.Item;
 using UnityEngine;
-using UnityEngine.Serialization;
-using UnityEngine.UI;
 
 namespace Manager
 {
@@ -24,11 +22,9 @@ namespace Manager
         public EnemyTurnState EnemyTurnState { get; private set; }
         public DamageRouletteState DamageRouletteState { get; private set; }
         public ResultBattleState ResultBattleState { get; private set; }
-        public SelectMapState SelectMapState { get; private set; }
         public FiniteStateMachine<GameState> StateMachine { get; private set; }
         public BattleResult BattleResult { get; private set; }
-        private UIManager _uiManagerGeneral;
-        private GameManager _gameManager;
+        public GameManager GameManager { get; private set; }
         public int PlayerDefend { get; private set; }
 
         public void Awake()
@@ -45,8 +41,7 @@ namespace Manager
         public void Start()
         {
             PlayerStats = PlayerStats.Instance;
-            _gameManager = GameManager.Instance;
-            _uiManagerGeneral = _gameManager.UIManager;
+            GameManager = GameManager.Instance;
             PlayerStats.InitializeStats(
                 "Kamikaze",
                 100,
@@ -64,7 +59,6 @@ namespace Manager
             SelectEnemyState     = new SelectEnemyState(this, this);
             DamageRouletteState  = new DamageRouletteState(this, this);
             EnemyTurnState       = new EnemyTurnState(this, this);
-            SelectMapState       = new SelectMapState(this, this);
             ResultBattleState    = new ResultBattleState(this, this);
 
             StateMachine = new FiniteStateMachine<GameState>(PlayerTurnState);
@@ -78,7 +72,7 @@ namespace Manager
 
         public void SpawnEnemies()
         {
-            var enemies = _gameManager.GetEnemies();
+            var enemies = GameManager.GetEnemies();
             _enemies.Clear();
             for (int i = 0; i < enemies.Length; i++)
             {
@@ -90,15 +84,34 @@ namespace Manager
         public void DropItems()
         {
             _uiManager.SetDropItemPanel(true);
-            var dropItems = _gameManager.GetDropItems();
+            var dropItems = GameManager.GetDropItems();
             foreach (var item in dropItems)
             {
                 _uiManager.InstantiateDropItem(item.Icon, item.Amount);
                 Debug.Log($"Get {item.Type} {item.Amount}");
-                item.AppliedToPlayerStats(PlayerStats);
             }
         }
 
+        public void AppliedDropItem()
+        {
+            var dropItems = GameManager.GetDropItems();
+            foreach (var item in dropItems)
+            {
+                if (item.Type != ConsumableType.SparePart)
+                {
+                    item.AppliedToPlayerStats(PlayerStats);
+                };
+            }
+            Debug.Log(PlayerStats.IsLevelUp);
+            if(!PlayerStats.IsLevelUp) ResultBattleState.Continue();
+            PlayerStats.ResetLevelUpStatus();
+        }
+        public void OnContinueClicked()
+        {
+            GameManager.PlayerLevelUp += ResultBattleState.Continue;
+            AppliedDropItem();
+            ClearDropItem();
+        }
         public GameObject InstantiateVFX(GameObject vfx)
         {
             return Instantiate(vfx, SelectedTarget.transform);
@@ -121,6 +134,15 @@ namespace Manager
         {
             if (StateMachine.CurrentState == SelectActionState)
             {
+                if (action.IsLimited)
+                {
+                    if (!(action.CurrentLimit > 0))
+                    {
+                        Debug.Log("Out of limit"); 
+                        return;
+                    }
+                    action.UseAction();
+                }
                 SelectedAction = action;
                 if(action.IsDefend) StateMachine.ChangeState(DamageRouletteState);
                 else StateMachine.ChangeState(SelectEnemyState);
@@ -141,12 +163,9 @@ namespace Manager
 
         public void ChangeStatusMap(bool value)
         {
-            _gameManager.ChangeStatusMap(value);
+            GameManager.ChangeStatusMap(value);
         }
-        public void OnContinueClicked()
-        {
-            ResultBattleState.isContinueClicked = true;
-        }
+
         public void OnHoverEnemy(EnemyStats enemyUnit, bool active)
         {
             SetEnemyPanel(active);
@@ -181,11 +200,6 @@ namespace Manager
         {
             _uiManager.SetEnemyPortrait(image);
         }
-        public void SetMap(bool value)
-        {
-            _uiManagerGeneral.SetMap(value);
-        }
-
         public void SetBattleResult(bool value)
         {
             _uiManager.SetBattleResult(value);
@@ -204,6 +218,17 @@ namespace Manager
         public void ClearAction()
         {
             SelectedAction = null;
+        }
+        public void Leave()
+        {
+            _uiManager.SetMainCanvas(false);
+            GameManager.UIManager.SetMap(true);
+            GameManager.ChangeStatusMap(true);
+        }
+
+        private void OnDestroy()
+        {
+            GameManager.PlayerLevelUp -= ResultBattleState.Continue;
         }
     }
 

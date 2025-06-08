@@ -29,19 +29,21 @@ namespace Player
         }
         void OnMouseEnter()
         {
+            if(_battleSystem.StateMachine.CurrentState != _battleSystem.SelectEnemyState) return;
             OnChangeMarker(true);
             _battleSystem.OnHoverEnemy(EnemyStats, true);
         }
 
         private void OnMouseExit()
         {
-            if(_battleSystem.SelectedTarget != null) return;
+            if (_battleSystem.SelectedTarget != null) return;
             OnChangeMarker(false);
             _battleSystem.OnHoverEnemy(EnemyStats, false);
         }
 
         void OnMouseDown()
         {
+            if(_battleSystem.StateMachine.CurrentState != _battleSystem.SelectEnemyState) return;
             _battleSystem.OnEnemyButtonClicked(this);
         }
     }

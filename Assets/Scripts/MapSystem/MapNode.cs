@@ -9,6 +9,8 @@ public class MapNode
 {
     public string mapNodeId;
     public MapType mapType;
+    [Tooltip("If Map Type Boss Must Fill This")]
+    public Sprite changeBackground;
     public Vector2 position;
     public EnemySO[] enemies;
     public DropItem[] DropItems;

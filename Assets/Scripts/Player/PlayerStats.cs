@@ -11,7 +11,8 @@ namespace Player
         public event Action OnBaseDamageChange;
         public event Action OnExpStatsChange;
         public event Action OnCoinStatsChange;
-
+        public event Action OnPlayerLevelUp;
+        public bool IsLevelUp { get; private set; }
         public string Name
         {
             get => _playerData.PlayerName;
@@ -152,22 +153,42 @@ namespace Player
         }
         public void AddExp(int value)
         {
-            if (Exp + value <= MaxExp) Exp += value;
+            if (Exp + value <= MaxExp)
+            {
+                Exp += value;
+            }
             else
             {
                 var remaining = Exp + value - MaxExp;
-                LevelUp(10, 50, remaining, 50, 10);
+                LevelUp(remaining, 25);
             };
         }
 
-        public void LevelUp(int health,int maxHealth, int exp,int maxExp, int baseDamage)
+        public void LevelUp(int exp,int maxExp)
         {
             Debug.Log("You Level Up");
-            Health += health;
-            MaxHealth += maxHealth;
             Exp += exp;
             MaxExp += maxExp;
-            BaseDamage += baseDamage;
+            IsLevelUp = true;
+            OnPlayerLevelUp?.Invoke();
+        }
+
+        public void LevelUpShield(int value)
+        {
+            MaxShield += value;
+        }
+        public void LevelUpHealth(int value)
+        {
+            MaxHealth += value;
+        }
+        public void LevelUpDamage(int value)
+        {
+            BaseDamage += value;
+        }
+
+        public void ResetLevelUpStatus()
+        {
+            IsLevelUp = false;
         }
         public void ResetStats()
         {

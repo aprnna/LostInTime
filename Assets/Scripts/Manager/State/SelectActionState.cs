@@ -9,7 +9,7 @@ namespace Manager
         }
         public override void OnEnter()
         {
-            Debug.Log("Select Action");
+            _battleSystem.GameManager.SetInstruction("Select Action");
             _battleSystem.SetActionButton(true);
         }
 

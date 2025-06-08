@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Manager;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -30,8 +31,8 @@ public class MapManager : MonoBehaviour
     [HideInInspector]
     public MapNode CurrentPlayerMapNode;
     public event Action<MapNode, MapNode> OnPlayerMoved;
-    public event Action OnMapItemChange; 
-
+    public event Action OnMapItemChange;
+    private GameManager _gameManager;
     public void TriggerPlayerMoved(MapNode startNode, MapNode endNode)
     {
         OnPlayerMoved?.Invoke(startNode, endNode);
@@ -39,6 +40,7 @@ public class MapManager : MonoBehaviour
 
     void Start()
     {
+        _gameManager = GameManager.Instance;
         InitializeMap();
     }
 
@@ -75,8 +77,8 @@ public class MapManager : MonoBehaviour
         lineUI.startNode = startNode;
         lineUI.endNode = endNode;
 
-        Vector2 startPos = new Vector2(startNode.position.x, startNode.position.y);
-        Vector2 endPos = new Vector2(endNode.position.x, endNode.position.y);
+        Vector2 startPos = new Vector2(startNode.position.x + mapData.OffSet.x, startNode.position.y + mapData.OffSet.y);
+        Vector2 endPos = new Vector2(endNode.position.x  + mapData.OffSet.x, endNode.position.y+ mapData.OffSet.y);
 
         Vector2 direction = endPos - startPos;
         float distance = direction.magnitude;
@@ -99,7 +101,7 @@ public class MapManager : MonoBehaviour
             OnPlayerMoved?.Invoke(CurrentPlayerMapNode, mapNode);
             CurrentPlayerMapNode = mapNode;
             SceneManager.LoadSceneAsync(mapNode.mapType.ToString(), LoadSceneMode.Additive);
-            HideMap();
+            _gameManager.UIManager.SetMap(false);
             Debug.Log("Moved to " + mapNode.mapNodeId + " map");
         }
         else
@@ -140,13 +142,4 @@ public class MapManager : MonoBehaviour
         return node;
     }
 
-    public void ShowMap()
-    {
-        Maps.SetActive(true);
-    }
-
-    public void HideMap()
-    {
-        Maps.SetActive(false);
-    }
 }

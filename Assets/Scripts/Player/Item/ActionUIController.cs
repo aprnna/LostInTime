@@ -21,7 +21,11 @@ namespace Player.Item
         }
         public void OnPointerEnter(PointerEventData eventData)
         {
-            _battleSystem.OnChangeActionDescription(_action.name + " Deal " + _action.MinDamage +" - "+_action.MaxDamage+" Damage to 1 chosen enemy");
+            var limit  = _action.IsLimited ? "limited" : _action.CurrentLimit.ToString();
+            _battleSystem.OnChangeActionDescription(_action.name 
+                                                    + " - Uses left:" +limit+" Deal "
+                                                    +_action.MaxDamage+"-"+_action.MinDamage
+                                                    +" damage to 1 chosen enemy");
         }
         public void OnPointerExit(PointerEventData eventData)
         {

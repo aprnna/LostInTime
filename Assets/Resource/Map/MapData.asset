@@ -12,14 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a7e7498fcad06d4fa7303255ddacc80, type: 3}
   m_Name: MapData
   m_EditorClassIdentifier: 
+  OffSet: {x: 0, y: -50}
   mapItems:
-  - mapNodeId: enemy1
+  - mapNodeId: Enemy1
     mapType: 0
+    changeBackground: {fileID: 0}
     position: {x: 0, y: 0}
     enemies:
     - {fileID: 11400000, guid: 6576621216ed83f46ac772b72e36768e, type: 2}
-    - {fileID: 11400000, guid: da3e560b9b593c744bfe282ce44f0da8, type: 2}
-    - {fileID: 11400000, guid: 35edda41120e83845a419186421e7ad6, type: 2}
     DropItems:
     - _type: 0
       _icon: {fileID: 2808546238655701393, guid: 0a7a42e161ac9b543b76a7965893456e, type: 3}
@@ -29,32 +29,85 @@ MonoBehaviour:
       _amount: 30
     connectionId:
     - Shop1
-    - Rest1
-    isVisited: 0
+    isVisited: 1
   - mapNodeId: Shop1
     mapType: 3
-    position: {x: 16, y: 16}
+    changeBackground: {fileID: 0}
+    position: {x: 0, y: 16}
     enemies: []
     DropItems: []
     connectionId:
-    - Boss1
-    isVisited: 0
+    - Rest1
+    isVisited: 1
   - mapNodeId: Rest1
     mapType: 2
-    position: {x: -16, y: 16}
+    changeBackground: {fileID: 0}
+    position: {x: 0, y: 32}
     enemies: []
     DropItems: []
     connectionId:
     - Boss1
-    isVisited: 0
+    isVisited: 1
   - mapNodeId: Boss1
     mapType: 1
-    position: {x: 0, y: 32}
+    changeBackground: {fileID: -6717176245421978288, guid: 606ab17dbafdef344ae0533f73810e58, type: 3}
+    position: {x: 0, y: 48}
     enemies:
     - {fileID: 11400000, guid: b009365bcda6857408fcc635ad4859c3, type: 2}
     DropItems:
     - _type: 4
+      _icon: {fileID: -1264930874874453210, guid: c266899a301897c4db98c6d25834c271, type: 3}
+      _amount: 30
+    connectionId:
+    - Enemy2
+    isVisited: 1
+  - mapNodeId: Enemy2
+    mapType: 0
+    changeBackground: {fileID: 0}
+    position: {x: 0, y: 64}
+    enemies:
+    - {fileID: 11400000, guid: 35edda41120e83845a419186421e7ad6, type: 2}
+    - {fileID: 11400000, guid: da3e560b9b593c744bfe282ce44f0da8, type: 2}
+    DropItems:
+    - _type: 3
+      _icon: {fileID: -1382870731, guid: 0a7a42e161ac9b543b76a7965893456e, type: 3}
+      _amount: 20
+    connectionId:
+    - Shop2
+    isVisited: 0
+  - mapNodeId: Shop2
+    mapType: 3
+    changeBackground: {fileID: 0}
+    position: {x: 0, y: 80}
+    enemies: []
+    DropItems:
+    - _type: 4
       _icon: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+      _amount: 20
+    connectionId:
+    - Rest2
+    isVisited: 0
+  - mapNodeId: Rest2
+    mapType: 2
+    changeBackground: {fileID: 0}
+    position: {x: 0, y: 96}
+    enemies: []
+    DropItems:
+    - _type: 4
+      _icon: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+      _amount: 20
+    connectionId:
+    - Boss2
+    isVisited: 0
+  - mapNodeId: Boss2
+    mapType: 1
+    changeBackground: {fileID: 0}
+    position: {x: 0, y: 112}
+    enemies:
+    - {fileID: 11400000, guid: b009365bcda6857408fcc635ad4859c3, type: 2}
+    DropItems:
+    - _type: 4
+      _icon: {fileID: 1392265681167690471, guid: c266899a301897c4db98c6d25834c271, type: 3}
       _amount: 20
     connectionId: []
     isVisited: 0

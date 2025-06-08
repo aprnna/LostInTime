@@ -6,5 +6,6 @@ public enum ConsumableType
     Shield,
     Coin,
     Exp,
-    SparePart
+    SparePart,
+    Damage
 }

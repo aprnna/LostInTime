@@ -6,7 +6,7 @@ using UnityEngine.UI;
 public class ShopManager : MonoBehaviour
 {
     public static ShopManager Instance { get; private set; }
-
+    public GameObject MainCanvas;
     public ItemSO[] itemList;
     public ItemUI itemPrefab;
     public Transform itemContainer;
@@ -41,7 +41,8 @@ public class ShopManager : MonoBehaviour
 
     public void Leave()
     {
-        MapManager.Instance.ShowMap();
+        MainCanvas.SetActive(false);
+        _gameManager.UIManager.SetMap(true);
         _gameManager.ChangeStatusMap(true);
     }
 

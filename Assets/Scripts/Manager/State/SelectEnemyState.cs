@@ -10,7 +10,7 @@ namespace Manager
         }
         public override void OnEnter()
         {
-            Debug.Log("Select Enemy");
+            _battleSystem.GameManager.SetInstruction("Select Enemy");
             if (_battleSystem.SelectedAction == null)
             {
                 _battleSystem.StateMachine.ChangeState(_battleSystem.PlayerTurnState);

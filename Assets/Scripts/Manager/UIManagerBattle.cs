@@ -11,6 +11,7 @@ namespace Manager
 {
     public class UIManagerBattle:MonoBehaviour
     {
+        [SerializeField] private GameObject _mainCanvas;
         [SerializeField] private GameObject _enemyPortrait;
         [SerializeField] private EnemyStatsUIController _enemyStats;
         [SerializeField] private GameObject _actionsPanel;
@@ -22,6 +23,7 @@ namespace Manager
         [SerializeField] private TMP_Text _actionDescription;
         public EnemyStatsUIController EnemyStatsUI => _enemyStats;
 
+  
         public void SetEnemyPanel(bool value)
         {
             _enemyStats.transform.parent.gameObject.SetActive(value);
@@ -77,6 +79,11 @@ namespace Manager
         public void SetActionDescription(string value)
         {
             _actionDescription.text = value;
+        }
+
+        public void SetMainCanvas(bool value)
+        {
+            _mainCanvas.SetActive(value);
         }
     }
 }

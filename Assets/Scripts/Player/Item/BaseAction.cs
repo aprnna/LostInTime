@@ -14,6 +14,9 @@ namespace Player.Item
         [SerializeField] private int _minDefend;
         [SerializeField] private int _maxDefend;
         [SerializeField] private GameObject _vfx;
+        [SerializeField] private bool _isLimited;
+        [SerializeField] private int _limit;
+        private int _currentLimit;
         public int MinDefend => _minDefend;
         public int MaxDefend => _maxDefend;
         public int BaseDamage { get; private set; }
@@ -21,6 +24,23 @@ namespace Player.Item
         public int MaxDamage { get; private set; }
         public bool IsDefend => _defend;
         public GameObject VFX => _vfx;
+        public int CurrentLimit => _currentLimit;
+        public bool IsLimited => _isLimited;
+
+        public void Awake()
+        {
+            _currentLimit = _limit;
+        }
+
+        public void UseAction()
+        {
+            _currentLimit -= 1;
+        }
+
+        public void AddLimit(int value)
+        {
+            _currentLimit += value;
+        }
         public void InitializeDamage(int baseDamagePlayer)
         {
             BaseDamage = baseDamagePlayer * (_percentageDamage / 100);

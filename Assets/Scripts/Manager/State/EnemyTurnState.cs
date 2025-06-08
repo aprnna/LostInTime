@@ -12,7 +12,7 @@ namespace Manager
 
         public override void OnEnter()
         {
-            Debug.Log("Enemy Turn");
+            _battleSystem.GameManager.SetInstruction("Enemy Turn");
             _battleSystem.StartCoroutine(ExecuteEnemyAI());
         }
         private IEnumerator ExecuteEnemyAI()

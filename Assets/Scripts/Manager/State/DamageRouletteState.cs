@@ -18,7 +18,7 @@ namespace Manager
 
             _isRouletteStarted = true;
 
-            Debug.Log("Roulette Started!");
+           _battleSystem.GameManager.SetInstruction("Roulette Started!");
 
             _monoBehaviour.StartCoroutine(RouletteRoutine());
         }
@@ -85,13 +85,17 @@ namespace Manager
         }
         public override void OnExit()
         {
-            _battleSystem.SelectedTarget.OnChangeMarker(false);
+            if (_battleSystem.SelectedAction.IsDefend)
+            {
+                _battleSystem.ClearAction();
+            }else
+            {
+                _battleSystem.SelectedTarget.OnChangeMarker(false);
+                _battleSystem.SetEnemyPanel(false);
+                _battleSystem.SetEnemyStats(_battleSystem.SelectedTarget.EnemyStats);
+                _battleSystem.ClearTarget();
+            }
             _battleSystem.SetRouletteButton(false, null);
-            _battleSystem.SetEnemyPanel(false);
-            _battleSystem.SetEnemyStats(_battleSystem.SelectedTarget.EnemyStats);
-            _battleSystem.ClearTarget();
-            _battleSystem.ClearAction();
-
         }
     }
 }

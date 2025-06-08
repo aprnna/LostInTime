@@ -27,7 +27,7 @@ public class MapItemUI : MonoBehaviour, IPointerClickHandler
         _mapManager = manager;
 
         image = GetComponent<Image>();
-        transform.localPosition = mapItemData.position;
+        transform.localPosition = mapItemData.position + _mapManager.mapData.OffSet;
 
         switch (mapItemData.mapType)
         {
