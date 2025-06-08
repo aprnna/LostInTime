@@ -79,6 +79,11 @@ namespace Manager
             {
                 _uiManager.InstantiateDropItem(item.Icon, item.Amount);
                 Debug.Log($"Get {item.Type} {item.Amount}");
+                if (item.Type == ConsumableType.SparePart)
+                {
+                    GameManager.SetTeleportProgress(true);
+                    GameManager.UpdateTeleportProgress(item.Amount);
+                }
             }
         }
 
@@ -87,10 +92,8 @@ namespace Manager
             var dropItems = GameManager.GetDropItems();
             foreach (var item in dropItems)
             {
-                if (item.Type != ConsumableType.SparePart)
-                {
+                if (item.Type != ConsumableType.SparePart) 
                     item.AppliedToPlayerStats(PlayerStats);
-                };
             }
             Debug.Log(PlayerStats.IsLevelUp);
             if(!PlayerStats.IsLevelUp) ResultBattleState.Continue();
@@ -119,6 +122,7 @@ namespace Manager
         {
             _uiManager.SetDropItemPanel(false);
             _uiManager.ClearDropItem();
+            GameManager.SetTeleportProgress(false);
         }
         public void OnActionButtonClicked(BaseAction action)
         {

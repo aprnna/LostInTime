@@ -1982,7 +1982,6 @@ MonoBehaviour:
   _enemyPortrait: {fileID: 886463500}
   _enemyStats: {fileID: 1453749126}
   _actionsPanel: {fileID: 975086095}
-  _roulette: {fileID: 0}
   _prefabDropItem: {fileID: 6618521607382202846, guid: 21a02ddb8f1234941873ea76eced3d2b, type: 3}
   _dropItemPanel: {fileID: 389148161}
   _dropItemContainer: {fileID: 1611820082}
@@ -2739,7 +2738,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4971290611389241206, guid: 0ba2a89119a700b46bb48cce60164e03, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 152.6
+      value: 119.0339
       objectReference: {fileID: 0}
     - target: {fileID: 4971290611389241206, guid: 0ba2a89119a700b46bb48cce60164e03, type: 3}
       propertyPath: m_LocalPosition.x
@@ -2775,7 +2774,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4971290611389241206, guid: 0ba2a89119a700b46bb48cce60164e03, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 34
+      value: 17.21689
       objectReference: {fileID: 0}
     - target: {fileID: 4971290611389241206, guid: 0ba2a89119a700b46bb48cce60164e03, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

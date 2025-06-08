@@ -113,7 +113,6 @@ namespace Roulette
             }
 
             content.anchoredPosition = new Vector2(targetX, content.anchoredPosition.y);
-
             GetData();
         }
 

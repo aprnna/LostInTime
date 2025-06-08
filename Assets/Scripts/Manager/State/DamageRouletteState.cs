@@ -5,14 +5,18 @@ namespace Manager
     public class DamageRouletteState: GameState
     {
         private bool _isRouletteStarted = false;
+        private bool _autoStart;
+        private GameObject _rouletteObject;
+        private int _result;
         
         public DamageRouletteState(BattleSystem battleSystem, MonoBehaviour coroutineRunner): base(battleSystem, coroutineRunner)
         {
         }
         public override void OnEnter()
         {
+            _autoStart = _battleSystem.GameManager.IsAutoStart;
             if (_battleSystem.GameManager.IsAutoStart) OnStartButtonPressed();
-            _battleSystem.GameManager.SetRoulette(true ,OnStartButtonPressed);
+            _battleSystem.GameManager.SetRouletteButton(true ,OnStartButtonPressed);
         }
         private void OnStartButtonPressed()
         {
@@ -37,8 +41,8 @@ namespace Manager
                 Debug.Log("min : "+min+"max: "+max);
                 yield return PlayRoulette(min,max); 
                 // var roulette = Random.Range(min, max);
-                Debug.Log("Defend: " + _battleSystem.GameManager.RouletteResult);
-                _battleSystem.SetPlayerDefend(_battleSystem.GameManager.RouletteResult);
+                Debug.Log("Defend: " + _result);
+                _battleSystem.SetPlayerDefend(_result);
             }
             else
             {
@@ -48,8 +52,8 @@ namespace Manager
                 yield return PlayRoulette(min,max); 
                 _battleSystem.SelectedTarget.PlayAnim("isDamaged");
                 yield return PlayVFX(); 
-                Debug.Log("Damage dealt: " + _battleSystem.GameManager.RouletteResult);
-                _battleSystem.SelectedTarget.EnemyStats.GetHit(_battleSystem.GameManager.RouletteResult);
+                Debug.Log("Damage dealt: " + _result);
+                _battleSystem.SelectedTarget.EnemyStats.GetHit(_result);
                 _battleSystem.SetEnemyStats(_battleSystem.SelectedTarget.EnemyStats);
             }
             _isRouletteStarted = false;
@@ -64,8 +68,15 @@ namespace Manager
 
         private IEnumerator PlayRoulette(int min, int max)
         {
-            _battleSystem.GameManager.SetRoulette(min, max);
-            yield return new WaitUntil(() => _battleSystem.GameManager.IsRouletteStop);
+            _rouletteObject = _battleSystem.GameManager.SpawnRoulette();
+            yield return _battleSystem.GameManager.SetAndPLayRoulette(
+                _rouletteObject,
+                min, 
+                max, 
+                _autoStart, 
+                (result)=> 
+                    _result = result);
+            // yield return new WaitUntil(() => _battleSystem.GameManager.IsRouletteStop);
             yield return new WaitForSeconds(1f);
 
         }
@@ -108,9 +119,9 @@ namespace Manager
                 _battleSystem.SetEnemyStats(_battleSystem.SelectedTarget.EnemyStats);
                 _battleSystem.ClearTarget();
             }
-            var roulette = _battleSystem.GameManager.RouletteObject;
-            _battleSystem.GameManager.DestroyObject(roulette);
-            _battleSystem.GameManager.SetRoulette(false ,null);
+            _battleSystem.GameManager.DestroyObject(_rouletteObject);
+            _battleSystem.GameManager.SetRouletteButton(false ,null);
+            _battleSystem.GameManager.ClearButtonRoulette();
 
         }
     }

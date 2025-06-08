@@ -21,6 +21,7 @@ MonoBehaviour:
     position: {x: 0, y: 0}
     enemies:
     - {fileID: 11400000, guid: 6576621216ed83f46ac772b72e36768e, type: 2}
+    - {fileID: 11400000, guid: 6576621216ed83f46ac772b72e36768e, type: 2}
     DropItems:
     - _type: 0
       _icon: {fileID: 2808546238655701393, guid: 0a7a42e161ac9b543b76a7965893456e, type: 3}

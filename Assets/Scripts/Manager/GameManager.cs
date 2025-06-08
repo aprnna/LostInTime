@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using Player;
 using Roulette;
 using Player.Item;
@@ -13,18 +14,23 @@ namespace Manager
         [SerializeField] private MapManager _mapManager;
         [SerializeField] private EnemyBiomePos[] _enemyBiomePos;
         [SerializeField] private GameObject _prefabRoulette;
+        
+        [Header("Roulette")]
         [SerializeField] private Transform _rouletteContainer;
         [SerializeField] private bool _autoStartRoulette = false;
         [SerializeField] private GameObject _buttonStopRoulette;
         [SerializeField] private GameObject _buttonStartRoulette;
         [SerializeField] private GameObject _checkBoxAutoStart;
+
+        [Header("TeleportProgress")] 
+        [SerializeField] private GameObject _progressContainer;
+        [SerializeField] private int _percentage;
+        [SerializeField] private Slider _slider;
+        
         public UIManager UIManager => _uiManager;
         public event Action PlayerLevelUp;
         public Biome ActiveBiome { get; private set; } = Biome.Cave;
         private PlayerStats _playerStats;
-        public bool IsRouletteStop { get; private set; }
-        public int RouletteResult { get; private set; }
-        public GameObject RouletteObject { get; private set; }
         public GameObject ButtonStopRoulette => _buttonStopRoulette;
         public GameObject ButtonStartRoulette => _buttonStartRoulette;
         public bool IsAutoStart => _autoStartRoulette;
@@ -72,7 +78,17 @@ namespace Manager
         {
             return _mapManager.CurrentPlayerMapNode.changeBiome;
         }
+        
+        public void SetTeleportProgress(bool value)
+        {
+            _progressContainer.SetActive(value);
+        }
 
+        public void UpdateTeleportProgress(int value)
+        {
+            _percentage = Mathf.Clamp(_percentage + value, 0, 100);
+            _slider.value = _percentage / 100f;
+        }
         public void ChangeBiome(Sprite image, Biome type)
         {
             ActiveBiome = type;
@@ -103,28 +119,33 @@ namespace Manager
         {
             _uiManager.SetTextInstruction(value);
         }
-      
 
-        public void SetRoulette(int min, int max)
+        public GameObject SpawnRoulette()
         {
-            IsRouletteStop = false;
-            RouletteObject = Instantiate(_prefabRoulette, _rouletteContainer);
-            RouletteUIController rouletteUI = RouletteObject.GetComponent<RouletteUIController>();
-           
+            var rouletteObject = Instantiate(_prefabRoulette, _rouletteContainer);
+            return rouletteObject;
+        }
+        public IEnumerator SetAndPLayRoulette(GameObject rouletteObject,int min, int max, bool autoStart, Action<int> onStopped)
+        {
+            var isRouletteStop = false;
+            RouletteUIController rouletteUI = rouletteObject.GetComponent<RouletteUIController>();
+
             rouletteUI.minValue = min;
             rouletteUI.maxValue = max;
-            rouletteUI.autoStop = _autoStartRoulette;
+            rouletteUI.autoStop = autoStart;
 
             rouletteUI.onRouletteStopped = (result) =>
             {
                 Debug.Log($"The roulette has stopped! The result is: {result}");
-                IsRouletteStop = true;
-                RouletteResult = result;
+                isRouletteStop = true;
+                onStopped?.Invoke(result);
             };
+            yield return new WaitUntil(() => isRouletteStop);
         }
-        public void SetRoulette(bool value, Action callback)
+
+        public void SetRouletteButton(bool value, Action callback)
         {
-            _rouletteContainer.gameObject.SetActive(value);
+            // _rouletteContainer.gameObject.SetActive(value);
             ClearButtonRoulette();
             if(_autoStartRoulette) _buttonStopRoulette.SetActive(value);
             else _buttonStartRoulette.SetActive(value);
@@ -147,6 +168,7 @@ namespace Manager
         {
             _buttonStopRoulette.SetActive(false);
             _buttonStartRoulette.SetActive(false);
+            _checkBoxAutoStart.SetActive(false);
         }
         public void OnClickLevelUp(ButtonAction itemLevelUp)
         {
