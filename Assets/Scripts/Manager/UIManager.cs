@@ -17,7 +17,7 @@ namespace Manager
         [SerializeField] private TMP_Text _textInstruction;
         [SerializeField] private Image _background;
         [SerializeField] private GameObject _battleResult;
-
+        
         private PlayerStats _playerStats;
         public PlayerStatsUIController PlayerStatsUI => _playerStatsUi;
         private void OnEnable()

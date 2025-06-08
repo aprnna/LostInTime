@@ -1,8 +1,9 @@
 using System;
 using Player;
+using Roulette;
 using Player.Item;
 using UnityEngine;
-using Random = UnityEngine.Random;
+using UnityEngine.UI;
 
 namespace Manager
 {
@@ -11,10 +12,22 @@ namespace Manager
         [SerializeField] private UIManager _uiManager;
         [SerializeField] private MapManager _mapManager;
         [SerializeField] private EnemyBiomePos[] _enemyBiomePos;
+        [SerializeField] private GameObject _prefabRoulette;
+        [SerializeField] private Transform _rouletteContainer;
+        [SerializeField] private bool _autoStartRoulette = false;
+        [SerializeField] private GameObject _buttonStopRoulette;
+        [SerializeField] private GameObject _buttonStartRoulette;
+        [SerializeField] private GameObject _checkBoxAutoStart;
         public UIManager UIManager => _uiManager;
         public event Action PlayerLevelUp;
         public Biome ActiveBiome { get; private set; } = Biome.Cave;
         private PlayerStats _playerStats;
+        public bool IsRouletteStop { get; private set; }
+        public int RouletteResult { get; private set; }
+        public GameObject RouletteObject { get; private set; }
+        public GameObject ButtonStopRoulette => _buttonStopRoulette;
+        public GameObject ButtonStartRoulette => _buttonStartRoulette;
+        public bool IsAutoStart => _autoStartRoulette;
         public EnemySO[] GetEnemies()
         {
             return _mapManager.CurrentPlayerMapNode.enemies;
@@ -91,6 +104,50 @@ namespace Manager
             _uiManager.SetTextInstruction(value);
         }
       
+
+        public void SetRoulette(int min, int max)
+        {
+            IsRouletteStop = false;
+            RouletteObject = Instantiate(_prefabRoulette, _rouletteContainer);
+            RouletteUIController rouletteUI = RouletteObject.GetComponent<RouletteUIController>();
+           
+            rouletteUI.minValue = min;
+            rouletteUI.maxValue = max;
+            rouletteUI.autoStop = _autoStartRoulette;
+
+            rouletteUI.onRouletteStopped = (result) =>
+            {
+                Debug.Log($"The roulette has stopped! The result is: {result}");
+                IsRouletteStop = true;
+                RouletteResult = result;
+            };
+        }
+        public void SetRoulette(bool value, Action callback)
+        {
+            _rouletteContainer.gameObject.SetActive(value);
+            ClearButtonRoulette();
+            if(_autoStartRoulette) _buttonStopRoulette.SetActive(value);
+            else _buttonStartRoulette.SetActive(value);
+            _checkBoxAutoStart.SetActive(value);
+     
+            Toggle toggle = _checkBoxAutoStart.GetComponent<Toggle>();
+            toggle.isOn = _autoStartRoulette;
+            toggle.onValueChanged.RemoveAllListeners();
+            toggle.onValueChanged.AddListener((bool isOn) =>
+            {
+                _autoStartRoulette = isOn;
+            });
+            
+            Button button = _buttonStartRoulette.GetComponent<Button>();
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() => callback());
+        }
+
+        public void ClearButtonRoulette()
+        {
+            _buttonStopRoulette.SetActive(false);
+            _buttonStartRoulette.SetActive(false);
+        }
         public void OnClickLevelUp(ButtonAction itemLevelUp)
         {
             switch (itemLevelUp.Type)
@@ -112,6 +169,10 @@ namespace Manager
             _mapManager.TriggerChangeStatusMap(value);
         }
 
+        public void DestroyObject(GameObject gameObject)
+        {
+            Destroy(gameObject);
+        }
         public void SetLevelUpPanel(bool value)
         {
             _uiManager.SetLevelUpPanel(value);

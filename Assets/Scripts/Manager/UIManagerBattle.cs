@@ -1,10 +1,8 @@
 using Player;
 using Player.Item;
 using Player.UI;
-using Roulette;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace Manager
@@ -15,7 +13,6 @@ namespace Manager
         [SerializeField] private GameObject _enemyPortrait;
         [SerializeField] private EnemyStatsUIController _enemyStats;
         [SerializeField] private GameObject _actionsPanel;
-        [SerializeField] private RouletteController _roulette;
         [SerializeField] private GameObject _prefabDropItem;
         [SerializeField] private GameObject _dropItemPanel;
         [SerializeField] private Transform _dropItemContainer;
@@ -63,13 +60,6 @@ namespace Manager
             _enemyStats.InitializeStats(enemyStats);
         }
 
-
-        public void SetRouletteButton(bool value, System.Action callback)
-        {
-            _roulette.gameObject.SetActive(value);
-            _roulette.ButtonStart.onClick.RemoveAllListeners();
-            _roulette.ButtonStart.onClick.AddListener(()=> callback());
-        }
 
         public void SetActionDescription(string value)
         {

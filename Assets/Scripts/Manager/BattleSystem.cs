@@ -171,12 +171,6 @@ namespace Manager
         {
             _uiManager.SetActionsButton(value);
         }
-
-        public void SetRouletteButton(bool value, System.Action callback)
-        {
-            _uiManager.SetRouletteButton(value, callback);
-        }
-
         public void OnChangeActionDescription(string value)
         {
             _uiManager.SetActionDescription(value);

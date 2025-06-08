@@ -5,15 +5,19 @@ namespace Manager
     public class DamageRouletteState: GameState
     {
         private bool _isRouletteStarted = false;
+        
         public DamageRouletteState(BattleSystem battleSystem, MonoBehaviour coroutineRunner): base(battleSystem, coroutineRunner)
         {
         }
         public override void OnEnter()
         {
-            _battleSystem.SetRouletteButton(true, OnStartButtonPressed);
+            if (_battleSystem.GameManager.IsAutoStart) OnStartButtonPressed();
+            _battleSystem.GameManager.SetRoulette(true ,OnStartButtonPressed);
         }
         private void OnStartButtonPressed()
         {
+            _battleSystem.GameManager.ButtonStartRoulette.SetActive(false);
+            _battleSystem.GameManager.ButtonStopRoulette.SetActive(true);
             if (_isRouletteStarted) return;
 
             _isRouletteStarted = true;
@@ -25,29 +29,29 @@ namespace Manager
 
         private IEnumerator RouletteRoutine()
         {
-            yield return new WaitForSeconds(2f);
+            // yield return new WaitForSeconds(2f);
             if (_battleSystem.SelectedAction.IsDefend)
             {
                 var min = _battleSystem.SelectedAction.MinDefend;
                 var max =_battleSystem.SelectedAction.MaxDefend;
                 Debug.Log("min : "+min+"max: "+max);
-                var roulette = Random.Range(min, max);
-                Debug.Log("Defend: " + roulette);
-                _battleSystem.SetPlayerDefend(roulette);
+                yield return PlayRoulette(min,max); 
+                // var roulette = Random.Range(min, max);
+                Debug.Log("Defend: " + _battleSystem.GameManager.RouletteResult);
+                _battleSystem.SetPlayerDefend(_battleSystem.GameManager.RouletteResult);
             }
             else
             {
                 var min = _battleSystem.SelectedAction.MinDamage;
                 var max =_battleSystem.SelectedAction.MaxDamage;
-                var roulette = Random.Range(min, max);
+                // var roulette = Random.Range(min, max);
+                yield return PlayRoulette(min,max); 
                 _battleSystem.SelectedTarget.PlayAnim("isDamaged");
                 yield return PlayVFX(); 
-                Debug.Log("Damage dealt: " + roulette);
-                _battleSystem.SelectedTarget.EnemyStats.GetHit(roulette);
+                Debug.Log("Damage dealt: " + _battleSystem.GameManager.RouletteResult);
+                _battleSystem.SelectedTarget.EnemyStats.GetHit(_battleSystem.GameManager.RouletteResult);
                 _battleSystem.SetEnemyStats(_battleSystem.SelectedTarget.EnemyStats);
             }
-
-            yield return new WaitForSeconds(2f);
             _isRouletteStarted = false;
             if(EnemiesAvailable())_battleSystem.StateMachine.ChangeState(_battleSystem.EnemyTurnState);
             else
@@ -56,6 +60,14 @@ namespace Manager
                 _battleSystem.StateMachine.ChangeState(_battleSystem.ResultBattleState);
             }
             
+        }
+
+        private IEnumerator PlayRoulette(int min, int max)
+        {
+            _battleSystem.GameManager.SetRoulette(min, max);
+            yield return new WaitUntil(() => _battleSystem.GameManager.IsRouletteStop);
+            yield return new WaitForSeconds(1f);
+
         }
         private IEnumerator PlayVFX()
         {
@@ -96,7 +108,10 @@ namespace Manager
                 _battleSystem.SetEnemyStats(_battleSystem.SelectedTarget.EnemyStats);
                 _battleSystem.ClearTarget();
             }
-            _battleSystem.SetRouletteButton(false, null);
+            var roulette = _battleSystem.GameManager.RouletteObject;
+            _battleSystem.GameManager.DestroyObject(roulette);
+            _battleSystem.GameManager.SetRoulette(false ,null);
+
         }
     }
 }
