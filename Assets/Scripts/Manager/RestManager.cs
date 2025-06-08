@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using Player;
 using Player.Item;
 using TMPro;
@@ -47,17 +48,31 @@ namespace Manager
         }
         public void OnClickAction(RestActionController restController)
         {
-            var roulette = Random.Range(restController.RestItem.Min, restController.RestItem.Max);
+            _buttonPanel.SetActive(false);
+            StartCoroutine(Roulette(restController));
+        }
+
+        public IEnumerator Roulette(RestActionController restController)
+        {
+            var roulette = _gameManager.SpawnRoulette();
+            var resultroll = 0;
+            yield return _gameManager.SetAndPLayRoulette(roulette, restController.RestItem.Min, restController.RestItem.Max, true,(result) => resultroll = result);
             switch (restController.RestItem.Type)
             {
-                case RestType.Heal: PlayerRest(roulette); break;
-                case RestType.Repair: RepairWeapon(roulette, restController.Action); break;
+                case RestType.Heal: PlayerRest(resultroll); break;
+                case RestType.Repair: RepairWeapon(resultroll, restController.Action); break;
             }
+
+            yield return new WaitForSeconds(2f);
+            Destroy(roulette);
             Leave();
         }
-        private void RepairWeapon(int value, BaseAction action)
+        private void RepairWeapon(int value, BaseAction[] actions)
         {
-            if(action.IsLimited) action.AddLimit(value);
+            foreach (var action in actions)
+            {
+                if(action.IsLimited) action.AddLimit(value);
+            }
         }
 
         private void PlayerRest(int value)
@@ -67,6 +82,7 @@ namespace Manager
 
         private void Leave()
         {
+            _buttonPanel.SetActive(false);
             _mainCanvas.SetActive(false);
             _gameManager.UIManager.SetMap(true);
             _gameManager.ChangeStatusMap(true);

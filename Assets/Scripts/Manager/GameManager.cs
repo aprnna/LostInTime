@@ -8,8 +8,9 @@ using UnityEngine.UI;
 
 namespace Manager
 {
-    public class GameManager:PersistentSingleton<GameManager>
+    public class GameManager:MonoBehaviour
     {
+        public static GameManager Instance;
         [SerializeField] private UIManager _uiManager;
         [SerializeField] private MapManager _mapManager;
         [SerializeField] private EnemyBiomePos[] _enemyBiomePos;
@@ -37,6 +38,17 @@ namespace Manager
         public EnemySO[] GetEnemies()
         {
             return _mapManager.CurrentPlayerMapNode.enemies;
+        }
+        public void Awake()
+        {
+            if (Instance == null)
+            {
+                Instance = this;
+                // DontDestroyOnLoad(this);
+            }else
+            {
+                Destroy(gameObject);
+            }
         }
 
         private void Start()

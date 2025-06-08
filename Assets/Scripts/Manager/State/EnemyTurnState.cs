@@ -53,11 +53,8 @@ namespace Manager
                     )
                 );
             }
-
-            // 2) Setelah spawn & mulai semua coroutine di atas, tunggu sampai semua selesai
             yield return new WaitUntil(() => results.Count >= activeEnemyCount);
 
-            // 3) Kalkulasi damage untuk setiap hasil yang terkumpul
             foreach (int roll in results)
             {
                 int reduce = roll - _battleSystem.PlayerDefend;
@@ -74,12 +71,6 @@ namespace Manager
                 yield return new WaitForSeconds(0.5f);
             }
 
-            // 4) Bersihkan semua roulette UI
-            foreach (var r in _rouletteObjects)
-            {
-                GameObject.Destroy(r);
-            }
-
             yield return new WaitForSeconds(1f);
             _battleSystem.StateMachine.ChangeState(_battleSystem.PlayerTurnState);
         }
@@ -90,6 +81,12 @@ namespace Manager
         }
         public override void OnExit()
         {
+            
+            foreach (var r in _rouletteObjects)
+            {
+                Debug.Log(r);
+                _battleSystem.GameManager.DestroyObject(r);
+            }
             _battleSystem.SetPlayerDefend(0);
         }
     }

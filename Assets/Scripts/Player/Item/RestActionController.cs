@@ -8,8 +8,8 @@ namespace Player.Item
     public class RestActionController:MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
     {
         [SerializeField] private RestItem _restAction;
-        [SerializeField] private BaseAction _action;
-        public BaseAction Action => _action;
+        [SerializeField] private BaseAction[] _action;
+        public BaseAction[] Action => _action;
         public RestItem RestItem => _restAction;
         private RestManager _restManager;
         void Start()
