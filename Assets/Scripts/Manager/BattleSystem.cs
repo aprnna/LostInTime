@@ -11,7 +11,6 @@ namespace Manager
         public static BattleSystem Instance;
         [SerializeField] private UIManagerBattle _uiManager;
         [SerializeField] private List<EnemyController> _enemies = new List<EnemyController>();
-        [SerializeField] private Transform[] _enemiesPos;
         public PlayerStats PlayerStats { get; private set; }
         public EnemyController SelectedTarget { get; private set; }
         public BaseAction SelectedAction { get; private set; }
@@ -26,7 +25,6 @@ namespace Manager
         public BattleResult BattleResult { get; private set; }
         public GameManager GameManager { get; private set; }
         public int PlayerDefend { get; private set; }
-
         public void Awake()
         {
             if (Instance == null)
@@ -42,17 +40,7 @@ namespace Manager
         {
             PlayerStats = PlayerStats.Instance;
             GameManager = GameManager.Instance;
-            PlayerStats.InitializeStats(
-                "Kamikaze",
-                100,
-                100, 
-                3, 
-                3, 
-                20,
-                0,
-                20,
-                0,
-                3);
+        
 
             PlayerTurnState      = new PlayerTurnState(this, this);
             SelectActionState    = new SelectActionState(this, this);
@@ -73,10 +61,12 @@ namespace Manager
         public void SpawnEnemies()
         {
             var enemies = GameManager.GetEnemies();
+            var activeBiome = GameManager.ActiveBiome;
+            var enemiesPos = GameManager.GetEnemiesPos(activeBiome);
             _enemies.Clear();
             for (int i = 0; i < enemies.Length; i++)
             {
-                var enemy=Instantiate(enemies[i].Prefab, _enemiesPos[i]);
+                var enemy=Instantiate(enemies[i].Prefab, enemiesPos[i]);
                 _enemies.Add(enemy.GetComponent<EnemyController>());
             }
         }
@@ -136,7 +126,7 @@ namespace Manager
             {
                 if (action.IsLimited)
                 {
-                    if (!(action.CurrentLimit > 0))
+                    if (!(action.CurrentLimit > 0) && !action.IsDefend)
                     {
                         Debug.Log("Out of limit"); 
                         return;
@@ -144,7 +134,11 @@ namespace Manager
                     action.UseAction();
                 }
                 SelectedAction = action;
-                if(action.IsDefend) StateMachine.ChangeState(DamageRouletteState);
+                if (action.IsDefend)
+                {
+                    PlayerStats.UseShield();
+                    StateMachine.ChangeState(DamageRouletteState);
+                }
                 else StateMachine.ChangeState(SelectEnemyState);
             }
         }
@@ -202,7 +196,7 @@ namespace Manager
         }
         public void SetBattleResult(bool value)
         {
-            _uiManager.SetBattleResult(value);
+            GameManager.UIManager.SetBattleResult(value);
         }
 
         public void SetEnemyPanel(bool value)
@@ -236,5 +230,20 @@ namespace Manager
     {
         PlayerWin,
         EnemiesWin
+    }
+
+    public enum Biome
+    {
+        Forest,
+        Cave
+    }
+
+    [Serializable]
+    public class EnemyBiomePos
+    {
+        [SerializeField] private Transform[] _pos;
+        [SerializeField] private Biome _type;
+        public Transform[] EnemiesPos => _pos;
+        public Biome Type => _type;
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using Manager;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -7,10 +8,12 @@ namespace Player.Item
 {
     public class LevelUpUIController:MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
     {
+        [SerializeField] private TMP_Text text;
         [SerializeField] private ButtonAction ItemLevelUp;
         private GameManager _gameManager;
         void Start()
         {
+            text.text = ItemLevelUp.Amount.ToString();
             _gameManager = GameManager.Instance;
         }
         public void OnPointerClick(PointerEventData eventData)

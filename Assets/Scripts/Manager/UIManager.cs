@@ -16,6 +16,8 @@ namespace Manager
         [SerializeField] private TMP_Text _textDescription;
         [SerializeField] private TMP_Text _textInstruction;
         [SerializeField] private Image _background;
+        [SerializeField] private GameObject _battleResult;
+
         private PlayerStats _playerStats;
         public PlayerStatsUIController PlayerStatsUI => _playerStatsUi;
         private void OnEnable()
@@ -34,6 +36,10 @@ namespace Manager
             SetLevelUpPanel(true);
         }
 
+        public void SetBattleResult(bool value)
+        {
+            _battleResult.SetActive(value);
+        }
         public void SetTextInstruction(string value)
         {
             _textInstruction.text = value;
@@ -48,7 +54,7 @@ namespace Manager
         }
         public void SetMap(bool value)
         {
-            _background.transform.parent.gameObject.SetActive(!value);
+            _background.transform.parent.transform.parent.gameObject.SetActive(!value);
             _map.SetActive(value);
         }
 

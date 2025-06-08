@@ -127,9 +127,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _marker: {fileID: 4390627078930533888}
-  _vfxSlash: {fileID: 0}
-  _vfxPunch: {fileID: 0}
-  _vfxGun: {fileID: 0}
 --- !u!114 &4185197727810019890
 MonoBehaviour:
   m_ObjectHideFlags: 0

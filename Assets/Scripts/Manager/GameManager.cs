@@ -10,14 +10,42 @@ namespace Manager
     {
         [SerializeField] private UIManager _uiManager;
         [SerializeField] private MapManager _mapManager;
-        [SerializeField] private PlayerStats _playerStats;
+        [SerializeField] private EnemyBiomePos[] _enemyBiomePos;
         public UIManager UIManager => _uiManager;
         public event Action PlayerLevelUp;
+        public Biome ActiveBiome { get; private set; } = Biome.Cave;
+        private PlayerStats _playerStats;
         public EnemySO[] GetEnemies()
         {
             return _mapManager.CurrentPlayerMapNode.enemies;
         }
 
+        private void Start()
+        {
+            _playerStats = PlayerStats.Instance;
+            _playerStats.InitializeStats(
+                "Kamikaze",
+                100,
+                100, 
+                1, 
+                3, 
+                20,
+                0,
+                20,
+                0,
+                3,
+                10,
+                4);
+        }
+        public Transform[] GetEnemiesPos(Biome type)
+        {
+            foreach (var enemyBiome in _enemyBiomePos)
+            {
+                if (enemyBiome.Type == type) return enemyBiome.EnemiesPos;
+            }
+            Debug.Log("BIOME NOT FOUND");
+            return null;
+        }
         public MapType GetMapType()
         {
             return _mapManager.CurrentPlayerMapNode.mapType;
@@ -26,9 +54,17 @@ namespace Manager
         {
             return _mapManager.CurrentPlayerMapNode.changeBackground;
         }
-        public void ChangeBackground(Sprite image)
+
+        public Biome GetNextBiome()
         {
+            return _mapManager.CurrentPlayerMapNode.changeBiome;
+        }
+
+        public void ChangeBiome(Sprite image, Biome type)
+        {
+            ActiveBiome = type;
             _uiManager.SetBackground(image);
+            
         }
         public void OnHoverButtonLevelUp(ButtonAction itemLevelUp)
         {

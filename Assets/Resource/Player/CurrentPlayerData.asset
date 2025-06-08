@@ -15,6 +15,13 @@ MonoBehaviour:
   _name: Kamikaze
   _playerPotrait: {fileID: 0}
   _health: 100
+  _maxHealth: 0
+  _shield: 0
+  _maxShield: 0
   _baseDamage: 100
+  _baseDefend: 20
   _exp: 100
+  _maxExp: 0
   _coin: 100
+  _intervalDamage: 0
+  _intervalDefend: 0

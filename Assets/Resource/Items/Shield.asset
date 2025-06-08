@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemName: Shield
   itemDescription: Description about hovered item
-  sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+  sprite: {fileID: 8059037863144031450, guid: 0a7a42e161ac9b543b76a7965893456e, type: 3}
   itemPrice: 20
   consumableType: 1
   amount: 2

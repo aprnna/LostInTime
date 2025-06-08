@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Manager;
 using Player;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -11,6 +12,7 @@ public class MapNode
     public MapType mapType;
     [Tooltip("If Map Type Boss Must Fill This")]
     public Sprite changeBackground;
+    public Biome changeBiome;
     public Vector2 position;
     public EnemySO[] enemies;
     public DropItem[] DropItems;

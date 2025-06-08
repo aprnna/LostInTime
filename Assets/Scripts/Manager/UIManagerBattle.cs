@@ -16,7 +16,6 @@ namespace Manager
         [SerializeField] private EnemyStatsUIController _enemyStats;
         [SerializeField] private GameObject _actionsPanel;
         [SerializeField] private RouletteController _roulette;
-        [SerializeField] private GameObject _battleResult;
         [SerializeField] private GameObject _prefabDropItem;
         [SerializeField] private GameObject _dropItemPanel;
         [SerializeField] private Transform _dropItemContainer;
@@ -64,10 +63,6 @@ namespace Manager
             _enemyStats.InitializeStats(enemyStats);
         }
 
-        public void SetBattleResult(bool value)
-        {
-            _battleResult.SetActive(value);
-        }
 
         public void SetRouletteButton(bool value, System.Action callback)
         {

@@ -25,7 +25,8 @@ namespace Manager
                 {
                     int roll = Random.Range(e.EnemyStats.MinDamage(), e.EnemyStats.MaxDamage() + 1);
                     Debug.Log($"{e.name} menyerangmu {roll} dmg!");
-                    _battleSystem.PlayerStats.GetHit(roll - _battleSystem.PlayerDefend);
+                    var reduce = roll - _battleSystem.PlayerDefend;
+                    _battleSystem.PlayerStats.GetHit(reduce);
                     if(!_battleSystem.PlayerStats.IsAlive())
                     {
                         _battleSystem.ChangeBattleResult(BattleResult.EnemiesWin);

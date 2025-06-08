@@ -10,12 +10,18 @@ namespace Player.Item
         [SerializeField] private string _name;
         [SerializeField] private int _percentageDamage;
         [SerializeField] private int _interval;
+        
+        [Header("Defend")]
         [SerializeField] private bool _defend;
-        [SerializeField] private int _minDefend;
-        [SerializeField] private int _maxDefend;
+        [SerializeField] private int _multipleDefend;
+        [SerializeField] private int _intervalDefend;
+            
         [SerializeField] private GameObject _vfx;
         [SerializeField] private bool _isLimited;
         [SerializeField] private int _limit;
+        private int _minDefend;
+        private int _maxDefend;
+        
         private int _currentLimit;
         public int MinDefend => _minDefend;
         public int MaxDefend => _maxDefend;
@@ -27,13 +33,37 @@ namespace Player.Item
         public int CurrentLimit => _currentLimit;
         public bool IsLimited => _isLimited;
 
-        public void Awake()
+        public void InitializeDefendShield(PlayerStats playerStats)
         {
-            _currentLimit = _limit;
+            if (IsDefend)
+            {
+                Debug.Log(playerStats.Shield);
+                _limit = playerStats.Shield;
+                _currentLimit = _limit;
+                if (_limit > 0)
+                {
+                    var baseDefendShield = playerStats.BaseDefend * _multipleDefend;
+                    _minDefend = baseDefendShield - _intervalDefend;
+                    _maxDefend = baseDefendShield + _intervalDefend;
+                }
+                else
+                {
+                    _currentLimit = 0;
+                    _minDefend = playerStats.MinBaseDefend();
+                    _maxDefend = playerStats.MaxBaseDefend();                
+                }
+            }
         }
 
+        public void Initialize(PlayerStats playerStats)
+        {
+            _currentLimit = _limit;
+            InitializeDefendShield(playerStats);
+            InitializeDamage(playerStats.BaseDamage);
+        }
         public void UseAction()
         {
+            if(IsDefend && _currentLimit <= 0) return; 
             _currentLimit -= 1;
         }
 
@@ -41,7 +71,7 @@ namespace Player.Item
         {
             _currentLimit += value;
         }
-        public void InitializeDamage(int baseDamagePlayer)
+        private void InitializeDamage(int baseDamagePlayer)
         {
             BaseDamage = baseDamagePlayer * (_percentageDamage / 100);
             MinDamage = BaseDamage - _interval;

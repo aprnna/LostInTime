@@ -16,6 +16,8 @@ MonoBehaviour:
   _percentageDamage: 0
   _interval: 0
   _defend: 1
-  _minDefend: 10
-  _maxDefend: 20
+  _multipleDefend: 2
+  _intervalDefend: 4
   _vfx: {fileID: 0}
+  _isLimited: 1
+  _limit: 0

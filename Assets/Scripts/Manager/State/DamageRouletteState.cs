@@ -30,6 +30,7 @@ namespace Manager
             {
                 var min = _battleSystem.SelectedAction.MinDefend;
                 var max =_battleSystem.SelectedAction.MaxDefend;
+                Debug.Log("min : "+min+"max: "+max);
                 var roulette = Random.Range(min, max);
                 Debug.Log("Defend: " + roulette);
                 _battleSystem.SetPlayerDefend(roulette);

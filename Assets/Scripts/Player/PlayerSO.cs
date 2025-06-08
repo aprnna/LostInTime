@@ -12,10 +12,12 @@ namespace Player
         [SerializeField] private int _shield;
         [SerializeField] private int _maxShield;
         [SerializeField] private int _baseDamage;
+        [SerializeField] private int _baseDefend;
         [SerializeField] private int _exp;
         [SerializeField] private int _maxExp;
         [SerializeField] private int _coin;
         [SerializeField] private int _intervalDamage;
+        [SerializeField] private int _intervalDefend;
         public string PlayerName => _name;
         public int Health => _health;
         public int MaxHealth => _maxHealth;
@@ -26,7 +28,10 @@ namespace Player
         public int MaxExp => _maxExp;
         public int Coin => _coin;
         public int IntervalDamage => _intervalDamage;
-        public void InitializePlayerData(string playerName, int health,int maxHealth, int shield, int maxShield,int baseDamage, int exp, int maxExp, int coin, int interval)
+        public int IntervalDefend => _intervalDefend;
+        public int BaseDefend => _baseDefend;
+        
+        public void InitializePlayerData(string playerName, int health,int maxHealth, int shield, int maxShield,int baseDamage, int exp, int maxExp, int coin, int interval, int baseDefend, int intervalDefend)
         {
             _name = playerName;
             _health = health;
@@ -38,6 +43,8 @@ namespace Player
             _maxExp = maxExp;
             _coin = coin;
             _intervalDamage = interval;
+            _baseDefend = baseDefend;
+            _intervalDefend = intervalDefend;
         }
 
         public void ResetData()
@@ -52,6 +59,8 @@ namespace Player
             _exp = 0;
             _coin = 0;
             _intervalDamage = 0;
+            _baseDefend = 0;
+            _intervalDefend = 0;
         }
 
         public void SetName(string playerName)
@@ -94,6 +103,11 @@ namespace Player
         public void SetCoin(int value)
         {
             _coin = value;
+        }
+
+        public void SetBaseDefend(int value)
+        {
+            _baseDefend = value;
         }
     }
 }

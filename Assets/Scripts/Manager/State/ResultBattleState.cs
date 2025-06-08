@@ -30,18 +30,20 @@ namespace Manager
                 _battleSystem.ChangeStatusMap(true);
                 yield return new WaitUntil(() => isContinueClicked);
                 _battleSystem.Leave();
-                ChangeBackground();
+                
+                var currentMapType = _battleSystem.GameManager.GetMapType();
+                var nexBiome = _battleSystem.GameManager.GetNextBiome();
+                if(currentMapType == MapType.Boss) ChangeBiome(nexBiome);
             }else 
             {
                 _battleSystem.SetBattleResult(true);
             }
         }
 
-        private void ChangeBackground()
+        private void ChangeBiome(Biome biome)
         {
-            var currentMapType = _battleSystem.GameManager.GetMapType();
             var newBackground = _battleSystem.GameManager.GetBackground();
-            if(currentMapType == MapType.Boss) _battleSystem.GameManager.ChangeBackground(newBackground);
+            _battleSystem.GameManager.ChangeBiome(newBackground, biome);
          
         }
         public override void OnUpdate()
