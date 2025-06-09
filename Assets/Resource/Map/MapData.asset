@@ -63,7 +63,7 @@ MonoBehaviour:
     connectionId:
     - Enemy5
     - Shop1
-    isVisited: 0
+    isVisited: 1
   - mapNodeId: Enemy3
     mapType: 0
     changeBackground: {fileID: 0}
@@ -117,7 +117,7 @@ MonoBehaviour:
     DropItems: []
     connectionId:
     - Enemy7
-    isVisited: 0
+    isVisited: 1
   - mapNodeId: Enemy6
     mapType: 0
     changeBackground: {fileID: 0}
@@ -154,7 +154,7 @@ MonoBehaviour:
     connectionId:
     - Rest2
     - Shop2
-    isVisited: 0
+    isVisited: 1
   - mapNodeId: Rest2
     mapType: 2
     changeBackground: {fileID: 0}
@@ -174,10 +174,10 @@ MonoBehaviour:
     DropItems: []
     connectionId:
     - Boss1
-    isVisited: 0
+    isVisited: 1
   - mapNodeId: Boss1
     mapType: 1
-    changeBackground: {fileID: 0}
+    changeBackground: {fileID: 21300000, guid: 5f6525a5e4a34c046a35203d65bcd6a5, type: 3}
     changeBiome: 0
     position: {x: 0, y: 80}
     enemies:
@@ -188,7 +188,7 @@ MonoBehaviour:
       _amount: 20
     connectionId:
     - Enemy8
-    isVisited: 0
+    isVisited: 1
   - mapNodeId: Enemy8
     mapType: 0
     changeBackground: {fileID: 0}
