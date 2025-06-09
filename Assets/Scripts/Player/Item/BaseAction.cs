@@ -33,6 +33,11 @@ namespace Player.Item
         public int CurrentLimit => _currentLimit;
         public bool IsLimited => _isLimited;
 
+        private void Awake()
+        {
+            _currentLimit = _limit;
+        }
+
         public void InitializeDefendShield(PlayerStats playerStats)
         {
             if (IsDefend)
@@ -57,7 +62,6 @@ namespace Player.Item
 
         public void Initialize(PlayerStats playerStats)
         {
-            _currentLimit = _limit;
             InitializeDefendShield(playerStats);
             InitializeDamage(playerStats.BaseDamage);
         }
