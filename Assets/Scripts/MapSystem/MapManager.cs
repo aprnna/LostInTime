@@ -30,6 +30,7 @@ public class MapManager : MonoBehaviour
 
     [HideInInspector]
     public MapNode CurrentPlayerMapNode;
+    public MapNode lastNode;
     public event Action<MapNode, MapNode> OnPlayerMoved;
     public event Action OnMapItemChange;
     private GameManager _gameManager;
@@ -62,6 +63,7 @@ public class MapManager : MonoBehaviour
                 SceneManager.LoadSceneAsync(CurrentPlayerMapNode.mapType.ToString(), LoadSceneMode.Additive);
             }
         }
+        lastNode = mapData.mapItems[mapData.mapItems.Count() - 1];
     }
 
     public void TriggerChangeStatusMap(bool value)
