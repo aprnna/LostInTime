@@ -275,7 +275,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   scrollRect: {fileID: 5974423930916669795}
   content: {fileID: 7681237681418414515}
-  scrollSpeed: 100
+  scrollSpeed: 200
   autoStop: 0
   itemPrefab: {fileID: 6132714191416560495, guid: 9421181a757848946a4f8b7b899d21db, type: 3}
   minValue: 0
