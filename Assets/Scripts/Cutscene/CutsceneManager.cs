@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class CutsceneManager : MonoBehaviour
@@ -62,6 +63,10 @@ public class CutsceneManager : MonoBehaviour
         }
         else
         {
+            if (SceneManager.GetActiveScene().name == "Prolog")
+            {
+                SceneManager.LoadScene("BaseScene");
+            }
             //Load Scene
             Debug.Log("Cutescene Done");
         }
