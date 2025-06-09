@@ -48,7 +48,7 @@ namespace Player.Item
             var limit  = _action.IsLimited ? _action.CurrentLimit.ToString() :"unlimited";
             _battleSystem.OnChangeActionDescription(_action.name 
                                                     + " - Uses left: "+limit+" Deal "
-                                                    +_action.MaxDamage+"-"+_action.MinDamage
+                                                    +_action.MinDamage+"-"+_action.MaxDamage
                                                     +" damage to 1 chosen enemy");
         }
  

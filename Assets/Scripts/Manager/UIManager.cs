@@ -1,4 +1,5 @@
 using System;
+using Input;
 using Player;
 using Player.UI;
 using Roulette;
@@ -17,18 +18,23 @@ namespace Manager
         [SerializeField] private TMP_Text _textInstruction;
         [SerializeField] private Image _background;
         [SerializeField] private GameObject _battleResult;
-        
+        [SerializeField] private GameObject _pauseMenuUI;
+        private InputManager _inputManager;
         private PlayerStats _playerStats;
         public PlayerStatsUIController PlayerStatsUI => _playerStatsUi;
+
         private void OnEnable()
         {
+            _inputManager = InputManager.Instance;
             _playerStats = PlayerStats.Instance;
             _playerStats.OnPlayerLevelUp += OnPlayerLevelUp;
+            _inputManager.PlayerInput.Pause.OnDown += PauseGame;
         }
 
         private void OnDisable()
         {
             _playerStats.OnPlayerLevelUp -= OnPlayerLevelUp;
+            _inputManager.PlayerInput.Pause.OnDown -= PauseGame;
         }
 
         private void OnPlayerLevelUp()
@@ -44,6 +50,18 @@ namespace Manager
         {
             _textInstruction.text = value;
         }
+        public void ResumeGame()
+        {
+            _pauseMenuUI.SetActive(false);
+            Time.timeScale = 1f; // lanjutkan waktu
+        }
+
+        public void PauseGame()
+        {
+            _pauseMenuUI.SetActive(true);
+            Time.timeScale = 0f; // waktu berhenti
+        }
+
         public void SetDescription(string value)
         {
             _textDescription.text = value;

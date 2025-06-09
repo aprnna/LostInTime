@@ -232,7 +232,7 @@ namespace Player
         public void LevelUp(int exp,int maxExp)
         {
             Debug.Log("You Level Up");
-            Exp += exp;
+            Exp = 0;
             MaxExp += maxExp;
             IsLevelUp = true;
             AudioManager.Instance.PlaySound(SoundType.SFX_LevelUp);

@@ -1,10 +1,12 @@
 using System;
 using System.Collections;
 using Audio;
+using Input;
 using Player;
 using Roulette;
 using Player.Item;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace Manager
@@ -28,7 +30,7 @@ namespace Manager
         [SerializeField] private GameObject _progressContainer;
         [SerializeField] private int _percentage;
         [SerializeField] private Slider _slider;
-        
+        private InputManager _inputManager;
         public UIManager UIManager => _uiManager;
         public event Action PlayerLevelUp;
         public Biome ActiveBiome { get; private set; } = Biome.Cave;
@@ -54,6 +56,8 @@ namespace Manager
 
         private void Start()
         {
+            _inputManager = InputManager.Instance;
+            _inputManager.PlayerMode();
             _playerStats = PlayerStats.Instance;
             _playerStats.InitializeStats(
                 "Kamikaze",

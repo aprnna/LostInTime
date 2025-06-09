@@ -46,8 +46,10 @@ namespace Input
     {
         private InputValue<Vector2> _movement;
         private InputButton _attack;
+        private InputButton _pause;
         public InputButton Attack => _attack;
         public InputValue<Vector2> Movement => _movement;
+        public InputButton Pause => _pause;
 
         public override bool HasPollable => true;
 
@@ -55,6 +57,7 @@ namespace Input
         {
             _movement = new InputValue<Vector2>(action.Player.Move);
             _attack = new InputButton(action.Player.Attack);
+            _pause = new InputButton(action.Player.Pause);
         }
 
 
