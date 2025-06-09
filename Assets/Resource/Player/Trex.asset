@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _name: TRex
   _enemyPotrait: {fileID: 4221660867106967508, guid: a95d808fa6102f14cb33b6926380c813, type: 3}
-  _health: 100
-  _maxHealth: 100
+  _health: 35
+  _maxHealth: 35
   _baseDamage: 20
   _intervalDamage: 5
   _prefab: {fileID: 8524122133972161533, guid: a8a1de8f75ffb5f41b3f27a1276111e8, type: 3}

@@ -42,8 +42,8 @@ namespace Manager
         {
             switch (restController.RestItem.Type)
             {
-                case RestType.Heal: SetDescription($"Heal. Recovers {restController.RestItem.Min} - {restController.RestItem.Max} weapon usage"); break;
-                case RestType.Repair: SetDescription($"Repair your weapon to restore its durability. Recovers {restController.RestItem.Min} - {restController.RestItem.Max} weapon usage "); break;
+                case RestType.Heal: SetDescription($"Take a short break to recover {restController.RestItem.Min}-{restController.RestItem.Max} Health"); break;
+                case RestType.Repair: SetDescription($"Repair your weapon to restore its durability. Recovers {restController.RestItem.Min}-{restController.RestItem.Max} weapon usage"); break;
             }
         }
         public void OnClickAction(RestActionController restController)

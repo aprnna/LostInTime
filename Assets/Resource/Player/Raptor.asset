@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _name: Raptor
   _enemyPotrait: {fileID: -5279191003883025259, guid: a95d808fa6102f14cb33b6926380c813, type: 3}
-  _health: 100
-  _maxHealth: 100
-  _baseDamage: 20
+  _health: 24
+  _maxHealth: 24
+  _baseDamage: 9
   _intervalDamage: 5
   _prefab: {fileID: 3321948638339099570, guid: df9ec969e8b033941bc6ee98f602d7b1, type: 3}

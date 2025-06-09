@@ -43,12 +43,15 @@ namespace Player.Item
         }
         public void OnPointerEnter(PointerEventData eventData)
         {
+            _action.InitializeDamage(_playerStats.BaseDamage);
+            Debug.Log(_action.MaxDamage+" "+_action.MinDamage);
             var limit  = _action.IsLimited ? _action.CurrentLimit.ToString() :"unlimited";
             _battleSystem.OnChangeActionDescription(_action.name 
-                                                    + " - Uses left: " +limit+" Deal "
+                                                    + " - Uses left: "+limit+" Deal "
                                                     +_action.MaxDamage+"-"+_action.MinDamage
                                                     +" damage to 1 chosen enemy");
         }
+ 
         public void OnPointerExit(PointerEventData eventData)
         {
             _battleSystem.OnChangeActionDescription("");

@@ -35,6 +35,21 @@ namespace Audio
                 _audioSource.PlayOneShot(randomClip, volume * soundList.volume);
             }
         }
+
+        public void StopSound(SoundType sound, AudioSource source = null)
+        {
+            SoundList soundList = _audioSo.sounds[(int)sound];
+            AudioClip[] clips = soundList.sounds;
+            if(source)
+            {
+                source.Stop();
+            }
+            else
+            {
+                _audioSource.outputAudioMixerGroup = soundList.mixer;
+                _audioSource.Stop();
+            }
+        }
     }
     [Serializable]
     public struct SoundList

@@ -71,9 +71,10 @@ namespace Player.Item
         {
             _currentLimit += value;
         }
-        private void InitializeDamage(int baseDamagePlayer)
+        public void InitializeDamage(int baseDamagePlayer)
         {
-            BaseDamage = baseDamagePlayer * (_percentageDamage / 100);
+            BaseDamage = Mathf.RoundToInt(baseDamagePlayer * (_percentageDamage / 100f));
+            Debug.Log("Base Damage: "+BaseDamage+" Player "+ baseDamagePlayer);
             MinDamage = BaseDamage - _interval;
             MaxDamage = BaseDamage + _interval;
         }

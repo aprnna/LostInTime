@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Audio;
 using Player;
 using Roulette;
 using Player.Item;
@@ -58,15 +59,15 @@ namespace Manager
                 "Kamikaze",
                 100,
                 100, 
-                1, 
-                3, 
-                20,
+                2, 
+                2, 
+                12,
                 0,
-                20,
+                100,
                 0,
                 3,
-                10,
-                4);
+                2,
+                2);
         }
         public Transform[] GetEnemiesPos(Biome type)
         {
@@ -140,6 +141,7 @@ namespace Manager
         public IEnumerator SetAndPLayRoulette(GameObject rouletteObject,int min, int max, bool autoStart, Action<int> onStopped)
         {
             var isRouletteStop = false;
+            AudioManager.Instance.PlaySound(SoundType.SFX_Roulette);
             RouletteUIController rouletteUI = rouletteObject.GetComponent<RouletteUIController>();
 
             rouletteUI.minValue = min;
@@ -150,6 +152,7 @@ namespace Manager
             {
                 Debug.Log($"The roulette has stopped! The result is: {result}");
                 isRouletteStop = true;
+                AudioManager.Instance.StopSound(SoundType.SFX_Roulette);
                 onStopped?.Invoke(result);
             };
             yield return new WaitUntil(() => isRouletteStop);

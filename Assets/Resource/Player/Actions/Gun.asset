@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19c00aa9b6e745ba95cc3be8112f3a4e, type: 3}
   m_Name: Gun
   m_EditorClassIdentifier: 
-  _name: Gun
-  _percentageDamage: 600
-  _interval: 5
+  _name: Handgun
+  _percentageDamage: 120
+  _interval: 6
   _defend: 0
   _multipleDefend: 0
   _intervalDefend: 0
   _vfx: {fileID: 6028535869411997274, guid: 5ab3e6937b2be8041b7023f9d508fe6b, type: 3}
   _isLimited: 1
-  _limit: 10
+  _limit: 20

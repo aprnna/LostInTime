@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _name: Sabertooth
   _enemyPotrait: {fileID: -7595668472593801052, guid: a95d808fa6102f14cb33b6926380c813, type: 3}
-  _health: 100
-  _maxHealth: 100
-  _baseDamage: 20
+  _health: 18
+  _maxHealth: 18
+  _baseDamage: 8
   _intervalDamage: 3
   _prefab: {fileID: 1220821942254667986, guid: 71e4fdb3440fc704a83a55d18860f367, type: 3}

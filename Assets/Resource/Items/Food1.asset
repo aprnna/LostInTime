@@ -13,8 +13,7 @@ MonoBehaviour:
   m_Name: Food1
   m_EditorClassIdentifier: 
   itemName: Chicken
-  itemDescription: Description about the hovered item
   sprite: {fileID: -259907895, guid: 0a7a42e161ac9b543b76a7965893456e, type: 3}
-  itemPrice: 10
+  itemPrice: 15
   consumableType: 0
   amount: 20

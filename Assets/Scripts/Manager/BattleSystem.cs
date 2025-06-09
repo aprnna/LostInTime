@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Audio;
 using Player;
 using Player.Item;
 using UnityEngine;
@@ -60,6 +61,7 @@ namespace Manager
 
         public void SpawnEnemies()
         {
+            AudioManager.Instance.PlaySound(SoundType.SFX_SpawnEnemy);
             var enemies = GameManager.GetEnemies();
             var activeBiome = GameManager.ActiveBiome;
             var enemiesPos = GameManager.GetEnemiesPos(activeBiome);
@@ -102,6 +104,7 @@ namespace Manager
         public void OnContinueClicked()
         {
             GameManager.PlayerLevelUp += ResultBattleState.Continue;
+            AudioManager.Instance.PlaySound(SoundType.SFX_Reward);
             AppliedDropItem();
             ClearDropItem();
         }

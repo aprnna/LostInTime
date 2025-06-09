@@ -29,12 +29,12 @@ public class ItemUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
         {
             case ConsumableType.Health:
                 ShopManager.Instance.ChangeDescription(itemSO.itemPrice 
-                                                       + "Gold - A warm, hearty meal that restores your strength. Recovers +"
+                                                       + " Gold - A warm, hearty meal that restores your strength. Recovers + "
                                                        +itemSO.amount+" Health instantly."); 
                 break;
             case ConsumableType.Shield:
                 ShopManager.Instance.ChangeDescription(itemSO.itemPrice 
-                                                       + "Gold - Compact defense core that recharges your shield. Restores +"
+                                                       + " Gold - Compact defense core that recharges your shield. Restores + "
                                                        +itemSO.amount+" Shield when used."); 
                 break;
             default:Debug.Log("Not Match");

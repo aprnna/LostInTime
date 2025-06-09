@@ -12,10 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19c00aa9b6e745ba95cc3be8112f3a4e, type: 3}
   m_Name: FIst
   m_EditorClassIdentifier: 
-  _name: FIst
-  _percentageDamage: 100
-  _interval: 3
+  _name: Punch
+  _percentageDamage: 30
+  _interval: 2
   _defend: 0
-  _minDefend: 0
-  _maxDefend: 0
+  _multipleDefend: 0
+  _intervalDefend: 0
   _vfx: {fileID: 5165246179081346853, guid: effeb7ac5081a4a41b2f475c51e5084d, type: 3}
+  _isLimited: 0
+  _limit: 0

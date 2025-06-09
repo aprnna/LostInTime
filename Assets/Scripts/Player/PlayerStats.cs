@@ -160,7 +160,7 @@ namespace Player
 
         public void PaymentItem(ConsumableType type,int value, int price)
         {
-            if (!(Coin - value  >= 0))
+            if (!(Coin - price  >= 0))
             {
                 Debug.Log("Uang Gacukup");
                 return;

@@ -90,7 +90,7 @@ MonoBehaviour:
     sounds:
     - {fileID: 8300000, guid: 055f29bdc36ca874fa3545c15d25f928, type: 3}
   - name: SFX_SpawnEnemy
-    volume: 1
+    volume: 0.144
     mixer: {fileID: 1230014237580762995, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
     sounds:
     - {fileID: 8300000, guid: 0a859c0afc104ce4f919ec9602c1b730, type: 3}
