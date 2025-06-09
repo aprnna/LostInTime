@@ -12,7 +12,7 @@ namespace Roulette
     {
         public ScrollRect scrollRect;
         public RectTransform content;
-        public float scrollSpeed = 100f;
+        public float scrollSpeed = 200f;
         private Button stopButton;
         private int stopAtIndex = 3;
         public bool autoStop = false;
@@ -52,6 +52,8 @@ namespace Roulette
                 stopButton = buttonStop.GetComponent<Button>();
                 stopButton.onClick.AddListener(StopScrolling);
             }
+
+            timer = Random.Range(2, 6);
         }
 
         void Update()
