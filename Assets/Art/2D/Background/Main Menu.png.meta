@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 906303c89f99ff54480fcdd023966dc0
+guid: 3a7721de5ad3cfd498f6f14a0b1fa28e
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 7869029564572298572
-    second: SaltStudio_0
+      213: 5561665765474925660
+    second: Main Menu_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -37,7 +37,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 1
+    filterMode: 0
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -46,7 +46,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
+  spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
@@ -75,7 +75,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -139,13 +139,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: SaltStudio_0
+      name: Main Menu_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 1124
-        height: 615
+        width: 400
+        height: 225
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -154,8 +154,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: c4de06372b8643d60800000000000000
-      internalID: 7869029564572298572
+      spriteID: c5c7596fb810f2d40800000000000000
+      internalID: 5561665765474925660
       vertices: []
       indices: 
       edges: []
@@ -164,7 +164,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
     indices: 
@@ -174,7 +174,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      SaltStudio_0: 7869029564572298572
+      Main Menu_0: 5561665765474925660
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

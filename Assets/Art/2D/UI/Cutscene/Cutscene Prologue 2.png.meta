@@ -1,10 +1,16 @@
 fileFormatVersion: 2
-guid: 906303c89f99ff54480fcdd023966dc0
+guid: e21c4100d8136e745b9d9f3c555b46b6
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 7869029564572298572
-    second: SaltStudio_0
+      213: -8043868118831217294
+    second: Cutscene Prologue 2_0
+  - first:
+      213: -3498942168690048596
+    second: Cutscene Prologue 2_1
+  - first:
+      213: -2253530764208392870
+    second: Cutscene Prologue 2_2
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -37,7 +43,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 1
+    filterMode: 0
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -75,7 +81,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -139,23 +145,67 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: SaltStudio_0
+      name: Cutscene Prologue 2_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0
-        width: 1124
-        height: 615
+        x: 15
+        y: 121
+        width: 146
+        height: 89
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: c4de06372b8643d60800000000000000
-      internalID: 7869029564572298572
+      spriteID: 275c9fc60907e5090800000000000000
+      internalID: -8043868118831217294
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cutscene Prologue 2_1
+      rect:
+        serializedVersion: 2
+        x: 15
+        y: 16
+        width: 146
+        height: 103
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ca14891c2a2417fc0800000000000000
+      internalID: -3498942168690048596
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cutscene Prologue 2_2
+      rect:
+        serializedVersion: 2
+        x: 163
+        y: 16
+        width: 221
+        height: 194
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a55b1fca5b9d9b0e0800000000000000
+      internalID: -2253530764208392870
       vertices: []
       indices: 
       edges: []
@@ -164,7 +214,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 0eecb6aef86b45946a0140a359ed1a91
     internalID: 0
     vertices: []
     indices: 
@@ -174,7 +224,9 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      SaltStudio_0: 7869029564572298572
+      Cutscene Prologue 2_0: -8043868118831217294
+      Cutscene Prologue 2_1: -3498942168690048596
+      Cutscene Prologue 2_2: -2253530764208392870
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
