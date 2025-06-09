@@ -1,4 +1,5 @@
 using System;
+using Audio;
 using UnityEngine;
 
 namespace Player
@@ -128,6 +129,7 @@ namespace Player
             if(takeDamage < 0 ) return;
             if (Health - takeDamage > 0)
             {
+                AudioManager.Instance.PlaySound(SoundType.SFX_PlayerGetHit);
                 Health -= takeDamage;
                 Debug.Log("You take as much damage as " + Health);
             }
@@ -152,6 +154,7 @@ namespace Player
                 return true;
             }
             Health = MaxHealth;
+            AudioManager.Instance.PlaySound(SoundType.SFX_Heal);
             return false;
         }
 
@@ -181,6 +184,7 @@ namespace Player
                     break;
                 default: Debug.Log("Not Match Type");break;
             }
+            AudioManager.Instance.PlaySound(SoundType.SFX_PurchaseItem);
             Coin -= price;
         }
 
@@ -193,6 +197,7 @@ namespace Player
         {
             if (Shield > 0)
             {
+                AudioManager.Instance.PlaySound(SoundType.SFX_Attack_Defend);
                 Shield -= 1;
                 return true;
             }
@@ -230,6 +235,7 @@ namespace Player
             Exp += exp;
             MaxExp += maxExp;
             IsLevelUp = true;
+            AudioManager.Instance.PlaySound(SoundType.SFX_LevelUp);
             OnPlayerLevelUp?.Invoke();
         }
 

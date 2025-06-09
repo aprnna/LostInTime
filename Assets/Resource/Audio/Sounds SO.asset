@@ -14,24 +14,98 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sounds:
   - name: BGM_MainMenu
-    volume: 1
-    mixer: {fileID: 1230014237580762995, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
+    volume: 0.191
+    mixer: {fileID: -2266778527417616675, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
     sounds:
-    - {fileID: 8300000, guid: 3b0dd0e7c7787ed419d863a5dc454206, type: 3}
+    - {fileID: 8300000, guid: ba42991e2755dba4b873880d0ad71bf8, type: 3}
+    - {fileID: 8300000, guid: e44f0109de51757428b13a6f45ef3201, type: 3}
   - name: BGM_Game
+    volume: 0.212
+    mixer: {fileID: -2266778527417616675, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
+    sounds:
+    - {fileID: 8300000, guid: 733d3b1e2f5aa39409f38ad18ac27677, type: 3}
+  - name: BGM_Cutscene_Prolog
     volume: 1
-    mixer: {fileID: 0}
-    sounds: []
-  - name: SFX_Attack
+    mixer: {fileID: -2266778527417616675, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
+    sounds:
+    - {fileID: 8300000, guid: 860990b75214ec542a466ea4835fb581, type: 3}
+  - name: BGM_Cutscene_Epilog
+    volume: 1
+    mixer: {fileID: -2266778527417616675, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
+    sounds:
+    - {fileID: 8300000, guid: 15210622f03789249bd62665d8470659, type: 3}
+  - name: SFX_Attack_Sword
     volume: 1
     mixer: {fileID: 1230014237580762995, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
     sounds:
-    - {fileID: 8300000, guid: 7437318f7f245664896f0ad770c809e8, type: 3}
+    - {fileID: 8300000, guid: 5be23f3f40d04fa4c9a3a128f1fe5745, type: 3}
+  - name: SFX_Attack_Punch
+    volume: 1
+    mixer: {fileID: 1230014237580762995, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
+    sounds:
+    - {fileID: 8300000, guid: 691731f865a0dad43be83df58de13bad, type: 3}
+  - name: SFX_Attack_Gun
+    volume: 1
+    mixer: {fileID: 1230014237580762995, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
+    sounds:
+    - {fileID: 8300000, guid: 6999c54b5b370dc4fb654bb414b6e721, type: 3}
+  - name: SFX_Attack_Defend
+    volume: 1
+    mixer: {fileID: 1230014237580762995, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
+    sounds:
+    - {fileID: 8300000, guid: ec5e291c684f91a4baf2c651db1095ad, type: 3}
   - name: SFX_Heal
     volume: 1
-    mixer: {fileID: 0}
-    sounds: []
+    mixer: {fileID: 1230014237580762995, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
+    sounds:
+    - {fileID: 8300000, guid: 75ae622a44fc47d4497d305a8948db28, type: 3}
   - name: SFX_PurchaseItem
     volume: 1
-    mixer: {fileID: 0}
-    sounds: []
+    mixer: {fileID: 1230014237580762995, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
+    sounds:
+    - {fileID: 8300000, guid: 2c684625ba7d7d1479f2e664478e991b, type: 3}
+  - name: SFX_LevelUp
+    volume: 1
+    mixer: {fileID: 1230014237580762995, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
+    sounds:
+    - {fileID: 8300000, guid: a648bfa030f9dd24cbe4313ae856a743, type: 3}
+  - name: SFX_Roulette
+    volume: 1
+    mixer: {fileID: 1230014237580762995, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
+    sounds:
+    - {fileID: 8300000, guid: 06bd63100b410b24eba69141656b54d4, type: 3}
+  - name: SFX_Campfire
+    volume: 1
+    mixer: {fileID: 1230014237580762995, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
+    sounds:
+    - {fileID: 8300000, guid: d8778af84598085468d9779678f39870, type: 3}
+  - name: SFX_Reward
+    volume: 1
+    mixer: {fileID: 1230014237580762995, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
+    sounds:
+    - {fileID: 8300000, guid: 38ad6b53645f93e4fb370fc9b33e40f2, type: 3}
+  - name: SFX_Button
+    volume: 1
+    mixer: {fileID: 1230014237580762995, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
+    sounds:
+    - {fileID: 8300000, guid: 055f29bdc36ca874fa3545c15d25f928, type: 3}
+  - name: SFX_SpawnEnemy
+    volume: 1
+    mixer: {fileID: 1230014237580762995, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
+    sounds:
+    - {fileID: 8300000, guid: 0a859c0afc104ce4f919ec9602c1b730, type: 3}
+  - name: SFX_MonsterBite
+    volume: 1
+    mixer: {fileID: 1230014237580762995, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
+    sounds:
+    - {fileID: 8300000, guid: 3e0323076f9973844a8ee436b5842144, type: 3}
+  - name: SFX_PlayerGetHit
+    volume: 1
+    mixer: {fileID: 1230014237580762995, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
+    sounds:
+    - {fileID: 8300000, guid: 8db4a71c09c3cd44bbffb89acc9fb4aa, type: 3}
+  - name: BGM_Game_Intense
+    volume: 0.239
+    mixer: {fileID: -2266778527417616675, guid: 47774e675ff13a64ba0c2c8ddd3d8875, type: 2}
+    sounds:
+    - {fileID: 8300000, guid: 025d33e0841dfb44cbeb369852ef9ddb, type: 3}
