@@ -28,7 +28,7 @@ public class MapManager : MonoBehaviour
     public Transform mapContainer;
     public Transform lineContainer;
 
-    [HideInInspector]
+    //[HideInInspector]
     public MapNode CurrentPlayerMapNode;
     public MapNode lastNode;
     public event Action<MapNode, MapNode> OnPlayerMoved;

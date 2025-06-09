@@ -230,8 +230,8 @@ MonoBehaviour:
     changeBiome: 0
     position: {x: 0, y: 100}
     enemies:
-    - {fileID: 11400000, guid: 35edda41120e83845a419186421e7ad6, type: 2}
     - {fileID: 11400000, guid: da3e560b9b593c744bfe282ce44f0da8, type: 2}
+    - {fileID: 11400000, guid: 35edda41120e83845a419186421e7ad6, type: 2}
     DropItems:
     - _type: 4
       _icon: {fileID: -594433078490650569, guid: c266899a301897c4db98c6d25834c271, type: 3}

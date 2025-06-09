@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Manager
 {
@@ -30,11 +31,18 @@ namespace Manager
                 _battleSystem.ChangeStatusMap(true);
                 yield return new WaitUntil(() => isContinueClicked);
                 _battleSystem.Leave();
-                
+
                 var currentMapType = _battleSystem.GameManager.GetMapType();
                 var nexBiome = _battleSystem.GameManager.GetNextBiome();
-                if(currentMapType == MapType.Boss) ChangeBiome(nexBiome);
-            }else 
+                if (currentMapType == MapType.Boss) ChangeBiome(nexBiome);
+
+                if (MapManager.Instance.CurrentPlayerMapNode == MapManager.Instance.lastNode)
+                {
+                    yield return new WaitForSeconds(1.5f);
+                    SceneManager.LoadScene("Epilog");
+                }
+            }
+            else
             {
                 _battleSystem.SetBattleResult(true);
             }
