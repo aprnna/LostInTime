@@ -29,7 +29,7 @@ namespace Player
         }
         void OnMouseEnter()
         {
-            if(_battleSystem.StateMachine.CurrentState != _battleSystem.SelectEnemyState) return;
+            if(_battleSystem.StateMachine.CurrentState == _battleSystem.EnemyTurnState) return;
             OnChangeMarker(true);
             _battleSystem.OnHoverEnemy(EnemyStats, true);
         }
