@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -10,7 +11,7 @@ public class CutsceneManager : MonoBehaviour
     public GameObject[] comicPages;
     public float fadeDuration = 1.5f;
     public Button nextButton;
-    private List<Image> comicPanels = new List<Image>();
+    private List<Graphic> comicPanels = new List<Graphic>();
     private int numberOfPage;
     private int currentPage = 1;
 
@@ -27,7 +28,7 @@ public class CutsceneManager : MonoBehaviour
         for (var i = 0; i < comicPages[currentPage - 1].transform.childCount; i++)
         {
             comicPanels.Add(
-                comicPages[currentPage - 1].transform.GetChild(i).GetComponent<Image>()
+                comicPages[currentPage - 1].transform.GetChild(i).GetComponent<Graphic>()
             );
         }
 
@@ -66,6 +67,10 @@ public class CutsceneManager : MonoBehaviour
             if (SceneManager.GetActiveScene().name == "Prolog")
             {
                 SceneManager.LoadScene("BaseScene");
+            }
+            else
+            {
+                SceneManager.LoadScene("MainMenu");
             }
             //Load Scene
             Debug.Log("Cutescene Done");
