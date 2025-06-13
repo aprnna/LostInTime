@@ -1,4 +1,6 @@
+using System;
 using System.Collections;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -6,60 +8,46 @@ namespace Manager
 {
     public class ResultBattleState:GameState
     {
-        private bool isContinueClicked  = false;
-        public ResultBattleState(BattleSystem battleSystem, MonoBehaviour monoBehaviour) : base(battleSystem,
-            monoBehaviour)
+        public ResultBattleState(BattleSystem battleSystem, UIManagerBattle uiManagerBattle) : 
+            base(battleSystem, uiManagerBattle)
         {
             
         }
         public override void OnEnter()
         {
             Debug.Log("Battle Result ");
-            _battleSystem.GameManager.SetInstruction("");
-            _monoBehaviour.StartCoroutine(BattleResultRuntime());
+            _battleSystem.GameManager.ChangeInstruction("");
+            BattleResultRuntime().Forget();
         }
 
-        public void Continue()
-        {
-            isContinueClicked = true;
-        }
-        private IEnumerator BattleResultRuntime()
+        private async UniTask BattleResultRuntime()
         {
             if (_battleSystem.BattleResult == BattleResult.PlayerWin)
             {
                 _battleSystem.DropItems();
-                _battleSystem.ChangeStatusMap(true);
-                yield return new WaitUntil(() => isContinueClicked);
+                await _battleSystem.UIManagerBattle.ButtonCollectReward.OnClickAsync();
+                if(_battleSystem.PlayerStats.IsLevelUp) await UniTask.WaitUntil(() =>_battleSystem.PlayerStats.IsLevelUp == false);
+                else _battleSystem.PlayerStats.ResetLevelUpStatus();
                 _battleSystem.Leave();
-
-                var currentMapType = _battleSystem.GameManager.GetMapType();
-                var nexBiome = _battleSystem.GameManager.GetNextBiome();
-                if (currentMapType == MapType.Boss) ChangeBiome(nexBiome);
-
-                if (MapManager.Instance.CurrentPlayerMapNode == MapManager.Instance.lastNode)
+                var currentMapType = _battleSystem.MapSystem.GetMapType();
+                if (currentMapType == MapType.Boss) _battleSystem.GameManager.NextBiome();
+                _battleSystem.GameManager.BattleResult(BattleResult.PlayerWin);
+                if (MapSystem.Instance.CurrentPlayerMapNode == MapSystem.Instance.lastNode)
                 {
-                    yield return new WaitForSeconds(1.5f);
+                    await UniTask.Delay(TimeSpan.FromSeconds(1.5), ignoreTimeScale: false);
                     SceneManager.LoadScene("Epilog");
                 }
             }
             else
             {
-                _battleSystem.SetBattleResult(true);
+                _battleSystem.GameManager.BattleResult(BattleResult.EnemiesWin);
             }
-        }
-
-        private void ChangeBiome(Biome biome)
-        {
-            var newBackground = _battleSystem.GameManager.GetBackground();
-            _battleSystem.GameManager.ChangeBiome(newBackground, biome);
-         
         }
         public override void OnUpdate()
         {
         }
         public override void OnExit()
         {
-            isContinueClicked = false;
         }
     }
 }

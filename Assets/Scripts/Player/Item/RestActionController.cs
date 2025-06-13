@@ -11,27 +11,27 @@ namespace Player.Item
         [SerializeField] private BaseAction[] _action;
         public BaseAction[] Action => _action;
         public RestItem RestItem => _restAction;
-        private RestManager _restManager;
+        private RestSystem _restSystem;
         void Start()
         {
-            _restManager = RestManager.Instance;
+            _restSystem = RestSystem.Instance;
         }
         public void OnPointerClick(PointerEventData eventData)
         {
-            _restManager.OnClickAction(this);
+            _restSystem.OnClickAction(this);
         }
         public void OnPointerEnter(PointerEventData eventData)
         {
-            _restManager.OnHoverAction(this);
+            _restSystem.OnHoverAction(this);
         }
         public void OnPointerExit(PointerEventData eventData)
         {
-            _restManager.SetDescription("");
+            _restSystem.SetDescription("");
 
         }
         void OnDestroy()
         {
-            _restManager.SetDescription("");
+            _restSystem.SetDescription("");
         }
     }
 

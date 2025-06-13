@@ -14,74 +14,78 @@ namespace Manager
         [SerializeField] private PlayerStatsUIController _playerStatsUi;
         [SerializeField] private GameObject _map;
         [SerializeField] private GameObject _levelUpPanel;
-        [SerializeField] private TMP_Text _textDescription;
         [SerializeField] private TMP_Text _textInstruction;
-        [SerializeField] private Image _background;
         [SerializeField] private GameObject _battleResult;
         [SerializeField] private GameObject _pauseMenuUI;
+        [SerializeField] private BiomeController _biomeController;
         private InputManager _inputManager;
         private PlayerStats _playerStats;
-        public PlayerStatsUIController PlayerStatsUI => _playerStatsUi;
+        private GameManager _gameManager;
 
         private void OnEnable()
         {
             _inputManager = InputManager.Instance;
             _playerStats = PlayerStats.Instance;
+            _gameManager = GameManager.Instance;
+            
+
             _playerStats.OnPlayerLevelUp += OnPlayerLevelUp;
-            _inputManager.PlayerInput.Pause.OnDown += PauseGame;
+            _gameManager.OnChangeInstruction += OnChangeInstruction;
+            _gameManager.OnChangeDungeon += OnChangeDungeon;
+            _gameManager.OnBattleEnd += OnBattleEnd;
+
         }
 
         private void OnDisable()
         {
+
             _playerStats.OnPlayerLevelUp -= OnPlayerLevelUp;
-            _inputManager.PlayerInput.Pause.OnDown -= PauseGame;
+            _gameManager.OnChangeInstruction -= OnChangeInstruction;
+            _gameManager.OnChangeDungeon -= OnChangeDungeon;
+            _gameManager.OnBattleEnd -= OnBattleEnd;
+
         }
 
         private void OnPlayerLevelUp()
         {
-            SetLevelUpPanel(true);
+            SetLevelUpPanel(!_levelUpPanel.activeSelf);
         }
 
-        public void SetBattleResult(bool value)
+        private void OnChangeDungeon(bool value)
         {
-            _battleResult.SetActive(value);
+            _map.SetActive(value);
+            if (value) _biomeController.HideBackground();
+            else _biomeController.ShowBackground();
         }
-        public void SetTextInstruction(string value)
+        public void OnBattleEnd(BattleResult battleResult)
+        {
+            switch (battleResult)
+            {
+                case BattleResult.PlayerWin: 
+                    _biomeController.HideBackground();
+                    _map.SetActive(true);
+                    break;
+                case BattleResult.EnemiesWin: 
+                    _battleResult.SetActive(true); 
+                    break;
+            }
+        }
+        public void OnChangeInstruction(string value)
         {
             _textInstruction.text = value;
         }
-        public void ResumeGame()
+        public void OnResumeGame()
         {
             _pauseMenuUI.SetActive(false);
-            Time.timeScale = 1f; // lanjutkan waktu
         }
 
-        public void PauseGame()
+        public void OnPauseGame()
         {
             _pauseMenuUI.SetActive(true);
-            Time.timeScale = 0f; // waktu berhenti
-        }
-
-        public void SetDescription(string value)
-        {
-            _textDescription.text = value;
         }
         public void SetLevelUpPanel(bool value)
         {
             _levelUpPanel.SetActive(value);
         }
-        public void SetMap(bool value)
-        {
-            _background.transform.parent.transform.parent.gameObject.SetActive(!value);
-            _map.SetActive(value);
-        }
-
-        public void SetBackground(Sprite image)
-        {
-            _background.sprite = image;
-            _background.type = Image.Type.Simple;
-            _background.preserveAspect = true;
-        }
-
     }
 }

@@ -1,12 +1,13 @@
 using System;
 using System.Linq;
 using Manager;
+using Player;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class MapManager : MonoBehaviour
+public class MapSystem : MonoBehaviour
 {
-    public static MapManager Instance { get; private set; }
+    public static MapSystem Instance { get; private set; }
 
     void Awake()
     {
@@ -20,7 +21,10 @@ public class MapManager : MonoBehaviour
             Destroy(gameObject);
         }
     }
-
+    void Start()
+    {
+        _gameManager = GameManager.Instance;
+    }
     public MapData mapData;
     public GameObject Maps;
     public MapItemUI mapItemUIPrefab;
@@ -38,15 +42,9 @@ public class MapManager : MonoBehaviour
     {
         OnPlayerMoved?.Invoke(startNode, endNode);
     }
-
-    void Start()
+    public void InitializeMap()
     {
-        _gameManager = GameManager.Instance;
-        InitializeMap();
-    }
-
-    private void InitializeMap()
-    {
+        Debug.Log("InitializeMap");
         for (int i = 0; i < mapData.mapItems.Count(); i++)
         {
             mapItemUIPrefab = Instantiate(mapItemUIPrefab, mapContainer);
@@ -54,19 +52,20 @@ public class MapManager : MonoBehaviour
             mapData.mapItems[i].isVisited = false;
             foreach (string item in mapData.mapItems[i].connectionId)
             {
-                DrawLine(mapData.mapItems[i], getNode(item));
+                DrawLine(mapData.mapItems[i], GetNode(item));
             }
 
             if (i == 0)
             {
                 CurrentPlayerMapNode = mapData.mapItems[i];
+                TriggerChangeStatusMap(true);
                 SceneManager.LoadSceneAsync(CurrentPlayerMapNode.mapType.ToString(), LoadSceneMode.Additive);
             }
         }
         lastNode = mapData.mapItems[mapData.mapItems.Count() - 1];
     }
 
-    public void TriggerChangeStatusMap(bool value)
+    private void TriggerChangeStatusMap(bool value)
     {
         CurrentPlayerMapNode.isVisited = value;
         OnMapItemChange?.Invoke();
@@ -99,11 +98,11 @@ public class MapManager : MonoBehaviour
         if (CheckConnection(mapNode))
         {
             SceneManager.UnloadSceneAsync(CurrentPlayerMapNode.mapType.ToString());
-            CurrentPlayerMapNode.isVisited = true;
             OnPlayerMoved?.Invoke(CurrentPlayerMapNode, mapNode);
             CurrentPlayerMapNode = mapNode;
+            TriggerChangeStatusMap(true);
             SceneManager.LoadSceneAsync(mapNode.mapType.ToString(), LoadSceneMode.Additive);
-            _gameManager.UIManager.SetMap(false);
+            _gameManager.ChangeDungeon(false);
             Debug.Log("Moved to " + mapNode.mapNodeId + " map");
         }
         else
@@ -112,7 +111,7 @@ public class MapManager : MonoBehaviour
         }
     }
 
-    public bool CheckConnection(MapNode targetMapItem)
+    private bool CheckConnection(MapNode targetMapItem)
     {
         bool result = false;
 
@@ -128,7 +127,7 @@ public class MapManager : MonoBehaviour
         return result;
     }
 
-    public MapNode getNode(String mapId)
+    private MapNode GetNode(String mapId)
     {
         MapNode node = null;
 
@@ -143,5 +142,16 @@ public class MapManager : MonoBehaviour
 
         return node;
     }
-
+    public EnemySO[] GetEnemies()
+    {
+        return CurrentPlayerMapNode.enemies;
+    }
+    public DropItem[] GetDropItems()
+    {
+        return CurrentPlayerMapNode.DropItems;
+    }
+    public MapType GetMapType()
+    {
+        return CurrentPlayerMapNode.mapType;
+    }
 }

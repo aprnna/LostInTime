@@ -1,4 +1,5 @@
 using System;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -42,7 +43,6 @@ namespace Player.Item
         {
             if (IsDefend)
             {
-                Debug.Log(playerStats.Shield);
                 _limit = playerStats.Shield;
                 _currentLimit = _limit;
                 if (_limit > 0)
@@ -78,9 +78,21 @@ namespace Player.Item
         public void InitializeDamage(int baseDamagePlayer)
         {
             BaseDamage = Mathf.RoundToInt(baseDamagePlayer * (_percentageDamage / 100f));
-            Debug.Log("Base Damage: "+BaseDamage+" Player "+ baseDamagePlayer);
             MinDamage = BaseDamage - _interval;
             MaxDamage = BaseDamage + _interval;
+        }
+        public async UniTask PlayVfx(Transform position)
+        {
+            var vfxObject = Instantiate(_vfx, position);
+            vfxObject.transform.SetParent(position.parent);
+            var animator = vfxObject.GetComponent<Animator>();
+            await UniTask.Yield();
+            while (animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1f || animator.IsInTransition(0))
+            {
+                await UniTask.Yield();
+            }
+            await UniTask.Delay(TimeSpan.FromSeconds(0.5), ignoreTimeScale: false);
+            Destroy(vfxObject);
         }
     }
 }

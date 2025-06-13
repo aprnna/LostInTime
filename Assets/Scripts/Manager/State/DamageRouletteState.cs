@@ -1,98 +1,66 @@
+using System;
 using UnityEngine;
-using System.Collections;
+using Cysharp.Threading.Tasks;
+
 namespace Manager
 {
     public class DamageRouletteState: GameState
     {
-        private bool _isRouletteStarted = false;
         private bool _autoStart;
         private GameObject _rouletteObject;
-        private int _result;
         
-        public DamageRouletteState(BattleSystem battleSystem, MonoBehaviour coroutineRunner): base(battleSystem, coroutineRunner)
+        public DamageRouletteState(BattleSystem battleSystem, UIManagerBattle uiManagerBattle): 
+            base(battleSystem,uiManagerBattle)
         {
         }
         public override void OnEnter()
         {
-            _autoStart = _battleSystem.GameManager.IsAutoStart;
-            if (_battleSystem.GameManager.IsAutoStart) OnStartButtonPressed();
-            _battleSystem.GameManager.SetRouletteButton(true ,OnStartButtonPressed);
+            _battleSystem.GameManager.ChangeInstruction("Start Roulette");
+            _autoStart = _battleSystem.RouletteSystem.AutoStartRoulette;
+            _battleSystem.RouletteSystem.EnableRouletteAction();
+            if(_autoStart) OnStartRoulette();
+            else _battleSystem.RouletteSystem.SetRouletteButton(OnStartRoulette);
         }
-        private void OnStartButtonPressed()
+        public void OnStartRoulette()
         {
-            _battleSystem.GameManager.ButtonStartRoulette.SetActive(false);
-            _battleSystem.GameManager.ButtonStopRoulette.SetActive(true);
-            if (_isRouletteStarted) return;
-
-            _isRouletteStarted = true;
-
-           _battleSystem.GameManager.SetInstruction("Roulette Started!");
-
-            _monoBehaviour.StartCoroutine(RouletteRoutine());
+            StartRoulette().Forget();
+            _battleSystem.RouletteSystem.ButtonStartRoulette.SetActive(false);
         }
-
-        private IEnumerator RouletteRoutine()
+        private async UniTask StartRoulette()
         {
-            // yield return new WaitForSeconds(2f);
             if (_battleSystem.SelectedAction.IsDefend)
-            {
-                var min = _battleSystem.SelectedAction.MinDefend;
-                var max =_battleSystem.SelectedAction.MaxDefend;
-                Debug.Log("min : "+min+"max: "+max);
-                yield return PlayRoulette(min,max); 
-                // var roulette = Random.Range(min, max);
-                Debug.Log("Defend: " + _result);
-                _battleSystem.SetPlayerDefend(_result);
-            }
+                await DefendAction();
             else
-            {
-                var min = _battleSystem.SelectedAction.MinDamage;
-                var max =_battleSystem.SelectedAction.MaxDamage;
-                // var roulette = Random.Range(min, max);
-                yield return PlayRoulette(min,max); 
-                _battleSystem.SelectedTarget.PlayAnim("isDamaged");
-                yield return PlayVFX(); 
-                Debug.Log("Damage dealt: " + _result);
-                _battleSystem.SelectedTarget.EnemyStats.GetHit(_result);
-                _battleSystem.SetEnemyStats(_battleSystem.SelectedTarget.EnemyStats);
-            }
-            _isRouletteStarted = false;
+                await AttackAction();
             if(EnemiesAvailable())_battleSystem.StateMachine.ChangeState(_battleSystem.EnemyTurnState);
             else
             {
                 _battleSystem.ChangeBattleResult(BattleResult.PlayerWin);
                 _battleSystem.StateMachine.ChangeState(_battleSystem.ResultBattleState);
             }
-            
         }
 
-        private IEnumerator PlayRoulette(int min, int max)
+        private async UniTask DefendAction()
         {
-            _rouletteObject = _battleSystem.GameManager.SpawnRoulette();
-            yield return _battleSystem.GameManager.SetAndPLayRoulette(
-                _rouletteObject,
-                min, 
-                max, 
-                _autoStart, 
-                (result)=> 
-                    _result = result);
-            // yield return new WaitUntil(() => _battleSystem.GameManager.IsRouletteStop);
-            yield return new WaitForSeconds(1f);
-
+            var min = _battleSystem.SelectedAction.MinDefend;
+            var max =_battleSystem.SelectedAction.MaxDefend;
+            var result = await _battleSystem.RouletteSystem.SetRoulette(min,max); 
+            Debug.Log("Defend: " + result);
+            _battleSystem.SetPlayerDefend(result);
         }
-        private IEnumerator PlayVFX()
+
+        private async UniTask AttackAction()
         {
-            var vfx = _battleSystem.SelectedAction.VFX;
-            var objectVfx = _battleSystem.InstantiateVFX(vfx);
-            var animator = objectVfx.GetComponent<Animator>();
-            yield return null;
-            while (animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1f || animator.IsInTransition(0))
-            {
-                yield return null;
-            }
-            _battleSystem.ClearVfx(objectVfx);
+            var min = _battleSystem.SelectedAction.MinDamage;
+            var max =_battleSystem.SelectedAction.MaxDamage;
+            var result = await _battleSystem.RouletteSystem.SetRoulette(min,max); 
+            _battleSystem.SelectedTarget.PlayAnim("isDamaged");
+            _battleSystem.SelectedTarget.EnemyStats.GetHit(result);
+            _battleSystem.UIManagerBattle.EnemyStatsUI.InitializeStats(_battleSystem.SelectedTarget.EnemyStats);
+            await _battleSystem.SelectedAction.PlayVfx(_battleSystem.SelectedTarget.transform); 
+            Debug.Log("Damage dealt: " + result);
+            await UniTask.Delay(TimeSpan.FromSeconds(1), ignoreTimeScale: false);
         }
-
         private bool EnemiesAvailable()
         {
             foreach (var e in _battleSystem.Enemies)
@@ -111,18 +79,13 @@ namespace Manager
         {
             if (_battleSystem.SelectedAction.IsDefend)
             {
-                _battleSystem.ClearAction();
+                _uiManagerBattle.SetActionPanel(false);
             }else
             {
                 _battleSystem.SelectedTarget.OnChangeMarker(false);
-                _battleSystem.SetEnemyPanel(false);
-                _battleSystem.SetEnemyStats(_battleSystem.SelectedTarget.EnemyStats);
-                _battleSystem.ClearTarget();
+                _uiManagerBattle.SetEnemyPanel(_battleSystem.SelectedTarget.EnemyStats,false);
+                _battleSystem.ResetBattle();
             }
-            _battleSystem.GameManager.DestroyObject(_rouletteObject);
-            _battleSystem.GameManager.SetRouletteButton(false ,null);
-            _battleSystem.GameManager.ClearButtonRoulette();
-
         }
     }
 }

@@ -1,61 +1,51 @@
+using System;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 
 namespace Manager
 {
     public class EnemyTurnState: GameState
     {
-        private List<GameObject> _rouletteObjects;
-        private GameObject _rouletteObject;
-        private int _result;
-        public EnemyTurnState(BattleSystem battleSystem, MonoBehaviour coroutineRunner) : base(battleSystem, coroutineRunner)
+        private List<GameObject> _rouletteObjects  = new List<GameObject>();
+        private List<int> _results = new List<int>();
+        
+        public EnemyTurnState(BattleSystem battleSystem, UIManagerBattle uiManagerBattle) : 
+            base(battleSystem, uiManagerBattle)
         {
         }
 
         public override void OnEnter()
         {
             Debug.Log("Enemy Turn");
-            _battleSystem.GameManager.SetInstruction("Enemy Turn");
-            _battleSystem.StartCoroutine(ExecuteEnemyAIAll());
+            _battleSystem.GameManager.ChangeInstruction("Enemy Turn");
+            ExecuteEnemyAIAll().Forget();
         }
-         private IEnumerator ExecuteEnemyAIAll()
+        private async UniTask ExecuteEnemyAIAll()
         {
-            yield return new WaitForSeconds(1f);
+            await UniTask.DelayFrame(2);
 
-            List<int> results = new List<int>();
-            _rouletteObjects = new List<GameObject>();
-            int activeEnemyCount = 0;
-
-            // 1) Spawn semua roulette dan langsung mulai coroutinenya, tanpa menunggu
+            var tasks = new List<UniTask<(GameObject rouletteObject, int result)>>();
             foreach (var e in _battleSystem.Enemies)
             {
-                if (!e.EnemyStats.IsAlive())
-                    continue;
+                if (!e.EnemyStats.IsAlive()) continue;
 
-                activeEnemyCount++;
-
-                // Spawn satu instance roulette (GameObject)
-                GameObject rouletteGO = _battleSystem.GameManager.SpawnRoulette();
-                _rouletteObjects.Add(rouletteGO);
-
-                // Jalankan coroutine SetAndPlayRoulette untuk instance ini,
-                // tapi jangan 'yield return' di sini—kita cuma ingin coroutine-nya berlalu di background
-                _battleSystem.StartCoroutine(
-                    _battleSystem.GameManager.SetAndPLayRoulette(
-                        rouletteGO,
-                        e.EnemyStats.MinDamage(),
-                        e.EnemyStats.MaxDamage(),
-                        true, // autoStart = true
-                        (result) => {
-                            results.Add(result);
-                        }
-                    )
-                );
+                var min = e.EnemyStats.MinDamage();
+                var max = e.EnemyStats.MaxDamage();
+                tasks.Add(_battleSystem.RouletteSystem
+                    .SetRoulette(min, max, true));
             }
-            yield return new WaitUntil(() => results.Count >= activeEnemyCount);
 
-            foreach (int roll in results)
+            var allResults = await UniTask.WhenAll(tasks);
+
+            foreach (var (rouletteObject, result) in allResults)
+            {
+                _rouletteObjects.Add(rouletteObject);
+                _results.Add(result);
+            }
+
+            foreach (var roll in _results)
             {
                 int reduce = roll - _battleSystem.PlayerDefend;
                 _battleSystem.PlayerStats.GetHit(reduce);
@@ -65,29 +55,29 @@ namespace Manager
                 {
                     _battleSystem.ChangeBattleResult(BattleResult.EnemiesWin);
                     _battleSystem.StateMachine.ChangeState(_battleSystem.ResultBattleState);
-                    yield break;
+                    await UniTask.Yield();
                 }
-
-                yield return new WaitForSeconds(0.5f);
             }
-
-            yield return new WaitForSeconds(1f);
+            await UniTask.Delay(TimeSpan.FromSeconds(2));
             _battleSystem.StateMachine.ChangeState(_battleSystem.PlayerTurnState);
         }
 
+        private void ClearRoulette()
+        {
+            foreach (var rouletteObject in _rouletteObjects)
+            {
+                _battleSystem.DestroyObject(rouletteObject);
+            }
+        }
         public override void OnUpdate()
         {
 
         }
         public override void OnExit()
         {
-            
-            foreach (var r in _rouletteObjects)
-            {
-                Debug.Log(r);
-                _battleSystem.GameManager.DestroyObject(r);
-            }
-            _battleSystem.SetPlayerDefend(0);
+            _battleSystem.ResetBattle();
+            ClearRoulette();
+            _results.Clear();
         }
     }
 }

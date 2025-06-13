@@ -4,13 +4,14 @@ namespace Manager
 {
     public class SelectActionState: GameState
     {
-        public SelectActionState(BattleSystem battleSystem, MonoBehaviour monoBehaviour): base(battleSystem, monoBehaviour)
+        public SelectActionState(BattleSystem battleSystem, UIManagerBattle uiManagerBattle): 
+            base(battleSystem, uiManagerBattle)
         {
         }
         public override void OnEnter()
         {
-            _battleSystem.GameManager.SetInstruction("Select Action");
-            _battleSystem.SetActionButton(true);
+            _battleSystem.GameManager.ChangeInstruction("Select Action");
+            _uiManagerBattle.SetActionsButton(true);
         }
 
         public override void OnUpdate()
@@ -18,8 +19,8 @@ namespace Manager
         }
         public override void OnExit()
         {
-            _battleSystem.SetActionButton(false);
-            _battleSystem.OnChangeActionDescription("");
+            _uiManagerBattle.SetActionsButton(false);
+            _battleSystem.GameManager.ChangeInstruction("");
         }
     }
 }

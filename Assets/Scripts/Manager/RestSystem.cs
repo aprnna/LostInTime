@@ -1,22 +1,24 @@
 using System;
 using System.Collections;
+using Cysharp.Threading.Tasks;
 using Player;
 using Player.Item;
+using Roulette;
 using TMPro;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace Manager
 {
-    public class RestManager:MonoBehaviour
+    public class RestSystem:MonoBehaviour
     {
         [SerializeField] private GameObject _mainCanvas;
         [SerializeField] private GameObject _buttonPanel;
         [SerializeField] private TMP_Text _textDescription;
-        public static RestManager Instance;
-        private GameManager _gameManager;
+        public static RestSystem Instance;
         private PlayerStats _playerStats;
-        
+        private RouletteSystem _rouletteSystem;
+        private GameManager _gameManager;
         public void Awake()
         {
             if (Instance == null)
@@ -29,8 +31,10 @@ namespace Manager
         }
         public void Start()
         {
-            _gameManager = GameManager.Instance;
             _playerStats = PlayerStats.Instance;
+            _rouletteSystem = RouletteSystem.Instance;
+            _gameManager = GameManager.Instance;
+            
             _buttonPanel.SetActive(true);
         }
 
@@ -49,24 +53,29 @@ namespace Manager
         public void OnClickAction(RestActionController restController)
         {
             _buttonPanel.SetActive(false);
-            StartCoroutine(Roulette(restController));
+            StartRoulette(restController).Forget();
         }
 
-        public IEnumerator Roulette(RestActionController restController)
+        private async UniTask StartRoulette(RestActionController restController)
         {
-            var roulette = _gameManager.SpawnRoulette();
-            var resultroll = 0;
-            yield return _gameManager.SetAndPLayRoulette(roulette, restController.RestItem.Min, restController.RestItem.Max, true,(result) => resultroll = result);
+            var (rouletteObject, result) = await _rouletteSystem.SetRoulette(restController.RestItem.Min, restController.RestItem.Max,
+                true);
+            Destroy(rouletteObject);
             switch (restController.RestItem.Type)
             {
-                case RestType.Heal: PlayerRest(resultroll); break;
-                case RestType.Repair: RepairWeapon(resultroll, restController.Action); break;
+                case RestType.Heal: _playerStats.Heal(result);
+                    break;
+                case RestType.Repair:
+                    RepairWeapon(result, restController.Action);
+                    break;
+                default:
+                    Debug.Log("Type Not Match");
+                    break;
             }
-
-            yield return new WaitForSeconds(2f);
-            Destroy(roulette);
             Leave();
         }
+
+
         private void RepairWeapon(int value, BaseAction[] actions)
         {
             foreach (var action in actions)
@@ -74,18 +83,11 @@ namespace Manager
                 if(action.IsLimited) action.AddLimit(value);
             }
         }
-
-        private void PlayerRest(int value)
-        {
-            _playerStats.Heal(value);
-        }
-
         private void Leave()
         {
             _buttonPanel.SetActive(false);
             _mainCanvas.SetActive(false);
-            _gameManager.UIManager.SetMap(true);
-            _gameManager.ChangeStatusMap(true);
+            _gameManager.ChangeDungeon(true);
         }
     }
 }

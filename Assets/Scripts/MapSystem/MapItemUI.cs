@@ -20,14 +20,14 @@ public class MapItemUI : MonoBehaviour, IPointerClickHandler
     [HideInInspector]
     public MapNode mapItemData;
 
-    private MapManager _mapManager;
-    public void Init(MapNode node, MapManager manager)
+    private MapSystem _mapSystem;
+    public void Init(MapNode node, MapSystem system)
     {
         mapItemData = node;
-        _mapManager = manager;
+        _mapSystem = system;
 
         image = GetComponent<Image>();
-        transform.localPosition = mapItemData.position + _mapManager.mapData.OffSet;
+        transform.localPosition = mapItemData.position + _mapSystem.mapData.OffSet;
 
         switch (mapItemData.mapType)
         {
@@ -37,21 +37,21 @@ public class MapItemUI : MonoBehaviour, IPointerClickHandler
             case MapType.Boss: image.sprite = bossSprite; break;
         }
 
-        _mapManager.OnPlayerMoved += ChangeState;
-        _mapManager.OnMapItemChange += ChangeMapStatus;
+        _mapSystem.OnPlayerMoved += ChangeState;
+        _mapSystem.OnMapItemChange += ChangeMapStatus;
     }
        
     private void OnDestroy()
     {
-        if (_mapManager != null)
+        if (_mapSystem != null)
         {
-            _mapManager.OnPlayerMoved -= ChangeState;
-            _mapManager.OnMapItemChange -= ChangeMapStatus;
+            _mapSystem.OnPlayerMoved -= ChangeState;
+            _mapSystem.OnMapItemChange -= ChangeMapStatus;
         }
     }
     public void OnPointerClick(PointerEventData eventData)
     {
-        MapManager.Instance.MovePlayerToNode(mapItemData);
+        MapSystem.Instance.MovePlayerToNode(mapItemData);
     }
 
 

@@ -1,21 +1,23 @@
 using System;
 using System.Collections.Generic;
 using Audio;
+using Cysharp.Threading.Tasks;
 using Player;
 using Player.Item;
+using Roulette;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Manager
 {
     public class BattleSystem: MonoBehaviour
     {
         public static BattleSystem Instance;
-        [SerializeField] private UIManagerBattle _uiManager;
-        [SerializeField] private List<EnemyController> _enemies = new List<EnemyController>();
-        public PlayerStats PlayerStats { get; private set; }
+        [field:SerializeField] public UIManagerBattle UIManagerBattle { get; private set; }
+      
+        [Header("Game State")]
         public EnemyController SelectedTarget { get; private set; }
         public BaseAction SelectedAction { get; private set; }
-        public List<EnemyController> Enemies => _enemies;
         public PlayerTurnState PlayerTurnState { get; private set; }
         public SelectActionState SelectActionState{ get; private set; }
         public SelectEnemyState SelectEnemyState { get; private set; }
@@ -23,9 +25,16 @@ namespace Manager
         public DamageRouletteState DamageRouletteState { get; private set; }
         public ResultBattleState ResultBattleState { get; private set; }
         public FiniteStateMachine<GameState> StateMachine { get; private set; }
+        
+        [Header("Other")]
+        public PlayerStats PlayerStats { get; private set; }
         public BattleResult BattleResult { get; private set; }
-        public GameManager GameManager { get; private set; }
         public int PlayerDefend { get; private set; }
+        public List<EnemyController> Enemies { get; private set; } = new List<EnemyController>();
+        public MapSystem MapSystem{ get; private set; }
+        public GameManager GameManager { get; private set; }
+        public RouletteSystem RouletteSystem { get; private set; }
+        
         public void Awake()
         {
             if (Instance == null)
@@ -39,20 +48,21 @@ namespace Manager
 
         public void Start()
         {
-            PlayerStats = PlayerStats.Instance;
             GameManager = GameManager.Instance;
-        
-
-            PlayerTurnState      = new PlayerTurnState(this, this);
-            SelectActionState    = new SelectActionState(this, this);
-            SelectEnemyState     = new SelectEnemyState(this, this);
-            DamageRouletteState  = new DamageRouletteState(this, this);
-            EnemyTurnState       = new EnemyTurnState(this, this);
-            ResultBattleState    = new ResultBattleState(this, this);
-
-            StateMachine = new FiniteStateMachine<GameState>(PlayerTurnState);
-            SpawnEnemies();
+            MapSystem = MapSystem.Instance;
+            RouletteSystem = RouletteSystem.Instance;
+            PlayerStats = PlayerStats.Instance;
+            
+            PlayerTurnState      = new PlayerTurnState(this,UIManagerBattle );
+            SelectActionState    = new SelectActionState(this, UIManagerBattle);
+            SelectEnemyState     = new SelectEnemyState(this, UIManagerBattle);
+            DamageRouletteState  = new DamageRouletteState(this, UIManagerBattle);
+            EnemyTurnState       = new EnemyTurnState(this, UIManagerBattle);
+            ResultBattleState    = new ResultBattleState(this, UIManagerBattle);
+            StateMachine         = new FiniteStateMachine<GameState>(PlayerTurnState);
+            
             StateMachine.Init();
+            SpawnEnemies();
         }
         void Update()
         {
@@ -62,168 +72,94 @@ namespace Manager
         public void SpawnEnemies()
         {
             AudioManager.Instance.PlaySound(SoundType.SFX_SpawnEnemy);
-            var enemies = GameManager.GetEnemies();
-            var activeBiome = GameManager.ActiveBiome;
-            var enemiesPos = GameManager.GetEnemiesPos(activeBiome);
-            _enemies.Clear();
+            var enemies = MapSystem.GetEnemies();
+            Transform[] enemiesPos = GameManager.GetEnemiesPosition();
+            Enemies.Clear();
             for (int i = 0; i < enemies.Length; i++)
             {
-                var enemy=Instantiate(enemies[i].Prefab, enemiesPos[i]);
-                _enemies.Add(enemy.GetComponent<EnemyController>());
+                var enemy= Instantiate(enemies[i].Prefab, enemiesPos[i]);
+                Enemies.Add(enemy.GetComponent<EnemyController>());
             }
         }
 
         public void DropItems()
         {
-            _uiManager.SetDropItemPanel(true);
-            var dropItems = GameManager.GetDropItems();
+            UIManagerBattle.SetDropItemPanel(true);
+            var dropItems = MapSystem.GetDropItems();
             foreach (var item in dropItems)
             {
-                _uiManager.InstantiateDropItem(item.Icon, item.Amount);
+                UIManagerBattle.InstantiateDropItem(item.Icon, item.Amount);
                 Debug.Log($"Get {item.Type} {item.Amount}");
                 if (item.Type == ConsumableType.SparePart)
                 {
-                    GameManager.SetTeleportProgress(true);
-                    GameManager.UpdateTeleportProgress(item.Amount);
+                    GameManager.IncreaseProgress(item.Amount);
                 }
             }
         }
-
+        public void ClearDropItem()
+        {
+            UIManagerBattle.SetDropItemPanel(false);
+            UIManagerBattle.ClearDropItem();
+            // GameManager.SetTeleportProgress(false);
+        }
         public void AppliedDropItem()
         {
-            var dropItems = GameManager.GetDropItems();
+            var dropItems = MapSystem.GetDropItems();
             foreach (var item in dropItems)
             {
                 if (item.Type != ConsumableType.SparePart) 
                     item.AppliedToPlayerStats(PlayerStats);
             }
-            Debug.Log(PlayerStats.IsLevelUp);
-            if(!PlayerStats.IsLevelUp) ResultBattleState.Continue();
-            PlayerStats.ResetLevelUpStatus();
-        }
-        public void OnContinueClicked()
-        {
-            GameManager.PlayerLevelUp += ResultBattleState.Continue;
-            AudioManager.Instance.PlaySound(SoundType.SFX_Reward);
-            AppliedDropItem();
-            ClearDropItem();
-        }
-        public GameObject InstantiateVFX(GameObject vfx)
-        {
-            return Instantiate(vfx, SelectedTarget.transform);
         }
 
-        public void ClearVfx(GameObject vfx)
+  
+        public void OnContinueClicked()
         {
-            Destroy(vfx);
+            // GameManager.PlayerLevelUp += ResultBattleState.Continue;
+            AudioManager.Instance.PlaySound(SoundType.SFX_Reward);
+            ClearDropItem();
+            AppliedDropItem();
         }
+
         public void SetPlayerDefend(int value)
         {
             PlayerDefend = value;
         }
-        public void ClearDropItem()
-        {
-            _uiManager.SetDropItemPanel(false);
-            _uiManager.ClearDropItem();
-            GameManager.SetTeleportProgress(false);
-        }
-        public void OnActionButtonClicked(BaseAction action)
-        {
-            if (StateMachine.CurrentState == SelectActionState)
-            {
-                if (action.IsLimited)
-                {
-                    if (!(action.CurrentLimit > 0) && !action.IsDefend)
-                    {
-                        Debug.Log("Out of limit"); 
-                        return;
-                    }
-                    action.UseAction();
-                }
-                SelectedAction = action;
-                if (action.IsDefend)
-                {
-                    PlayerStats.UseShield();
-                    StateMachine.ChangeState(DamageRouletteState);
-                }
-                else StateMachine.ChangeState(SelectEnemyState);
-            }
-        }
-
-        public void OnEnemyButtonClicked(EnemyController enemyUnit)
-        {
-            if (StateMachine.CurrentState == SelectEnemyState)
-            {
-                SelectedTarget = enemyUnit;
-                SetEnemyStats(enemyUnit.EnemyStats);
-                SetEnemyPanel(true);
-                StateMachine.ChangeState(DamageRouletteState);
-            }
-          
-        }
-
-        public void ChangeStatusMap(bool value)
-        {
-            GameManager.ChangeStatusMap(value);
-        }
-
-        public void OnHoverEnemy(EnemyStats enemyUnit, bool active)
-        {
-            SetEnemyPanel(active);
-            SetEnemyPortrait(enemyUnit.GetPotrait());
-            SetEnemyStats(enemyUnit);
-        }
-
-        public void SetActionButton(bool value)
-        {
-            _uiManager.SetActionsButton(value);
-        }
-        public void OnChangeActionDescription(string value)
-        {
-            _uiManager.SetActionDescription(value);
-        }
-
+   
         public void ChangeBattleResult(BattleResult result)
         {
             BattleResult = result;
         }
-        public void SetEnemyStats(EnemyStats enemyUnit)
+
+        public void SelectAction(BaseAction action)
         {
-            _uiManager.SetEnemyStats(enemyUnit);
-        }
-        public void SetEnemyPortrait(Sprite image)
-        {
-            _uiManager.SetEnemyPortrait(image);
-        }
-        public void SetBattleResult(bool value)
-        {
-            GameManager.UIManager.SetBattleResult(value);
+            SelectedAction = action;
         }
 
-        public void SetEnemyPanel(bool value)
+        public void SelectEnemy(EnemyController enemy)
         {
-            _uiManager.SetEnemyPanel(value);
+            SelectedTarget = enemy;
         }
-
-        public void ClearTarget()
+        public void ResetBattle()
         {
             SelectedTarget = null;
+            SelectedAction = null;
+            PlayerDefend = 0;
         }
 
-        public void ClearAction()
-        {
-            SelectedAction = null;
-        }
         public void Leave()
         {
-            _uiManager.SetMainCanvas(false);
-            GameManager.UIManager.SetMap(true);
-            GameManager.ChangeStatusMap(true);
+            UIManagerBattle.SetMainCanvas(false);
+            GameManager.ChangeDungeon(true);
         }
+        // private void OnDestroy()
+        // {
+        //     GameManager.PlayerLevelUp -= ResultBattleState.Continue;
+        // }
 
-        private void OnDestroy()
+        public void DestroyObject(GameObject gameObject)
         {
-            GameManager.PlayerLevelUp -= ResultBattleState.Continue;
+            Destroy(gameObject);
         }
     }
 
@@ -233,18 +169,4 @@ namespace Manager
         EnemiesWin
     }
 
-    public enum Biome
-    {
-        Forest,
-        Cave
-    }
-
-    [Serializable]
-    public class EnemyBiomePos
-    {
-        [SerializeField] private Transform[] _pos;
-        [SerializeField] private Biome _type;
-        public Transform[] EnemiesPos => _pos;
-        public Biome Type => _type;
-    }
 }

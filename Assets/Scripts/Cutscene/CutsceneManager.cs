@@ -28,7 +28,7 @@ public class CutsceneManager : MonoBehaviour
         for (var i = 0; i < comicPages[currentPage - 1].transform.childCount; i++)
         {
             comicPanels.Add(
-                comicPages[currentPage - 1].transform.GetChild(i).GetComponent<Graphic>()
+                comicPages[currentPage - 1].transform.GetChild(i).GetChild(0).GetComponent<Graphic>()
             );
         }
 

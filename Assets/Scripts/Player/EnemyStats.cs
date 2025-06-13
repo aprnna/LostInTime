@@ -7,8 +7,6 @@ namespace Player
     {
         [SerializeField] private EnemySO _enemyData;
         private EnemyModel _enemyModel;
-        public event Action OnChangeHealth;
-        public event Action OnChangeDamage;
         public void Start()
         {
             _enemyModel = new EnemyModel(_enemyData);
@@ -19,7 +17,6 @@ namespace Player
             private set
             {
                 _enemyModel.Health = value ;
-                OnChangeHealth?.Invoke();
             }
         }
         public int MaxHealth
@@ -28,7 +25,6 @@ namespace Player
             private set
             {
                 _enemyModel.MaxHealth = value;
-                OnChangeHealth?.Invoke();
             }
         }
         public int BaseDamage
@@ -37,7 +33,6 @@ namespace Player
             private set
             {
                 _enemyModel.BaseDamage = value;
-                OnChangeDamage?.Invoke();
             }
         }
         public int MinDamage()
@@ -59,7 +54,7 @@ namespace Player
             }
         }
 
-        public Sprite GetPotrait()
+        public Sprite GetPortrait()
         {
             return _enemyData.EnemyPortrait;
         }

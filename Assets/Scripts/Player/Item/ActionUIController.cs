@@ -1,5 +1,6 @@
 using System;
 using Manager;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -11,6 +12,7 @@ namespace Player.Item
         private PlayerStats _playerStats;
         private UIManagerBattle _uiManagerBattle;
         [SerializeField] private BaseAction _action;
+        [SerializeField] private TMP_Text _description;
 
         void Start()
         {
@@ -24,7 +26,6 @@ namespace Player.Item
         private void OnDisable()
         {
             _playerStats.OnShieldStatsChange -= OnChangeShield;
-
         }
 
         private void OnChangeShield()
@@ -39,26 +40,54 @@ namespace Player.Item
                 Debug.Log("Cannot Use");
                 return;
             }
-            _battleSystem.OnActionButtonClicked(_action);
+            OnActionButtonClicked(_action);
         }
+        private void OnActionButtonClicked(BaseAction action)
+        {
+            Debug.Log(_battleSystem.StateMachine.CurrentState);
+            if (_battleSystem.StateMachine.CurrentState == _battleSystem.SelectActionState)
+            {
+                if (action.IsLimited)
+                {
+                    if (!(action.CurrentLimit > 0) && !action.IsDefend)
+                    {
+                        Debug.Log("Out of limit"); 
+                        return;
+                    }
+                    action.UseAction();
+                }
+                _battleSystem.SelectAction(action); 
+                if (action.IsDefend)
+                {
+                    _playerStats.UseShield();
+                    _battleSystem.StateMachine.ChangeState(_battleSystem.DamageRouletteState);
+                }
+                else _battleSystem.StateMachine.ChangeState(_battleSystem.SelectEnemyState);
+            }
+        }
+        
         public void OnPointerEnter(PointerEventData eventData)
         {
             _action.InitializeDamage(_playerStats.BaseDamage);
-            Debug.Log(_action.MaxDamage+" "+_action.MinDamage);
             var limit  = _action.IsLimited ? _action.CurrentLimit.ToString() :"unlimited";
-            _battleSystem.OnChangeActionDescription(_action.name 
-                                                    + " - Uses left: "+limit+" Deal "
-                                                    +_action.MinDamage+"-"+_action.MaxDamage
-                                                    +" damage to 1 chosen enemy");
+            SetActionDescription(_action.name 
+                                 + " - Uses left: "+limit+" Deal "
+                                 +_action.MinDamage+"-"+_action.MaxDamage
+                                 +" damage to 1 chosen enemy");
         }
  
         public void OnPointerExit(PointerEventData eventData)
         {
-            _battleSystem.OnChangeActionDescription("");
+            SetActionDescription("");
+        }
+
+        private void SetActionDescription(string text)
+        {
+            _description.text = text;
         }
         void OnDestroy()
         {
-            _battleSystem.OnChangeActionDescription("");
+            SetActionDescription("");
         }
     }
 }

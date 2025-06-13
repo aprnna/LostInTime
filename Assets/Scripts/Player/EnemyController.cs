@@ -31,20 +31,36 @@ namespace Player
         {
             if(_battleSystem.StateMachine.CurrentState == _battleSystem.EnemyTurnState) return;
             OnChangeMarker(true);
-            _battleSystem.OnHoverEnemy(EnemyStats, true);
+            OnHoverEnemy(EnemyStats, true);
         }
 
         private void OnMouseExit()
         {
             if (_battleSystem.SelectedTarget != null) return;
             OnChangeMarker(false);
-            _battleSystem.OnHoverEnemy(EnemyStats, false);
+            OnHoverEnemy(EnemyStats, false);
         }
 
         void OnMouseDown()
         {
             if(_battleSystem.StateMachine.CurrentState != _battleSystem.SelectEnemyState) return;
-            _battleSystem.OnEnemyButtonClicked(this);
+            OnEnemyButtonClicked(this);
         }
+        
+        public void OnEnemyButtonClicked(EnemyController enemyUnit)
+        {
+            if (_battleSystem.StateMachine.CurrentState == _battleSystem.SelectEnemyState)
+            {
+                _battleSystem.SelectEnemy(enemyUnit);
+                _battleSystem.UIManagerBattle.SetEnemyPanel(enemyUnit.EnemyStats, true);
+                _battleSystem.StateMachine.ChangeState(_battleSystem.DamageRouletteState);
+            }
+        }
+
+        public void OnHoverEnemy(EnemyStats enemyUnit, bool active)
+        {
+            _battleSystem.UIManagerBattle.SetEnemyPanel(enemyUnit, active);
+        }
+
     }
 }

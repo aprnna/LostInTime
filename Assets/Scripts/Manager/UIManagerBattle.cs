@@ -10,22 +10,26 @@ namespace Manager
     public class UIManagerBattle:MonoBehaviour
     {
         [SerializeField] private GameObject _mainCanvas;
+        [Header("EnemySide")]
         [SerializeField] private GameObject _enemyPortrait;
         [SerializeField] private EnemyStatsUIController _enemyStats;
         [SerializeField] private GameObject _actionsPanel;
         [SerializeField] private GameObject _prefabDropItem;
         [SerializeField] private GameObject _dropItemPanel;
         [SerializeField] private Transform _dropItemContainer;
-        [SerializeField] private TMP_Text _actionDescription;
+        [SerializeField] private Button _buttonCollectReward;
         public EnemyStatsUIController EnemyStatsUI => _enemyStats;
+        public Button ButtonCollectReward => _buttonCollectReward;
 
-  
-        public void SetEnemyPanel(bool value)
+        public void SetEnemyPanel(EnemyStats enemyStats, bool active)
         {
-            _enemyStats.transform.parent.gameObject.SetActive(value);
+            _enemyStats.InitializeStats(enemyStats);   
+            SetEnemyPortrait(enemyStats.GetPortrait(), active);
         }
-        public void SetEnemyPortrait(Sprite image)
+        public void SetEnemyPortrait(Sprite image, bool active)
         {
+            _enemyStats.transform.parent.gameObject.SetActive(active);
+
             var imageComp = _enemyPortrait.GetComponent<Image>();
             imageComp.sprite = image;
             imageComp.type = Image.Type.Simple;
@@ -55,17 +59,10 @@ namespace Manager
                 Destroy(child.gameObject);
             }
         }
-        public void SetEnemyStats(EnemyStats enemyStats)
+        public void SetActionPanel(bool value)
         {
-            _enemyStats.InitializeStats(enemyStats);
+            _actionsPanel.SetActive(value);
         }
-
-
-        public void SetActionDescription(string value)
-        {
-            _actionDescription.text = value;
-        }
-
         public void SetMainCanvas(bool value)
         {
             _mainCanvas.SetActive(value);

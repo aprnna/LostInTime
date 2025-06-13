@@ -218,13 +218,14 @@ namespace Player
         }
         public void AddExp(int value)
         {
-            if (Exp + value <= MaxExp)
+            if (Exp + value < MaxExp)
             {
                 Exp += value;
             }
             else
             {
-                var remaining = Exp + value - MaxExp;
+                var remaining =  Mathf.Clamp(Exp + value - MaxExp, 0, MaxExp);
+               Debug.Log("REMAINING "+ remaining);
                 LevelUp(remaining, 25);
             };
         }
@@ -232,7 +233,7 @@ namespace Player
         public void LevelUp(int exp,int maxExp)
         {
             Debug.Log("You Level Up");
-            Exp = 0;
+            Exp = exp;
             MaxExp += maxExp;
             IsLevelUp = true;
             AudioManager.Instance.PlaySound(SoundType.SFX_LevelUp);
@@ -242,14 +243,20 @@ namespace Player
         public void LevelUpShield(int value)
         {
             BaseDefend += value;
+            IsLevelUp = false;
+            OnPlayerLevelUp?.Invoke();
         }
         public void LevelUpHealth(int value)
         {
             MaxHealth += value;
+            IsLevelUp = false;
+            OnPlayerLevelUp?.Invoke();
         }
         public void LevelUpDamage(int value)
         {
             BaseDamage += value;
+            IsLevelUp = false;
+            OnPlayerLevelUp?.Invoke();
         }
 
         public void ResetLevelUpStatus()

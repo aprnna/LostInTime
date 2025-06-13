@@ -42,8 +42,7 @@ public class ShopManager : MonoBehaviour
     public void Leave()
     {
         MainCanvas.SetActive(false);
-        _gameManager.UIManager.SetMap(true);
-        _gameManager.ChangeStatusMap(true);
+        _gameManager.ChangeDungeon(true);
     }
 
     public void ChangeDescription(string description)
