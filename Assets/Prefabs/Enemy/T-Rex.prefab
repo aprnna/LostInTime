@@ -101,6 +101,7 @@ GameObject:
   - component: {fileID: 9190053806828732287}
   - component: {fileID: 4876550203614455561}
   - component: {fileID: 7671792727139435284}
+  - component: {fileID: 8059040123524223971}
   m_Layer: 0
   m_Name: T-Rex
   m_TagString: Untagged
@@ -273,3 +274,64 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 0.96, y: 0.8463522}
   m_EdgeRadius: 0
+--- !u!114 &8059040123524223971
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8524122133972161533}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7db70e0ea77f5ac47a8f4565a9406397, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_ShadowGroup: 0
+  m_Priority: 1
+  m_ComponentVersion: 5
+  m_HasRenderer: 1
+  m_UseRendererSilhouette: 1
+  m_CastsShadows: 1
+  m_SelfShadows: 0
+  m_AlphaCutoff: 0.1
+  m_ApplyToSortingLayers: 59520c60000000009793c537
+  m_ShapePath:
+  - {x: -0.12654407, y: -0.33102286, z: 0}
+  - {x: -0.037560735, y: -0.24937199, z: 0}
+  - {x: 0.16230981, y: -0.29999292, z: 0}
+  - {x: 0.25739506, y: -0.39507806, z: 0}
+  - {x: 0.27552143, y: -0.47415784, z: 0}
+  - {x: 0.10917398, y: -0.47618008, z: 0}
+  - {x: 0.17069978, y: -0.41045946, z: 0}
+  - {x: 0.10218244, y: -0.38528985, z: 0}
+  - {x: -0.0292588, y: -0.3055861, z: 0}
+  - {x: -0.02646219, y: -0.3685101, z: 0}
+  - {x: -0.02366554, y: -0.45940033, z: 0}
+  - {x: -0.16908996, y: -0.45380715, z: 0}
+  - {x: -0.06701318, y: -0.40766284, z: 0}
+  m_ShapePathHash: -1553123506
+  m_InstanceId: 0
+  m_ShadowShape2DComponent: {fileID: 0}
+  m_ShadowShape2DProvider:
+    rid: -2
+  m_ShadowCastingSource: 1
+  m_ShadowMesh:
+    m_Mesh: {fileID: 0}
+    m_LocalBounds:
+      m_Center: {x: 0.053215727, y: -0.36277604, z: 0}
+      m_Extent: {x: 0.22230569, y: 0.11340404, z: 0}
+    m_EdgeProcessing: 1
+    m_TrimEdge: 0.1
+    m_FlipX: 0
+    m_FlipY: 0
+    m_InitialTrim: 0.1
+  m_CastingOption: 1
+  m_PreviousTrimEdge: 0.1
+  m_PreviousEdgeProcessing: 1
+  m_PreviousShadowCastingSource: 1
+  m_PreviousShadowShape2DSource: {fileID: 7903206680084306345}
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }

@@ -6,9 +6,8 @@ namespace Manager
 {
     public class BiomeController : MonoBehaviour
     {
-        [field:SerializeField] public Image BackgroundBattle { get; private set; }
-        [field: SerializeField] public Sprite BackgroundCaveBiome { get; private set; }
-        [field: SerializeField] public Sprite BackgroundForestBiome { get; private set; }
+        [field: SerializeField] public GameObject BackgroundCaveBiome { get; private set; }
+        [field: SerializeField] public GameObject BackgroundForestBiome { get; private set; }
     
         private GameManager _gameManager;
 
@@ -23,11 +22,9 @@ namespace Manager
             _gameManager.OnChangeBiome -= OnChangeBackgroundBiome;
         }
 
-        private void SetBackground(Sprite image)
+        private void SetBackground(GameObject backgroundBattle)
         {
-            BackgroundBattle.sprite = image;
-            BackgroundBattle.type = Image.Type.Simple;
-            BackgroundBattle.preserveAspect = true;
+            backgroundBattle.SetActive(true); 
         }
         private void OnChangeBackgroundBiome()
         {

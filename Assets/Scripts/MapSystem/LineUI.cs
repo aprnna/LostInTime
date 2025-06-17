@@ -28,7 +28,8 @@ public class LineUI : MonoBehaviour
     {
         if (startNode == this.startNode && endNode == this.endNode)
         {
-            image.color = Color.blue;
+            Color newColor = new Color(88f / 255f, 84f / 255f, 74f / 255f);
+            image.color = newColor;
         }
     }
 }

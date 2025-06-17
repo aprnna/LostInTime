@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 1525297845143733931}
   - component: {fileID: 6181428133212161475}
   - component: {fileID: -7087928427728349928}
+  - component: {fileID: 3958274659671431464}
   m_Layer: 0
   m_Name: Raptor
   m_TagString: Untagged
@@ -186,6 +187,77 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _marker: {fileID: 9195590572011755866}
+--- !u!114 &3958274659671431464
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3321948638339099570}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7db70e0ea77f5ac47a8f4565a9406397, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_ShadowGroup: 0
+  m_Priority: 0
+  m_ComponentVersion: 5
+  m_HasRenderer: 1
+  m_UseRendererSilhouette: 1
+  m_CastsShadows: 1
+  m_SelfShadows: 0
+  m_AlphaCutoff: 0.1
+  m_ApplyToSortingLayers: 59520c60000000009793c537
+  m_ShapePath:
+  - {x: -0.08938114, y: -0.2839338, z: 0}
+  - {x: -0.041730322, y: -0.23216994, z: 0}
+  - {x: -0.0989361, y: -0.15430579, z: 0}
+  - {x: -0.060985982, y: -0.08150465, z: 0}
+  - {x: -0.14341748, y: -0.10605364, z: 0}
+  - {x: -0.16408032, y: -0.15748177, z: 0}
+  - {x: -0.16716625, y: -0.20104513, z: 0}
+  - {x: -0.20650782, y: -0.13967225, z: 0}
+  - {x: -0.13610402, y: -0.060166903, z: 0}
+  - {x: 0.15910357, y: -0.069802195, z: 0}
+  - {x: 0.20412815, y: -0.15240492, z: 0}
+  - {x: 0.2022458, y: -0.23428865, z: 0}
+  - {x: 0.15706852, y: -0.31711364, z: 0}
+  - {x: 0.08742026, y: -0.2964074, z: 0}
+  - {x: 0.13730352, y: -0.2502889, z: 0}
+  - {x: 0.14483301, y: -0.16464044, z: 0}
+  - {x: 0.09777343, y: -0.15146372, z: 0}
+  - {x: 0.08083192, y: -0.099698134, z: 0}
+  - {x: 0.03659593, y: -0.0902862, z: 0}
+  - {x: 0.01024248, y: -0.12511034, z: 0}
+  - {x: -0.0054396316, y: -0.20909527, z: 0}
+  - {x: 0.005204775, y: -0.2602872, z: 0}
+  - {x: -0.031075243, y: -0.29633424, z: 0}
+  m_ShapePathHash: 469098011
+  m_InstanceId: 0
+  m_ShadowShape2DComponent: {fileID: 0}
+  m_ShadowShape2DProvider:
+    rid: -2
+  m_ShadowCastingSource: 1
+  m_ShadowMesh:
+    m_Mesh: {fileID: 0}
+    m_LocalBounds:
+      m_Center: {x: -0.0011898428, y: -0.18864027, z: 0}
+      m_Extent: {x: 0.20531797, y: 0.12847337, z: 0}
+    m_EdgeProcessing: 1
+    m_TrimEdge: 0.09
+    m_FlipX: 0
+    m_FlipY: 0
+    m_InitialTrim: 0.09
+  m_CastingOption: 1
+  m_PreviousTrimEdge: 0.09
+  m_PreviousEdgeProcessing: 1
+  m_PreviousShadowCastingSource: 1
+  m_PreviousShadowShape2DSource: {fileID: 6920784770119004252}
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
 --- !u!1 &9195590572011755866
 GameObject:
   m_ObjectHideFlags: 0

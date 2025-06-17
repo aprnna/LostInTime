@@ -101,6 +101,7 @@ GameObject:
   - component: {fileID: 1106812155042659914}
   - component: {fileID: 73983140061264322}
   - component: {fileID: 6548642310606346643}
+  - component: {fileID: -8091157019647909358}
   m_Layer: 0
   m_Name: Triceratops
   m_TagString: Untagged
@@ -273,3 +274,57 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 0.96, y: 0.65231264}
   m_EdgeRadius: 0
+--- !u!114 &-8091157019647909358
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6445276588713408054}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7db70e0ea77f5ac47a8f4565a9406397, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_ShadowGroup: 0
+  m_Priority: 1
+  m_ComponentVersion: 5
+  m_HasRenderer: 1
+  m_UseRendererSilhouette: 1
+  m_CastsShadows: 1
+  m_SelfShadows: 0
+  m_AlphaCutoff: 0.1
+  m_ApplyToSortingLayers: 59520c60000000009793c537
+  m_ShapePath:
+  - {x: -0.33176312, y: -0.46682346, z: 0}
+  - {x: -0.27401704, y: -0.40152076, z: 0}
+  - {x: -0.29882163, y: -0.27765495, z: 0}
+  - {x: 0.26474583, y: -0.2656204, z: 0}
+  - {x: 0.32259217, y: -0.3743638, z: 0}
+  - {x: 0.34164563, y: -0.4898824, z: 0}
+  m_ShapePathHash: 353075294
+  m_InstanceId: 0
+  m_ShadowShape2DComponent: {fileID: 0}
+  m_ShadowShape2DProvider:
+    rid: -2
+  m_ShadowCastingSource: 1
+  m_ShadowMesh:
+    m_Mesh: {fileID: 0}
+    m_LocalBounds:
+      m_Center: {x: 0.004941255, y: -0.3777514, z: 0}
+      m_Extent: {x: 0.33670437, y: 0.112131, z: 0}
+    m_EdgeProcessing: 1
+    m_TrimEdge: 0.1
+    m_FlipX: 0
+    m_FlipY: 0
+    m_InitialTrim: 0.1
+  m_CastingOption: 1
+  m_PreviousTrimEdge: 0.1
+  m_PreviousEdgeProcessing: 1
+  m_PreviousShadowCastingSource: 1
+  m_PreviousShadowShape2DSource: {fileID: 6323732087623017180}
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
