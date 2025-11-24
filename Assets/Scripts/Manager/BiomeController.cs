@@ -10,6 +10,7 @@ namespace Manager
         [field: SerializeField] public GameObject BackgroundForestBiome { get; private set; }
     
         private GameManager _gameManager;
+        private GameObject _currentBackground;
 
         public void OnEnable()
         {
@@ -24,6 +25,11 @@ namespace Manager
 
         private void SetBackground(GameObject backgroundBattle)
         {
+            if (_currentBackground != null)
+            {
+                _currentBackground.SetActive(false);
+            }
+            _currentBackground = backgroundBattle;
             backgroundBattle.SetActive(true); 
         }
         private void OnChangeBackgroundBiome()

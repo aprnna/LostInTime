@@ -5,13 +5,16 @@ namespace Player.UI
 {
     public class PlayerStatsUIController:MonoBehaviour
     {
+        [SerializeField] private GameObject _potraitPlayer;
+        [SerializeField] private GameObject _damagePopUpPrefab;
         [SerializeField] private StatsItem _health;
-        [SerializeField] private StatsItem _shield;
+        [SerializeField] private StatsItem _defend;
         [SerializeField] private StatsItem _damage;
         [SerializeField] private StatsItem _exp;
         [SerializeField] private StatsItem _coin;
 
         private PlayerStats _playerStats;
+        private Animator _playerAnimator;
         private void Start()
         {
             InitializeStats();
@@ -24,7 +27,8 @@ namespace Player.UI
             _playerStats.OnCoinStatsChange += OnChangeCoin;
             _playerStats.OnExpStatsChange += OnChangeExp;
             _playerStats.OnBaseDamageChange += OnChangeDamage;
-            _playerStats.OnShieldStatsChange += OnChangeShield;
+            _playerStats.OnDefendPlayerChange += OnChangeDefend;
+            _playerStats.OnPlayerGetDamage += PlayerGetDamageVFX;
         }
 
         private void OnDisable()
@@ -33,7 +37,14 @@ namespace Player.UI
             _playerStats.OnCoinStatsChange -= OnChangeCoin;
             _playerStats.OnExpStatsChange -= OnChangeExp;
             _playerStats.OnBaseDamageChange -= OnChangeDamage;
-            _playerStats.OnShieldStatsChange -= OnChangeShield;
+            _playerStats.OnDefendPlayerChange -= OnChangeDefend;
+            _playerStats.OnPlayerGetDamage -= PlayerGetDamageVFX;
+        }
+        
+        public void PlayerGetDamageVFX(int damage, bool isCritical)
+        {
+            _playerAnimator.SetTrigger("GetHit");
+            DamagePopup.Create(_damagePopUpPrefab.transform, _potraitPlayer.transform.position, damage, isCritical, _potraitPlayer.transform.parent.parent);
         }
 
         private void OnChangeHealth()
@@ -41,14 +52,14 @@ namespace Player.UI
             _health.SetStat(_playerStats.MaxHealth, _playerStats.Health);
         }
 
-        private void OnChangeShield()
+        private void OnChangeDefend()
         {
-            _shield.SetStat(_playerStats.MaxShield, _playerStats.Shield);
+            _defend.SetStat(_playerStats.Defend, 0,true);
         }
 
         private void OnChangeDamage()
         {
-            _damage.SetStat(_playerStats.MaxDamage(), _playerStats.MinDamage());
+            _damage.SetStat(_playerStats.BaseDamage,0 ,true);
         }
 
         private void OnChangeExp()
@@ -60,13 +71,16 @@ namespace Player.UI
         {
             _coin.SetStat(_playerStats.Coin,0,true);
         }
+
+     
         private void InitializeStats()
         {
             _health.SetStat(_playerStats.MaxHealth, _playerStats.Health);
-            _shield.SetStat(_playerStats.MaxShield, _playerStats.Shield);
-            _damage.SetStat(_playerStats.MaxDamage(), _playerStats.MinDamage());
+            _defend.SetStat(_playerStats.Defend, 0, true);
+            _damage.SetStat(_playerStats.BaseDamage, 0,true);
             _exp.SetStat(_playerStats.MaxExp, _playerStats.Exp);
             _coin.SetStat(_playerStats.Coin,0,true);
+            _playerAnimator = _potraitPlayer.GetComponent<Animator>();
         }
     }
 }

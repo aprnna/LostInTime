@@ -13,24 +13,27 @@ namespace Player
         [SerializeField] private int _maxShield;
         [SerializeField] private int _baseDamage;
         [SerializeField] private int _baseDefend;
+        [SerializeField] private int _defend;
         [SerializeField] private int _exp;
         [SerializeField] private int _maxExp;
         [SerializeField] private int _coin;
         [SerializeField] private int _intervalDamage;
         [SerializeField] private int _intervalDefend;
+        [SerializeField] private int _criticalHitPercentage;
         public string PlayerName => _name;
         public int Health => _health;
         public int MaxHealth => _maxHealth;
         public int BaseDamage => _baseDamage;
         public int MaxShield => _maxShield;
         public int Shield => _shield;
+        public int Defend => _defend;
         public int Exp => _exp;
         public int MaxExp => _maxExp;
         public int Coin => _coin;
         public int IntervalDamage => _intervalDamage;
         public int IntervalDefend => _intervalDefend;
         public int BaseDefend => _baseDefend;
-        
+        public  int CriticalHitPercentage => _criticalHitPercentage;
         public void InitializePlayerData(string playerName, int health,int maxHealth, int shield, int maxShield,int baseDamage, int exp, int maxExp, int coin, int interval, int baseDefend, int intervalDefend)
         {
             _name = playerName;
@@ -61,6 +64,7 @@ namespace Player
             _intervalDamage = 0;
             _baseDefend = 0;
             _intervalDefend = 0;
+            _defend = 0;
         }
 
         public void SetName(string playerName)
@@ -108,6 +112,14 @@ namespace Player
         public void SetBaseDefend(int value)
         {
             _baseDefend = value;
+        }
+        public  void SetCriticalHitPercentage(int value)
+        {
+            _criticalHitPercentage = value;
+        }
+        public void SetDefend(int value)
+        {
+            _defend = value;
         }
     }
 }

@@ -11,9 +11,11 @@ namespace Player
         public event Action OnShieldStatsChange;
         public event Action OnBaseDamageChange;
         public event Action OnBaseDefendChange;
+        public event Action OnDefendPlayerChange; 
         public event Action OnExpStatsChange;
         public event Action OnCoinStatsChange;
         public event Action OnPlayerLevelUp;
+        public event Action<int,bool> OnPlayerGetDamage; 
         public bool IsLevelUp { get; private set; }
         public string Name
         {
@@ -68,6 +70,15 @@ namespace Player
                 OnBaseDamageChange?.Invoke();
             }
         }
+
+        public int CriticalHitPercentage
+        {
+            get => _playerData.CriticalHitPercentage;
+            private set
+            {
+                _playerData.SetCriticalHitPercentage(value);
+            }
+        }
         public int BaseDefend
         {
             get => _playerData.BaseDefend;
@@ -75,6 +86,16 @@ namespace Player
             {
                 _playerData.SetBaseDefend(value);
                 OnBaseDefendChange?.Invoke();
+            }
+        }
+
+        public int Defend
+        {
+            get => _playerData.Defend;
+            private set
+            {
+                _playerData.SetDefend(value);
+                OnDefendPlayerChange?.Invoke();
             }
         }
         public int MaxExp
@@ -124,9 +145,27 @@ namespace Player
         {
             return BaseDefend + _playerData.IntervalDefend;
         }
-        public void GetHit(int takeDamage)
+        public int SetPlayerDefend(int value)
+        {
+            Defend = value;
+            return Defend;
+        }
+        public void GetHit(int takeDamage, bool isCritical = false)
         {
             if(takeDamage < 0 ) return;
+            if(Defend > 0)
+            {
+                Debug.Log("Defend Absorb Damage " + takeDamage);
+                Defend -= takeDamage;
+                if (Defend < 0)
+                {
+                    var remainingDamage = Mathf.Abs(Defend);
+                    Defend = 0;
+                    GetHit(remainingDamage);
+                }
+                AudioManager.Instance.PlaySound(SoundType.SFX_Attack_Defend);
+                return;
+            }
             if (Health - takeDamage > 0)
             {
                 AudioManager.Instance.PlaySound(SoundType.SFX_PlayerGetHit);
@@ -138,6 +177,7 @@ namespace Player
                 Health = 0;
                 Debug.Log("You Died");
             }
+            OnPlayerGetDamage?.Invoke(takeDamage, isCritical);
             
         }
 
@@ -278,5 +318,11 @@ namespace Player
             OnShieldStatsChange?.Invoke();
         }
 
+    }
+
+    [Serializable]
+    public class PlayerDataContainer
+    {
+        public int health;
     }
 }

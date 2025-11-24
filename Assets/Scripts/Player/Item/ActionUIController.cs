@@ -35,7 +35,7 @@ namespace Player.Item
         public void OnPointerClick(PointerEventData eventData)
         {
             _action.InitializeDefendShield(_playerStats);
-            if (!_action.IsDefend && _action.IsLimited && _action.CurrentLimit <= 0)
+            if (_action.IsLimited && _action.CurrentLimit <= 0)
             {
                 Debug.Log("Cannot Use");
                 return;
@@ -60,7 +60,7 @@ namespace Player.Item
                 if (action.IsDefend)
                 {
                     _playerStats.UseShield();
-                    _battleSystem.StateMachine.ChangeState(_battleSystem.DamageRouletteState);
+                    _battleSystem.StateMachine.ChangeState(_battleSystem.CriticalAttackState);
                 }
                 else _battleSystem.StateMachine.ChangeState(_battleSystem.SelectEnemyState);
             }
@@ -68,11 +68,20 @@ namespace Player.Item
         
         public void OnPointerEnter(PointerEventData eventData)
         {
-            _action.InitializeDamage(_playerStats.BaseDamage);
+            _action.InitializeDamage(_playerStats.BaseDamage, _playerStats.CriticalHitPercentage);
             var limit  = _action.IsLimited ? _action.CurrentLimit.ToString() :"unlimited";
+            var damage = _action.IsIntervalDamage ? _action.MinDamage+"-"+_action.MaxDamage : _action.BaseDamage.ToString();
+            if(_action.IsDefend)
+            {
+                SetActionDescription(_action.name 
+                                     + " - Uses left: "+limit+" Gain "
+                                     + _action.BaseDefend
+                                     +" defend shield");
+                return;
+            }
             SetActionDescription(_action.name 
                                  + " - Uses left: "+limit+" Deal "
-                                 +_action.MinDamage+"-"+_action.MaxDamage
+                                 + damage
                                  +" damage to 1 chosen enemy");
         }
  

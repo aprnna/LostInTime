@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Manager;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -66,7 +67,7 @@ public class CutsceneManager : MonoBehaviour
         {
             if (SceneManager.GetActiveScene().name == "Prolog")
             {
-                SceneManager.LoadScene("BaseScene");
+                GameManager.Instance.StartGame();   
             }
             else
             {

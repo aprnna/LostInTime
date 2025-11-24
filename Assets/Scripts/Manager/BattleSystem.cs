@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using Audio;
 using Cysharp.Threading.Tasks;
+using Minigames;
 using Player;
 using Player.Item;
+using Playfab;
 using Roulette;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -14,7 +16,7 @@ namespace Manager
     {
         public static BattleSystem Instance;
         [field:SerializeField] public UIManagerBattle UIManagerBattle { get; private set; }
-      
+        [SerializeField] private GameObject _popupPrefab;
         [Header("Game State")]
         public EnemyController SelectedTarget { get; private set; }
         public BaseAction SelectedAction { get; private set; }
@@ -23,17 +25,20 @@ namespace Manager
         public SelectEnemyState SelectEnemyState { get; private set; }
         public EnemyTurnState EnemyTurnState { get; private set; }
         public DamageRouletteState DamageRouletteState { get; private set; }
+        public CriticalAttackState CriticalAttackState { get; private set; }
         public ResultBattleState ResultBattleState { get; private set; }
         public FiniteStateMachine<GameState> StateMachine { get; private set; }
         
         [Header("Other")]
         public PlayerStats PlayerStats { get; private set; }
         public BattleResult BattleResult { get; private set; }
-        public int PlayerDefend { get; private set; }
         public List<EnemyController> Enemies { get; private set; } = new List<EnemyController>();
         public MapSystem MapSystem{ get; private set; }
         public GameManager GameManager { get; private set; }
         public RouletteSystem RouletteSystem { get; private set; }
+        public MinigameManager MinigameManager { get; private set; }
+        public PlayfabManager PlayfabManager { get; private set; }
+        public BattleLogger BattleLogger { get; private set; }
         
         public void Awake()
         {
@@ -48,28 +53,48 @@ namespace Manager
 
         public void Start()
         {
-            GameManager = GameManager.Instance;
-            MapSystem = MapSystem.Instance;
-            RouletteSystem = RouletteSystem.Instance;
-            PlayerStats = PlayerStats.Instance;
+            PrepareBattle().Forget();
             
-            PlayerTurnState      = new PlayerTurnState(this,UIManagerBattle );
-            SelectActionState    = new SelectActionState(this, UIManagerBattle);
-            SelectEnemyState     = new SelectEnemyState(this, UIManagerBattle);
-            DamageRouletteState  = new DamageRouletteState(this, UIManagerBattle);
-            EnemyTurnState       = new EnemyTurnState(this, UIManagerBattle);
-            ResultBattleState    = new ResultBattleState(this, UIManagerBattle);
-            StateMachine         = new FiniteStateMachine<GameState>(PlayerTurnState);
-            
-            StateMachine.Init();
-            SpawnEnemies();
+        }
+        public async UniTask PrepareBattle()
+        {
+            await Initialize();
+            await InitializeFSM();
+            await SpawnEnemies();
+            await StartBattleLogging();
         }
         void Update()
         {
             StateMachine.OnUpdate();
         }
 
-        public void SpawnEnemies()
+        public async UniTask Initialize()
+        {
+            GameManager = GameManager.Instance;
+            MapSystem = MapSystem.Instance;
+            RouletteSystem = RouletteSystem.Instance;
+            MinigameManager = MinigameManager.Instance;
+            PlayerStats = PlayerStats.Instance;
+            BattleLogger = BattleLogger.Instance;
+            PlayfabManager = PlayfabManager.Instance;
+            await UniTask.Yield();
+        }
+
+        public async UniTask InitializeFSM()
+        {
+            PlayerTurnState      = new PlayerTurnState(this,UIManagerBattle );
+            SelectActionState    = new SelectActionState(this, UIManagerBattle);
+            SelectEnemyState     = new SelectEnemyState(this, UIManagerBattle);
+            DamageRouletteState  = new DamageRouletteState(this, UIManagerBattle);
+            CriticalAttackState  = new CriticalAttackState(this, UIManagerBattle);
+            EnemyTurnState       = new EnemyTurnState(this, UIManagerBattle);
+            ResultBattleState    = new ResultBattleState(this, UIManagerBattle);
+            StateMachine         = new FiniteStateMachine<GameState>(PlayerTurnState);
+            
+            StateMachine.Init();
+            await UniTask.Yield();
+        }
+        public async UniTask SpawnEnemies()
         {
             AudioManager.Instance.PlaySound(SoundType.SFX_SpawnEnemy);
             var enemies = MapSystem.GetEnemies();
@@ -80,6 +105,7 @@ namespace Manager
                 var enemy= Instantiate(enemies[i].Prefab, enemiesPos[i]);
                 Enemies.Add(enemy.GetComponent<EnemyController>());
             }
+            await UniTask.Yield();
         }
 
         public void DropItems()
@@ -95,6 +121,12 @@ namespace Manager
                     GameManager.IncreaseProgress(item.Amount);
                 }
             }
+            
+        }
+
+        public void ShowDamagePopup(Vector3 position,  float damage, bool isCritical)
+        {
+            var popup = DamagePopup.Create(_popupPrefab.transform, position, damage, isCritical);
         }
         public void ClearDropItem()
         {
@@ -111,8 +143,7 @@ namespace Manager
                     item.AppliedToPlayerStats(PlayerStats);
             }
         }
-
-  
+        
         public void OnContinueClicked()
         {
             // GameManager.PlayerLevelUp += ResultBattleState.Continue;
@@ -123,7 +154,7 @@ namespace Manager
 
         public void SetPlayerDefend(int value)
         {
-            PlayerDefend = value;
+            PlayerStats.SetPlayerDefend(value);
         }
    
         public void ChangeBattleResult(BattleResult result)
@@ -144,7 +175,6 @@ namespace Manager
         {
             SelectedTarget = null;
             SelectedAction = null;
-            PlayerDefend = 0;
         }
 
         public void Leave()
@@ -152,15 +182,125 @@ namespace Manager
             UIManagerBattle.SetMainCanvas(false);
             GameManager.ChangeDungeon(true);
         }
-        // private void OnDestroy()
-        // {
-        //     GameManager.PlayerLevelUp -= ResultBattleState.Continue;
-        // }
 
         public void DestroyObject(GameObject gameObject)
         {
             Destroy(gameObject);
         }
+        
+        #region Battle Lifecycle
+        private async UniTask StartBattleLogging()
+        {
+            Debug.Log("[BattleSystem] SessionID = " + GameManager.SessionID);
+            if (BattleLogger == null) return ;
+            
+            // Gather enemy HPs
+            List<int> enemyHPs = new List<int>();
+            foreach (var enemy in Enemies)
+            {
+                enemyHPs.Add(enemy.EnemyStats.Health);
+            }
+            
+            // Start logging
+            BattleLogger.StartBattle(
+                GameManager.SessionID,
+                MapSystem.CurrentPlayerMapNode.mapNodeId,
+                PlayerStats.Health,
+                enemyHPs
+            );
+            await UniTask.Yield();
+        }
+        public void OnBattleEnd()
+        {
+            bool playerWon = BattleResult == BattleResult.PlayerWin;
+            
+            // Calculate total enemy HP
+            int totalEnemyHP = 0;
+            foreach (var enemy in Enemies)
+            {
+                totalEnemyHP += enemy.EnemyStats.Health;
+            }
+            
+            // End logging
+            if (BattleLogger != null)
+            {
+                BattleLogger.EndBattle(PlayerStats.Health, totalEnemyHP, playerWon);
+            }
+            
+            SendBattleLog();
+        }
+
+        private void SendBattleLog()
+        {
+            if (BattleLogger == null || PlayfabManager == null) return;
+            
+            bool playerWon = BattleResult == BattleResult.PlayerWin;
+            BattleLog log = BattleLogger.GenerateBattleLog(playerWon);
+            
+            PlayfabManager.SendBattleLog(log);
+            
+            Debug.Log($"[BattleSystem] Battle log sent - Duration: {log.player_performance.battle_duration:F2}s, Turns: {log.player_performance.turn_count}");
+        }
+
+        #endregion
+
+        #region Action Logging Hooks
+        public void LogPlayerAttack(EnemyController target, int damage, bool isCritical = false)
+        {
+            BattleLogger?.OnPlayerAttack(target.name, damage, isCritical);
+        }
+   
+        public void LogPlayerAction(int damage)
+        {
+            BattleLogger?.OnPlayerAction(SelectedAction.ActionName,SelectedTarget.name, damage);
+        }
+        public void LogPlayerFist(EnemyController target, int damage)
+        {
+            BattleLogger?.OnPlayerFistAction(target.name, damage);
+        }
+        public void LogPlayerGun(EnemyController target, int damage)
+        {
+            BattleLogger?.OnPlayerGunAction(target.name, damage);
+        }
+        public void LogPlayerSword(EnemyController target, int damage)
+        {
+            BattleLogger?.OnPlayerSwordAction(target.name, damage);
+        }
+        public void LogPlayerDefend(string action,int defenseValue)
+        {
+            BattleLogger?.OnPlayerDefendAction(action,defenseValue);
+        }
+        public void LogEnemyAttack(EnemyController enemy, int damage)
+        {
+            BattleLogger?.OnEnemyAttack(enemy.name, damage);
+        }
+        public void LogEnemyDefeated(EnemyController enemy)
+        {
+            BattleLogger?.OnEnemyDefeated(enemy.name);
+        }
+        public void LogPlayerDeath()
+        {
+            BattleLogger?.OnPlayerDeath();
+        }
+
+        public void LogPlayerTurnStart()
+        {
+            BattleLogger?.OnPlayerTurnStart();
+        }
+        public void LogEnemyTurnStart(string enemyName)
+        {
+            BattleLogger?.OnEnemyTurnStart(enemyName);
+        }
+        public void LogMinigameResult(string minigameName, bool success, float difficulty)
+        {
+            BattleLogger?.OnMinigameCompleted(minigameName, success, difficulty);
+        }
+        public void LogRouletteResult(int damageMultiplier)
+        {
+            BattleLogger?.OnRouletteResult(damageMultiplier);
+        }
+
+        #endregion
     }
 
     public enum BattleResult

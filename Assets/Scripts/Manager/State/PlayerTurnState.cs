@@ -12,10 +12,12 @@ namespace Manager
         public override void OnEnter()
         {
             Debug.Log("Player Turn");
+            _battleSystem.LogPlayerTurnStart();
             if(!_battleSystem.PlayerStats.IsAlive()) _battleSystem.StateMachine.ChangeState(_battleSystem.ResultBattleState);
             else _battleSystem.StateMachine.ChangeState(_battleSystem.SelectActionState);
         }
 
+    
         public override void OnUpdate()
         {
         }
