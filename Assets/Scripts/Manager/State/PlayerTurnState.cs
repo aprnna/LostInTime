@@ -16,6 +16,7 @@ namespace Manager
             else _battleSystem.StateMachine.ChangeState(_battleSystem.SelectActionState);
         }
 
+    
         public override void OnUpdate()
         {
         }

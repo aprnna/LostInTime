@@ -53,7 +53,7 @@ namespace Player
             {
                 _battleSystem.SelectEnemy(enemyUnit);
                 _battleSystem.UIManagerBattle.SetEnemyPanel(enemyUnit.EnemyStats, true);
-                _battleSystem.StateMachine.ChangeState(_battleSystem.DamageRouletteState);
+                _battleSystem.StateMachine.ChangeState(_battleSystem.CriticalAttackState);
             }
         }
 

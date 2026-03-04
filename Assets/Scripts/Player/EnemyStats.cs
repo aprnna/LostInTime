@@ -11,6 +11,17 @@ namespace Player
         {
             _enemyModel = new EnemyModel(_enemyData);
         }
+        
+        public string EnemyName
+        {
+            get => _enemyModel.EnemyName;
+            private set
+            {
+                _enemyModel.EnemyName = value;
+            }
+        }
+        public EnemyType EnemyType => _enemyData.EnemyType;
+            
         public int Health
         {
             get => _enemyModel.Health;

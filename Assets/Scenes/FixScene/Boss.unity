@@ -1141,7 +1141,7 @@ MonoBehaviour:
   m_BlockingObjects: 0
   m_BlockingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 55
 --- !u!114 &990955290
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1417,6 +1417,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <UIManagerBattle>k__BackingField: {fileID: 1241009904}
+  _popupPrefab: {fileID: 2520267749109972424, guid: 23be9eada1380f845aaad799ef598452, type: 3}
 --- !u!1 &1817853965
 GameObject:
   m_ObjectHideFlags: 0
@@ -1452,7 +1453,7 @@ MonoBehaviour:
   m_BlockingObjects: 0
   m_BlockingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 55
 --- !u!114 &1817853967
 MonoBehaviour:
   m_ObjectHideFlags: 0

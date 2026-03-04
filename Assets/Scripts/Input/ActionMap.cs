@@ -1,5 +1,6 @@
 
 using UnityEngine;
+using UnityEngine.PlayerLoop;
 
 namespace Input
 {
@@ -74,6 +75,30 @@ namespace Input
         {
             _movement.ForcePoll();
         }
+    }
+    
+    public class MinigamesActionMap : ActionMap
+    {
+        private InputButton _tap;
+        
+        public InputButton Tap => _tap;
+        public override bool HasPollable => false;
+
+        public MinigamesActionMap(InputActions action) : base(action)
+        {
+            _tap = new InputButton(action.Minigames.Tap);
+        }
+
+        public override void OnEnter()
+        {
+            InputActions.Minigames.Enable();
+        }
+
+        public override void OnExit()
+        {
+            InputActions.Minigames.Disable();
+        }
+
     }
     
 }

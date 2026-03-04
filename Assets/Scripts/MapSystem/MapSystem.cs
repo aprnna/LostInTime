@@ -24,7 +24,10 @@ public class MapSystem : MonoBehaviour
     void Start()
     {
         _gameManager = GameManager.Instance;
+        InitializeMap();
     }
+
+
     public MapData mapData;
     public GameObject Maps;
     public MapItemUI mapItemUIPrefab;
@@ -103,6 +106,7 @@ public class MapSystem : MonoBehaviour
             TriggerChangeStatusMap(true);
             SceneManager.LoadSceneAsync(mapNode.mapType.ToString(), LoadSceneMode.Additive);
             _gameManager.ChangeDungeon(false);
+            if(mapNode.isNextBiome) _gameManager.NextBiome();
             Debug.Log("Moved to " + mapNode.mapNodeId + " map");
         }
         else

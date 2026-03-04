@@ -1,8 +1,12 @@
 using System;
 using Audio;
+using Cysharp.Threading.Tasks;
+using DDA;
 using Input;
 using Player;
+using Player.Item;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 
 namespace Manager
@@ -13,6 +17,8 @@ namespace Manager
         private PlayerStats _playerStats;
         private InputManager _inputManager;
         private MapSystem _mapSystem;
+        private SceneController _sceneController;
+        public static string SessionID { get; private set; }
         public int ProgressTeleport { get; private set; }
         public event Action<string> OnChangeInstruction;
         public event Action<BattleResult> OnBattleEnd;
@@ -20,14 +26,50 @@ namespace Manager
         public event Action OnChangeBiome;
         public event Action OnIncreaseProgress;
         [field: SerializeField] public Biome[] ListBiome { get; private set; }
+        public GameData GameData {get; private set;}
         public Biome ActiveBiome => ListBiome[_activeIndexBiome];
         private int _activeIndexBiome=0;
         private Transform[] _enemiesPosition;
 
+        protected override void Awake()
+        {
+            base.Awake();
+            StartNewSession();
+        }
+
         private void Start()
         {
-            Initialize();
-            _inputManager.PlayerMode();
+            PrepareGame().Forget();
+        }
+
+        private async UniTask PrepareGame()
+        {
+            await Initialize();
+            await InitializeActions();
+            await InitializePlayerStats();
+        }
+        private async UniTask Initialize()
+        {
+            _inputManager = InputManager.Instance;
+            _playerStats = PlayerStats.Instance;
+            _sceneController = GetComponent<SceneController>();
+            GameData = Resources.Load<GameData>("GameData");
+
+            await UniTask.Yield();
+        }
+
+        public async UniTask InitializeActions()
+        {
+            var actions = Resources.LoadAll<BaseAction>("Player/Actions");
+            foreach (var item in actions)
+            {
+                item.Initialize(_playerStats);
+                item.ResetLimit();
+            }
+            await UniTask.Yield();
+        }
+        public async UniTask InitializePlayerStats()
+        {
             _playerStats.InitializeStats(
                 "Kamikaze",
                 100,
@@ -35,20 +77,13 @@ namespace Manager
                 2, 
                 2, 
                 12,
-                90,
+                0,
                 100,
                 0,
                 3,
                 2,
                 2);
-            StartGame();
-        }
-
-        private void Initialize()
-        {
-            _inputManager = InputManager.Instance;
-            _playerStats = PlayerStats.Instance;
-            _mapSystem = MapSystem.Instance;
+            await UniTask.Yield();
         }
         private void OnEnable()
         {
@@ -70,10 +105,11 @@ namespace Manager
         }
         public void NextBiome()
         {
+            
             _activeIndexBiome = (_activeIndexBiome + 1) % ListBiome.Length;
             OnChangeBiome?.Invoke();
         }
-
+        
         public void SetEnemyPosition(Transform[] transforms)
         {
             _enemiesPosition = transforms;
@@ -85,17 +121,97 @@ namespace Manager
         }
         public void StartGame()
         {
-            _mapSystem.InitializeMap();
+            _sceneController.ChangeScene("BaseScene");
+        }
+        public void StartPrologue()
+        {
+            _sceneController.ChangeScene("Prolog");
+        }
+        public void RestartGame()
+        {
+            OnRestartGame().Forget();
+        }
+        
+        public async UniTask OnRestartGame()
+        {
+            PrepareGame().Forget();
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            await _sceneController.ClearAllScene();
+            StartGame();
+            MapSystem.Instance.InitializeMap();
+        }
+        public void QuitGame()
+        {
+            Application.Quit();
+        }
+        public void MainMenu()
+        {
+            _sceneController.ChangeScene("MainMenu");
         }
         public void ResumeGame()
         {
             Time.timeScale = 1f; 
         }
-
+        
         public void PauseGame()
         {
             Time.timeScale = 0f; 
         }
 
+        public static void StartNewSession()
+        {
+            SessionID = Guid.NewGuid().ToString();
+            Debug.Log("SESSION ID: " + SessionID);
+        }
+
+        #region  DDA
+
+        public QLearningAgent agent;
+
+        private State lastState;
+        private DifficultyAction lastAction;
+
+        public void StartNextArea(
+            HPState hp,
+            TimeState time,
+            DamageState damage)
+        {
+            lastState = new State(hp, time, damage);
+            lastAction = agent.ChooseAction(lastState);
+
+            ApplyDifficulty(lastAction);
+        }
+
+        public void EndArea(
+            bool win,
+            HPState hp,
+            TimeState time,
+            DamageState damage)
+        {
+            State nextState = new State(hp, time, damage);
+            float reward = agent.CalculateReward(win, hp, time);
+
+            agent.UpdateQ(lastState, lastAction, reward, nextState);
+        }
+
+        private void ApplyDifficulty(DifficultyAction action)
+        {
+            switch (action)
+            {
+                case DifficultyAction.Maintain:
+                    Debug.Log("Difficulty maintained");
+                    break;
+
+                case DifficultyAction.Increase:
+                    Debug.Log("Difficulty increased (enemy stats up)");
+                    break;
+
+                case DifficultyAction.Decrease:
+                    Debug.Log("Difficulty decreased (enemy stats down)");
+                    break;
+            }
+        }
+
+        #endregion
     }
 }

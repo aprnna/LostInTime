@@ -1060,6 +1060,56 @@ public partial class @InputActions: IInputActionCollection2, IDisposable
                     ""isPartOfComposite"": false
                 }
             ]
+        },
+        {
+            ""name"": ""Minigames"",
+            ""id"": ""c21ef6df-7254-47af-95a4-ad0ec8d9bf5f"",
+            ""actions"": [
+                {
+                    ""name"": ""Tap"",
+                    ""type"": ""Button"",
+                    ""id"": ""fa0b5a58-c7cb-43e2-a3ac-b601ba410581"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""f54a7d94-c8d6-40c4-af19-fc59c4f682d3"",
+                    ""path"": ""<Keyboard>/space"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""Tap"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""82d06e48-87bc-4582-a6b0-4881c2c921e9"",
+                    ""path"": ""<Mouse>/leftButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""Tap"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""55bb0f77-9184-4689-b100-e49874747bf0"",
+                    ""path"": ""<Touchscreen>/Press"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Touch"",
+                    ""action"": ""Tap"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
         }
     ],
     ""controlSchemes"": [
@@ -1152,6 +1202,9 @@ public partial class @InputActions: IInputActionCollection2, IDisposable
         // World
         m_World = asset.FindActionMap("World", throwIfNotFound: true);
         m_World_Newaction = m_World.FindAction("New action", throwIfNotFound: true);
+        // Minigames
+        m_Minigames = asset.FindActionMap("Minigames", throwIfNotFound: true);
+        m_Minigames_Tap = m_Minigames.FindAction("Tap", throwIfNotFound: true);
     }
 
     ~@InputActions()
@@ -1159,6 +1212,7 @@ public partial class @InputActions: IInputActionCollection2, IDisposable
         UnityEngine.Debug.Assert(!m_Player.enabled, "This will cause a leak and performance issues, InputActions.Player.Disable() has not been called.");
         UnityEngine.Debug.Assert(!m_UI.enabled, "This will cause a leak and performance issues, InputActions.UI.Disable() has not been called.");
         UnityEngine.Debug.Assert(!m_World.enabled, "This will cause a leak and performance issues, InputActions.World.Disable() has not been called.");
+        UnityEngine.Debug.Assert(!m_Minigames.enabled, "This will cause a leak and performance issues, InputActions.Minigames.Disable() has not been called.");
     }
 
     public void Dispose()
@@ -1498,6 +1552,52 @@ public partial class @InputActions: IInputActionCollection2, IDisposable
         }
     }
     public WorldActions @World => new WorldActions(this);
+
+    // Minigames
+    private readonly InputActionMap m_Minigames;
+    private List<IMinigamesActions> m_MinigamesActionsCallbackInterfaces = new List<IMinigamesActions>();
+    private readonly InputAction m_Minigames_Tap;
+    public struct MinigamesActions
+    {
+        private @InputActions m_Wrapper;
+        public MinigamesActions(@InputActions wrapper) { m_Wrapper = wrapper; }
+        public InputAction @Tap => m_Wrapper.m_Minigames_Tap;
+        public InputActionMap Get() { return m_Wrapper.m_Minigames; }
+        public void Enable() { Get().Enable(); }
+        public void Disable() { Get().Disable(); }
+        public bool enabled => Get().enabled;
+        public static implicit operator InputActionMap(MinigamesActions set) { return set.Get(); }
+        public void AddCallbacks(IMinigamesActions instance)
+        {
+            if (instance == null || m_Wrapper.m_MinigamesActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_MinigamesActionsCallbackInterfaces.Add(instance);
+            @Tap.started += instance.OnTap;
+            @Tap.performed += instance.OnTap;
+            @Tap.canceled += instance.OnTap;
+        }
+
+        private void UnregisterCallbacks(IMinigamesActions instance)
+        {
+            @Tap.started -= instance.OnTap;
+            @Tap.performed -= instance.OnTap;
+            @Tap.canceled -= instance.OnTap;
+        }
+
+        public void RemoveCallbacks(IMinigamesActions instance)
+        {
+            if (m_Wrapper.m_MinigamesActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        public void SetCallbacks(IMinigamesActions instance)
+        {
+            foreach (var item in m_Wrapper.m_MinigamesActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_MinigamesActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    public MinigamesActions @Minigames => new MinigamesActions(this);
     private int m_KeyboardMouseSchemeIndex = -1;
     public InputControlScheme KeyboardMouseScheme
     {
@@ -1572,5 +1672,9 @@ public partial class @InputActions: IInputActionCollection2, IDisposable
     public interface IWorldActions
     {
         void OnNewaction(InputAction.CallbackContext context);
+    }
+    public interface IMinigamesActions
+    {
+        void OnTap(InputAction.CallbackContext context);
     }
 }

@@ -5,15 +5,15 @@ using Player;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-[System.Serializable]
+[Serializable]
 public class MapNode
 {
     public string mapNodeId;
+    public bool isNextBiome;
     public MapType mapType;
     public Vector2 position;
     public EnemySO[] enemies;
     public DropItem[] DropItems;
-    
 
     public string[] connectionId;
     public bool isVisited;

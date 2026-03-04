@@ -13,11 +13,6 @@ namespace Player
         {
             _rigidbody = GetComponent<Rigidbody2D>();
         }
-        private void Start()
-        {
-            _inputManager.PlayerMode();
-        }
-
         private void Update()
         {
             OnMove(_inputManager.PlayerInput.Movement.Get());

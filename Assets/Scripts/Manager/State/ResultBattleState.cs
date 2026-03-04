@@ -22,6 +22,7 @@ namespace Manager
 
         private async UniTask BattleResultRuntime()
         {
+            _battleSystem.OnBattleEnd();
             if (_battleSystem.BattleResult == BattleResult.PlayerWin)
             {
                 _battleSystem.DropItems();
