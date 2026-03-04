@@ -2702,8 +2702,10 @@ MonoBehaviour:
   totalEnemyStartHP: 0
   totalEnemyEndHP: 0
   turnCount: 0
+  Enemies: []
+  playerWonCount: 0
+  playerDeathCount: 0
   actionCount: 0
-  actionsUsed: []
   fistUsedCount: 0
   swordUsedCount: 0
   gunUsedCount: 0

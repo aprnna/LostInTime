@@ -11,6 +11,7 @@ namespace Player.Item
         [SerializeField] private string _name;
         [SerializeField] private int _percentageDamage;
         [SerializeField] private int _interval;
+        [SerializeField] private PlayerActionType _actionType;
         
         [Header("Defend")]
         [SerializeField] private bool _defend;
@@ -40,6 +41,7 @@ namespace Player.Item
         public bool IsIntervalDamage => _interval > 0;
         public float DifficultyCritical => _difficultyCritical;
         public string ActionName => _name;
+        public PlayerActionType ActionType => _actionType;
 
         private void Awake()
         {
@@ -48,7 +50,6 @@ namespace Player.Item
 
         public void ResetLimit()
         {
-            Debug.Log("Reset Action: "+_name);
             _currentLimit = _limit;
         }
 

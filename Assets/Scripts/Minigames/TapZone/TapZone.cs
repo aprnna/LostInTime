@@ -131,7 +131,7 @@ namespace Minigames
             Debug.Log("TapZone: PerformTap");
             if (state == MinigameState.Running)
             {
-                Evaluate();
+                 Evaluate().Forget();
             }
         }
 
@@ -165,10 +165,11 @@ namespace Minigames
             marker.anchoredPosition = pos;
         }
 
-        private void Evaluate()
+        private async UniTask Evaluate()
         {
             state = MinigameState.Result;
             bool success = IsMarkerInsideZone();
+            await UniTask.Delay(500);
             
             if (success)
             {

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace Player
@@ -7,6 +8,7 @@ namespace Player
     {
         [SerializeField] private string _name;
         [SerializeField] private Sprite _enemyPotrait;
+        [SerializeField] private EnemyType _enemyType;
         [SerializeField] private int _health;
         [SerializeField] private int _maxHealth;
         [SerializeField] private int _baseDamage;
@@ -19,5 +21,6 @@ namespace Player
         public int BaseDamage => _baseDamage;
         public int IntervalDamage => _intervalDamage;
         public GameObject Prefab => _prefab;
+        public EnemyType EnemyType => _enemyType;
     }
 }

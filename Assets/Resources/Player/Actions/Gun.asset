@@ -15,11 +15,12 @@ MonoBehaviour:
   _name: Handgun
   _percentageDamage: 120
   _interval: 0
+  _actionType: 2
   _defend: 0
   _multipleDefend: 0
   _intervalDefend: 0
   _vfx: {fileID: 6028535869411997274, guid: 5ab3e6937b2be8041b7023f9d508fe6b, type: 3}
   _isLimited: 1
   _limit: 10
-  _difficultyCritical: 9
-  _currentLimit: 5
+  _difficultyCritical: 8
+  _currentLimit: 10

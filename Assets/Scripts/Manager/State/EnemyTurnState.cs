@@ -11,7 +11,7 @@ namespace Manager
     {
         private List<GameObject> _rouletteObjects  = new List<GameObject>();
         private List<(EnemyController enemy, int damage)> _attacks = new List<(EnemyController, int)>();
-        
+        private int playerHpBefore;
         public EnemyTurnState(BattleSystem battleSystem, UIManagerBattle uiManagerBattle) : 
             base(battleSystem, uiManagerBattle)
         {
@@ -20,6 +20,7 @@ namespace Manager
         public override void OnEnter()
         {
             Debug.Log("Enemy Turn");
+            playerHpBefore = _battleSystem.PlayerStats.Health;
             _battleSystem.GameManager.ChangeInstruction("Enemy Turn");
             ExecuteEnemyAIAll().Forget();
         }
@@ -33,7 +34,6 @@ namespace Manager
             foreach (var enemy  in _battleSystem.Enemies)
             {
                 if (!enemy.EnemyStats.IsAlive()) continue;
-                _battleSystem.LogEnemyTurnStart(enemy.EnemyStats.name);
                 var min = enemy.EnemyStats.MinDamage();
                 var max = enemy.EnemyStats.MaxDamage();
                 tasks.Add(_battleSystem.RouletteSystem
@@ -54,17 +54,20 @@ namespace Manager
                 }
             }
 
+            int totalDamage = 0;
+
             foreach (var (enemy, damage) in _attacks)
             {
                 if (enemy == null || !enemy.EnemyStats.IsAlive())
                     continue;
-                
-                _battleSystem.LogEnemyAttack(enemy, damage);
+                totalDamage =+ damage;
                 _battleSystem.PlayerStats.GetHit(damage);
                 Debug.Log($"Enemy hit with {damage})");
 
                 if (!_battleSystem.PlayerStats.IsAlive())
                 {
+                    int playerHpAfter = _battleSystem.PlayerStats.Health;
+                    _battleSystem.LogEnemyTurn(playerHpAfter,playerHpBefore,totalDamage);
                     _battleSystem.LogPlayerDeath();
                     _battleSystem.ChangeBattleResult(BattleResult.EnemiesWin);
                     _battleSystem.StateMachine.ChangeState(_battleSystem.ResultBattleState);
@@ -72,6 +75,8 @@ namespace Manager
                 }
                 await UniTask.Delay(500);
             }
+            int playerHpAfter2 = _battleSystem.PlayerStats.Health;
+            _battleSystem.LogEnemyTurn(playerHpAfter2,playerHpBefore, totalDamage);
             await UniTask.Delay(TimeSpan.FromSeconds(2));
             _battleSystem.StateMachine.ChangeState(_battleSystem.PlayerTurnState);
         }
@@ -83,10 +88,12 @@ namespace Manager
                 _battleSystem.DestroyObject(rouletteObject);
             }
         }
+        
         public override void OnUpdate()
         {
 
         }
+        
         public override void OnExit()
         {
             _battleSystem.ResetBattle();

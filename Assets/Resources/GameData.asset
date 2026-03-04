@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d270f031676e443e9cfeb273fc722967, type: 3}
   m_Name: GameData
   m_EditorClassIdentifier: 
-  <PrologCompleted>k__BackingField: 0
+  <PrologCompleted>k__BackingField: 1

@@ -7,6 +7,8 @@ namespace Manager
 {
     public class CriticalAttackState: GameState
     {
+        private int hpTargetBefore;
+        private int hpTargetAfter;
         
         public CriticalAttackState(BattleSystem battleSystem, UIManagerBattle uiManagerBattle): 
             base(battleSystem,uiManagerBattle)
@@ -14,6 +16,7 @@ namespace Manager
         }
         public override void OnEnter()
         {
+            hpTargetBefore = _battleSystem.SelectedTarget.EnemyStats.Health;
             _battleSystem.GameManager.ChangeInstruction(" ");
             OnStartRoulette();
 
@@ -41,8 +44,7 @@ namespace Manager
 
         private void  DefendAction()
         {
-            // var result = await _battleSystem.MinigameManager.PlayTapZone();
-            _battleSystem.LogPlayerDefend(_battleSystem.SelectedAction.ActionName,_battleSystem.SelectedAction.BaseDefend);
+            _battleSystem.LogPlayerTurn(0,0,0, false);
             _battleSystem.SetPlayerDefend(_battleSystem.SelectedAction.BaseDefend);
         }
 
@@ -52,15 +54,11 @@ namespace Manager
             var result = await _battleSystem.MinigameManager.PlayTapZone(); 
             var isCriticalHit = result == Minigame.Result.Success;
             var damage = isCriticalHit ? _battleSystem.SelectedAction.CriticalHitDamage : _battleSystem.SelectedAction.BaseDamage;
-            _battleSystem.LogPlayerAction(damage);
-            await UniTask.Delay(TimeSpan.FromSeconds(1), ignoreTimeScale: false);
-            _battleSystem.ShowDamagePopup(_battleSystem.SelectedTarget.transform.position, damage, isCriticalHit);
-            _battleSystem.SelectedTarget.PlayAnim("isDamaged");
-            _battleSystem.SelectedTarget.EnemyStats.GetHit(damage);
-            _battleSystem.UIManagerBattle.EnemyStatsUI.InitializeStats(_battleSystem.SelectedTarget.EnemyStats);
-            await _battleSystem.SelectedAction.PlayVfx(_battleSystem.SelectedTarget.transform); 
+            await _battleSystem.EnemyGetHit(damage, isCriticalHit);
+            hpTargetAfter = _battleSystem.SelectedTarget.EnemyStats.Health;
             Debug.Log("Damage dealt: " + damage);
             await UniTask.Delay(TimeSpan.FromSeconds(1), ignoreTimeScale: false);
+            _battleSystem.LogPlayerTurn(hpTargetBefore, hpTargetAfter, damage, isCriticalHit);
         }
         private bool EnemiesAvailable()
         {

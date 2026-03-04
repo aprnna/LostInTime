@@ -1,6 +1,7 @@
 using System;
 using Audio;
 using Cysharp.Threading.Tasks;
+using DDA;
 using Input;
 using Player;
 using Player.Item;
@@ -162,5 +163,55 @@ namespace Manager
             SessionID = Guid.NewGuid().ToString();
             Debug.Log("SESSION ID: " + SessionID);
         }
+
+        #region  DDA
+
+        public QLearningAgent agent;
+
+        private State lastState;
+        private DifficultyAction lastAction;
+
+        public void StartNextArea(
+            HPState hp,
+            TimeState time,
+            DamageState damage)
+        {
+            lastState = new State(hp, time, damage);
+            lastAction = agent.ChooseAction(lastState);
+
+            ApplyDifficulty(lastAction);
+        }
+
+        public void EndArea(
+            bool win,
+            HPState hp,
+            TimeState time,
+            DamageState damage)
+        {
+            State nextState = new State(hp, time, damage);
+            float reward = agent.CalculateReward(win, hp, time);
+
+            agent.UpdateQ(lastState, lastAction, reward, nextState);
+        }
+
+        private void ApplyDifficulty(DifficultyAction action)
+        {
+            switch (action)
+            {
+                case DifficultyAction.Maintain:
+                    Debug.Log("Difficulty maintained");
+                    break;
+
+                case DifficultyAction.Increase:
+                    Debug.Log("Difficulty increased (enemy stats up)");
+                    break;
+
+                case DifficultyAction.Decrease:
+                    Debug.Log("Difficulty decreased (enemy stats down)");
+                    break;
+            }
+        }
+
+        #endregion
     }
 }

@@ -15,6 +15,7 @@ MonoBehaviour:
   _name: Sword
   _percentageDamage: 80
   _interval: 0
+  _actionType: 1
   _defend: 0
   _multipleDefend: 0
   _intervalDefend: 0
@@ -22,4 +23,4 @@ MonoBehaviour:
   _isLimited: 1
   _limit: 15
   _difficultyCritical: 5
-  _currentLimit: 5
+  _currentLimit: 15

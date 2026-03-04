@@ -11,7 +11,7 @@ namespace Playfab
 {
     public class PlayfabManager: MonoBehaviour
     {
-        public static PlayfabManager Instance;
+        public static PlayfabManager Instance {get ; private set; }
         [SerializeField] private string _id;
         private LoadingManager _loadingManager;
         private PlayerStats _playerStats;
@@ -36,11 +36,24 @@ namespace Playfab
         
         void Login()
         {
+            string customId;
+            
+            if (PlayerPrefs.HasKey("CustomID"))
+            {
+                customId = PlayerPrefs.GetString("CustomID");
+            }
+            else
+            {
+                customId = System.Guid.NewGuid().ToString();
+                PlayerPrefs.SetString("CustomID", customId);
+            }
+        
             var request = new LoginWithCustomIDRequest()
             {
-                CustomId = SystemInfo.deviceUniqueIdentifier,
+                CustomId = customId,
                 CreateAccount = true
             };
+        
             PlayFabClientAPI.LoginWithCustomID(request, OnLoginSuccess, OnLoginFailure);
         }
         
@@ -60,54 +73,32 @@ namespace Playfab
         
          
         }
-        public void SendBattleLog(BattleLog log)
+        
+        public void UploadSessionLogToPlayFab( long sessionStartTime,Action onDone = null)
         {
-            string json = JsonConvert.SerializeObject(log, Formatting.None);
+            BattleLog currentLog = BattleLogger.Instance.GetCurrentLog();
+            string json = JsonConvert.SerializeObject(currentLog, Formatting.None);
 
-            var request = new UpdateUserDataRequest
+            var request = new UpdateUserDataRequest()
             {
-                Data = new Dictionary<string, string>
+                Data = new Dictionary<string, string>()
                 {
-                    { "BattleLog_" + DateTime.UtcNow.Ticks, json }
+                    { $"BattleSessionLog_{sessionStartTime}", json }
                 }
             };
 
-            PlayFabClientAPI.UpdateUserData(request,
-                (r) => Debug.Log("Battle log sent!"),
-                (e) => Debug.LogError(e.GenerateErrorReport()));
-        }
-
-        private void SaveDataToPlayfab()
-        {
-            var request = new UpdateUserDataRequest
-            {
-                Data = new Dictionary<string, string>
+            PlayFabClientAPI.UpdateUserData(request, result =>
                 {
-                    { "PlayerData", JsonConvert.SerializeObject(new PlayerDataContainer
-                        {
-                            health = _playerStats.Health
-                        })
-                    }
-                }
-            };
-            PlayFabClientAPI.UpdateUserData(request, OnDataSendSuccess, OnError);
+                    Debug.Log("[BattleLogManager] Session uploaded.");
+                    onDone?.Invoke();
+                },
+                OnError);
         }
       
-      
-        void OnDataSendSuccess(UpdateUserDataResult result)
-        {
-            Debug.Log("Data successfully sent to PlayFab.");
-        }
-        
-        
         void OnError(PlayFabError error)
         {
             Debug.LogError("PlayFab Error: " + error.GenerateErrorReport());
-            
-            if (_loadingManager != null ) 
-            {
-                _loadingManager.UpdateLoadingProgress(0f, "Error. Please check connection.");
-            }
+           
         }
         
     }

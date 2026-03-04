@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _name: Triceratops
   _enemyPotrait: {fileID: 2385461822859493598, guid: a95d808fa6102f14cb33b6926380c813, type: 3}
+  _enemyType: 5
   _health: 40
   _maxHealth: 40
   _baseDamage: 20

@@ -317,6 +317,7 @@ namespace Player
             OnBaseDamageChange?.Invoke();
             OnShieldStatsChange?.Invoke();
         }
+        
 
     }
 

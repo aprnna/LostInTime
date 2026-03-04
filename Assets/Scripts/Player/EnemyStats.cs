@@ -20,6 +20,8 @@ namespace Player
                 _enemyModel.EnemyName = value;
             }
         }
+        public EnemyType EnemyType => _enemyData.EnemyType;
+            
         public int Health
         {
             get => _enemyModel.Health;

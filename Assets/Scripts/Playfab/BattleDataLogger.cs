@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Player;
 using Sirenix.OdinInspector;
 using UnityEngine;
 namespace Playfab
@@ -7,7 +8,8 @@ namespace Playfab
     public class BattleLogger : MonoBehaviour
     {
         public static BattleLogger Instance { get; private set; }
-
+        private BattleLog currentLog;
+        
         [Header("Battle Tracking")]
         [SerializeField] private DateTime battleStartTime;
         [SerializeField] private DateTime battleEndTime;
@@ -16,10 +18,12 @@ namespace Playfab
         [SerializeField] private int totalEnemyStartHP;
         [SerializeField] private int totalEnemyEndHP;
         [SerializeField] private int turnCount;
+        [SerializeField] private List<EnemyController> Enemies;
+        [SerializeField] private int playerWonCount;
+        [SerializeField] private int playerDeathCount;
         
         [Header("Player Actions Tracking")]
         [SerializeField] private int actionCount;
-        [SerializeField] private List<string> actionsUsed = new List<string>();
         [SerializeField] private int fistUsedCount;
         [SerializeField] private int swordUsedCount;
         [SerializeField] private int gunUsedCount;
@@ -33,7 +37,7 @@ namespace Playfab
         [Header("References")]
         [SerializeField] private string sessionId;
         [SerializeField] private string levelId;
-
+        public bool HasActiveSession => currentLog != null;
         private void Awake()
         {
             if (Instance == null)
@@ -45,29 +49,50 @@ namespace Playfab
                 Destroy(gameObject);
             }
         }
+        
+        public void CreateNewLog(string sessionId)
+        {
+            currentLog = GenerateBattleLog(sessionId);
+        }
+        public BattleLog GetCurrentLog()
+        {
+            return currentLog;
+        }
+        public void AddLevelRecord(BattleRecord record)
+        {
+            if (currentLog == null)
+            {
+                Debug.LogWarning("⚠ AddLevelRecord called without session! Auto creating session.");
+                CreateNewLog(Guid.NewGuid().ToString());
+            }
+            
+            currentLog.Battle_Record.Add(record);
+
+            currentLog.win_count += record.battle_result == "Win" ? 1 : 0;
+            currentLog.player_death_count += record.battle_result == "Lose" ? 1 : 0;
+        }
+
+       
 
         #region Battle Lifecycle
 
-        public void StartBattle(string sessionId, string levelId, int playerHP, List<int> enemyHPs)
+        public void StartBattle(string levelId, int playerHP, List<EnemyController> enemies)
         {
-            this.sessionId = sessionId;
             this.levelId = levelId;
             
             battleStartTime = DateTime.UtcNow;
             playerStartHP = playerHP;
-            playerEndHP = playerHP;
             
             totalEnemyStartHP = 0;
-            foreach (int hp in enemyHPs)
+            foreach (var enemy in Enemies)
             {
-                totalEnemyStartHP += hp;
+                totalEnemyStartHP += enemy.EnemyStats.Health;
             }
             totalEnemyEndHP = totalEnemyStartHP;
+            Enemies = enemies;
             
             ResetCounters();
             battleEvents.Clear();
-            
-            LogEvent(BattleEventType.BattleStart, $"Battle started with {playerHP} HP vs {enemyHPs.Count} enemies");
             
             Debug.Log($"[BattleLogger] Battle started - Session: {sessionId}, Level: {levelId}");
         }
@@ -77,9 +102,12 @@ namespace Playfab
             battleEndTime = DateTime.UtcNow;
             playerEndHP = playerFinalHP;
             totalEnemyEndHP = totalEnemyFinalHP;
+
+            var record = GenerateBattleRecord(playerWon);
+
+            AddLevelRecord(record);
             
             string result = playerWon ? "Victory" : "Defeat";
-            LogEvent(BattleEventType.BattleEnd, $"Battle ended - {result}");
             
             Debug.Log($"[BattleLogger] Battle ended - Duration: {GetBattleDuration():F2}s, Turns: {turnCount}, Result: {result}");
         }
@@ -88,141 +116,126 @@ namespace Playfab
 
         #region Turn Tracking
 
-        public void OnPlayerTurnStart()
+        public void OnPlayerTurn(PlayerActionType playerActionType,string targetName, int targetHpBefore, int targetHpAfter, int damage, bool isCritical = false)
         {
             turnCount++;
-            LogEvent(BattleEventType.TurnStart, $"Turn {turnCount} - Player");
+            string criticalText = isCritical ? " (CRITICAL!)" : "";
+            damageDealtTotal += damage;
+            CalculatePlayerAction(playerActionType);
+            
+            BattleEvent battleEvent = new BattleEvent
+            {
+                eventType = BattleEventType.PlayerTurn,
+                timestamp = DateTime.UtcNow,
+                playerActionType = playerActionType,
+                turn = turnCount,
+                damage = damage,
+                target = targetName,
+                targetHPBefore = targetHpBefore,
+                targetHPAfter =  targetHpAfter,
+                description =  $"Turn {turnCount} - Player attacked {targetName} for {damage} damage {criticalText}"
+            };
+
+            LogBattleEvent(battleEvent);
         }
 
-      
-        public void OnEnemyTurnStart(string enemyName)
+        public void OnPlayerDeath()
         {
-            LogEvent(BattleEventType.TurnStart, $"Turn {turnCount} - {enemyName}");
+            playerDeathCount++;
+        }
+      
+        public void OnEnemyTurn(int playerHpAfter, int playerHpBefore, int totalDamage)
+        {
+            damageTakenTotal += totalDamage;
+
+            BattleEvent battleEvent = new BattleEvent
+            {
+                eventType = BattleEventType.EnemyTurn,
+                timestamp = DateTime.UtcNow,
+                playerActionType = PlayerActionType.Default,
+                turn = turnCount,
+                damage = totalDamage,
+                target = "Player",
+                targetHPAfter = playerHpAfter,
+                targetHPBefore = playerHpBefore,
+                description =  $"Turn {turnCount} - Enemies attack player for total {totalDamage} damage"
+            };
+            LogBattleEvent(battleEvent);
         }
 
         #endregion
 
         #region Action Tracking
 
-        public void OnPlayerAttack(string targetName, int damage, bool isCritical = false)
+        public void CalculatePlayerAction(PlayerActionType playerActionType)
         {
-            damageDealtTotal += damage;
-            
-            string critText = isCritical ? " (CRITICAL!)" : "";
-            LogEvent(BattleEventType.PlayerAttack, $"Player attacked {targetName} for {damage} damage{critText}");
-        }
-        
-        public void OnPlayerAction(string action,string targetName, int damage)
-        {
-            actionCount++;
-            damageDealtTotal += damage;
-            actionsUsed.Add(action);
-            
-            LogEvent(BattleEventType.PlayerAction, $"Player used Action on {targetName} for {damage} damage");
-        }
-
-        public void OnPlayerFistAction(string targetName, int damage)
-        {
-            fistUsedCount++;
-            damageDealtTotal += damage;
-            
-            LogEvent(BattleEventType.PlayerFist, $"Player used Fist Action on {targetName} for {damage} damage");
-        }
-        public void OnPlayerSwordAction(string targetName, int damage)
-        {
-            swordUsedCount++;
-            damageDealtTotal += damage;
-            
-            LogEvent(BattleEventType.PlayerSword, $"Player used Sword Action on {targetName} for {damage} damage");
-        }
-
-        public void OnPlayerDefendAction(string action,int defenseValue)
-        {
-            defendUsedCount++;
-            actionsUsed.Add(action);
-
-            LogEvent(BattleEventType.PlayerDefend, $"Player defended (+{defenseValue} defense)");
-        }
-        public void OnPlayerGunAction(string targetName, int damage)
-        {
-            gunUsedCount++;
-            damageDealtTotal += damage;
-
-            LogEvent(BattleEventType.PlayerGun, $"Player used Gun Action on {targetName} for {damage} damage");
-
-        }
-
-        public void OnEnemyAttack(string enemyName, int damage)
-        {
-            damageTakenTotal += damage;
-            LogEvent(BattleEventType.EnemyAttack, $"{enemyName} attacked player for {damage} damage");
-        }
-
-        public void OnEnemyDefeated(string enemyName)
-        {
-            LogEvent(BattleEventType.EnemyDefeated, $"{enemyName} was defeated");
-        }
-
-        public void OnPlayerDeath()
-        {
-            LogEvent(BattleEventType.PlayerDeath, "Player was defeated");
-        }
-
-        #endregion
-
-        #region Minigame Tracking
-
-        public void OnMinigameCompleted(string minigameName, bool success, float difficulty)
-        {
-            string result = success ? "Success" : "Failed";
-            LogEvent(BattleEventType.MinigameResult, $"Minigame '{minigameName}' - {result} (Difficulty: {difficulty:F1})");
-        }
-
-        public void OnRouletteResult(int damageMultiplier)
-        {
-            LogEvent(BattleEventType.RouletteResult, $"Roulette result: {damageMultiplier}x damage multiplier");
+            switch (playerActionType)
+            {
+                case PlayerActionType.Fist:
+                    fistUsedCount++;
+                    break;
+                case PlayerActionType.Sword:
+                    swordUsedCount++;
+                    break;
+                case PlayerActionType.Gun:
+                    gunUsedCount++;
+                    break;
+                case PlayerActionType.Shield:
+                    defendUsedCount++;
+                    break;
+                default:
+                    break;
+            }
         }
 
         #endregion
 
         #region Data Generation
 
-        public BattleLog GenerateBattleLog(bool playerWon)
+        public BattleLog GenerateBattleLog(string sessionId)
         {
-            float duration = GetBattleDuration();
-            
-            BattleLog log = new BattleLog
+            var log = new BattleLog
             {
                 session_id = sessionId,
-                device_id = SystemInfo.deviceUniqueIdentifier,
-                level_id = levelId,
                 timestamp = battleStartTime.ToString("o"),
-                
+                player_death_count = playerWonCount,
+                win_count = playerDeathCount,
+                Battle_Record = new List<BattleRecord>()
+            };
+
+            return log;
+        }
+        private BattleRecord GenerateBattleRecord(bool playerWon)
+        {
+            return new BattleRecord
+            {
+                level_id = levelId,
+                battle_result = playerWon ? "Win" : "Lose",
+                Enemy_count = Enemies.Count,
+                enemy_list = ExtractEnemyListData(Enemies),
                 player_performance = new PlayerPerformance
                 {
                     player_hp_start = playerStartHP,
                     player_hp_end = playerEndHP,
-                    enemy_hp_start = totalEnemyStartHP,
-                    enemy_hp_end = totalEnemyEndHP,
-                    battle_duration = duration,
+                    enemy_total_hp_start = totalEnemyStartHP,
+                    enemy_total_hp_end = totalEnemyEndHP,
+                    battle_duration = GetBattleDuration(),
                     turn_count = turnCount,
-                    player_death_count = playerWon ? 0 : 1,
-                    win = playerWon ? 1 : 0,
                     damage_dealt = damageDealtTotal,
                     damage_taken = damageTakenTotal
                 },
-                
                 player_behavior = new PlayerBehavior
                 {
                     fist_used = fistUsedCount,
                     sword_used = swordUsedCount,
                     gun_used = gunUsedCount,
                     defend_used = defendUsedCount
-                }
+                },
+                turn_logs = ConvertEventsToTurnLog(),
+                applied_difficulty_params = new AppliedDifficultyParams()
             };
-            
-            return log;
         }
+        
         public float GetBattleDuration()
         {
             if (battleEndTime == DateTime.MinValue)
@@ -252,22 +265,54 @@ namespace Playfab
             damageTakenTotal = 0;
         }
 
-        private void LogEvent(BattleEventType eventType, string description)
+        public void LogBattleEvent(BattleEvent battleEvent)
         {
-            BattleEvent battleEvent = new BattleEvent
-            {
-                eventType = eventType,
-                timestamp = DateTime.UtcNow,
-                turn = turnCount,
-                description = description
-            };
-            
+     
             battleEvents.Add(battleEvent);
             
             if (Application.isEditor)
             {
-                Debug.Log($"[BattleLogger] Turn {turnCount} | {eventType} | {description}");
+                Debug.Log($"[BattleLogger] Turn {turnCount} | {battleEvent.eventType} | {battleEvent.description}");
             }
+        }
+        
+        private List<TurnLog> ConvertEventsToTurnLog()
+        {
+            var list = new List<TurnLog>();
+
+            foreach (var evt in battleEvents)
+            {
+                list.Add(new TurnLog
+                {
+                    turn = evt.turn,
+                    actor = evt.eventType.ToString(),
+                    target = evt.target,
+                    action = evt.playerActionType.ToString(),
+                    damage = evt.damage,  
+                    targetHPAfter = evt.targetHPAfter,
+                    targetHPBefore = evt.targetHPBefore,
+                    description = evt.description,
+                });
+            }
+
+            return list;
+        }
+
+        private List<EnemyInfo> ExtractEnemyListData(List<EnemyController> enemies)
+        {
+            var enemyInfos = new List<EnemyInfo>();
+            foreach (var enemy in enemies)
+            {
+                enemyInfos.Add(new EnemyInfo
+                {
+                    enemy_id = enemy.EnemyStats.EnemyName,
+                    enemy_type = enemy.EnemyStats.EnemyType.ToString(),
+                    hp_start = enemy.EnemyStats.MaxHealth,
+                    hp_end = enemy.EnemyStats.Health 
+                });
+            }
+
+            return enemyInfos;
         }
         #endregion
         
@@ -310,13 +355,54 @@ namespace Playfab
     public class BattleLog
     {
         public string session_id;
-        public string device_id;
-        public string level_id;
         public string timestamp;
+        public int player_death_count;
+        public int win_count;
+        public List<BattleRecord> Battle_Record = new();
+    }
 
+    [Serializable]
+    public class BattleRecord
+    {
+        public string level_id;
+        public string battle_result;
+        public int Enemy_count;
+        public List<EnemyInfo> enemy_list;
         public PlayerPerformance player_performance;
         public PlayerBehavior player_behavior;
-        // public DDARuntime dda_runtime;
+        public List<TurnLog> turn_logs;
+        public AppliedDifficultyParams applied_difficulty_params;
+    }
+
+    [Serializable]
+    public class EnemyInfo
+    {
+        public string enemy_id;
+        public string enemy_type;
+        public int hp_start;
+        public int hp_end;
+    }
+
+    [Serializable]
+    public class TurnLog
+    {
+        public int turn;
+        public string actor;
+        public string target;
+        public string action;
+        public int damage;
+        public string description;
+        public int targetHPBefore;
+        public int targetHPAfter;
+    }
+
+    [Serializable]
+    public class AppliedDifficultyParams
+    {
+        public int enemy_count;
+        public float enemy_damage_scale;
+        public int player_heal_amount;
+        public float shop_price_modifier;
     }
 
     [Serializable]
@@ -324,12 +410,10 @@ namespace Playfab
     {
         public int player_hp_start;
         public int player_hp_end;
-        public int enemy_hp_start;
-        public int enemy_hp_end;
+        public int enemy_total_hp_start;
+        public int enemy_total_hp_end;
         public float battle_duration;
         public int turn_count;
-        public int player_death_count;
-        public int win;
         public int damage_dealt;
         public int damage_taken;
     }
@@ -343,45 +427,22 @@ namespace Playfab
     }
     
     [Serializable]
-    public class DDARuntime
-    {
-        public int difficulty_level;
-        public float enemy_hp_multiplier;
-        public float enemy_damage_multiplier;
-        public float item_drop_rate_multiplier;
-
-        public int dda_action;
-        public float reward;
-
-        public List<int> state;
-        public List<float> q_values_before;
-        public List<float> q_values_after;
-    }
-    [Serializable]
     public class BattleEvent
     {
+        public string target;
         public BattleEventType eventType;
         public DateTime timestamp;
+        public PlayerActionType playerActionType;
         public int turn;
+        public int damage;
+        public int targetHPAfter;
+        public int targetHPBefore;
         public string description;
     }
 
     public enum BattleEventType
     {
-        BattleStart,
-        BattleEnd,
-        TurnStart,
-        PlayerAttack,
-        PlayerAction,
-        PlayerFist,
-        PlayerSword,
-        PlayerDefend,
-        PlayerGun,
-        EnemyAttack,
-        EnemyDefeated,
-        PlayerDeath,
-        MinigameResult,
-        RouletteResult
+        PlayerTurn,
+        EnemyTurn,
     }
-
 }

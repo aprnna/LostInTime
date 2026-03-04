@@ -54,7 +54,6 @@ namespace Manager
         public void Start()
         {
             PrepareBattle().Forget();
-            
         }
         public async UniTask PrepareBattle()
         {
@@ -187,26 +186,30 @@ namespace Manager
         {
             Destroy(gameObject);
         }
-        
+
+        public async UniTask EnemyGetHit(int damage, bool isCriticalHit)
+        {
+            ShowDamagePopup(SelectedTarget.transform.position, damage, isCriticalHit);
+            SelectedTarget.PlayAnim("isDamaged");
+            SelectedTarget.EnemyStats.GetHit(damage);
+            UIManagerBattle.EnemyStatsUI.InitializeStats(SelectedTarget.EnemyStats);
+            await SelectedAction.PlayVfx(SelectedTarget.transform); 
+        }
         #region Battle Lifecycle
         private async UniTask StartBattleLogging()
         {
-            Debug.Log("[BattleSystem] SessionID = " + GameManager.SessionID);
             if (BattleLogger == null) return ;
             
-            // Gather enemy HPs
-            List<int> enemyHPs = new List<int>();
-            foreach (var enemy in Enemies)
+            if (!BattleLogger.HasActiveSession)
             {
-                enemyHPs.Add(enemy.EnemyStats.Health);
+                Debug.Log("[BattleSystem] No battle log found, creating new session log...");
+                BattleLogger.CreateNewLog(SessionManager.Instance.SessionId);
             }
-            
             // Start logging
             BattleLogger.StartBattle(
-                GameManager.SessionID,
                 MapSystem.CurrentPlayerMapNode.mapNodeId,
                 PlayerStats.Health,
-                enemyHPs
+                Enemies
             );
             await UniTask.Yield();
         }
@@ -225,81 +228,25 @@ namespace Manager
             if (BattleLogger != null)
             {
                 BattleLogger.EndBattle(PlayerStats.Health, totalEnemyHP, playerWon);
+                SessionManager.Instance.EndSessionAndSend();
             }
-            
-            SendBattleLog();
         }
-
-        private void SendBattleLog()
-        {
-            if (BattleLogger == null || PlayfabManager == null) return;
-            
-            bool playerWon = BattleResult == BattleResult.PlayerWin;
-            BattleLog log = BattleLogger.GenerateBattleLog(playerWon);
-            
-            PlayfabManager.SendBattleLog(log);
-            
-            Debug.Log($"[BattleSystem] Battle log sent - Duration: {log.player_performance.battle_duration:F2}s, Turns: {log.player_performance.turn_count}");
-        }
-
         #endregion
 
         #region Action Logging Hooks
-        public void LogPlayerAttack(EnemyController target, int damage, bool isCritical = false)
+        public void LogPlayerTurn(int targetHpBefore, int targetHpAfter, int damage, bool isCritical = false)
         {
-            BattleLogger?.OnPlayerAttack(target.name, damage, isCritical);
+            BattleLogger.OnPlayerTurn(SelectedAction.ActionType, SelectedTarget.name, targetHpBefore, targetHpAfter, damage, isCritical);
         }
-   
-        public void LogPlayerAction(int damage)
-        {
-            BattleLogger?.OnPlayerAction(SelectedAction.ActionName,SelectedTarget.name, damage);
-        }
-        public void LogPlayerFist(EnemyController target, int damage)
-        {
-            BattleLogger?.OnPlayerFistAction(target.name, damage);
-        }
-        public void LogPlayerGun(EnemyController target, int damage)
-        {
-            BattleLogger?.OnPlayerGunAction(target.name, damage);
-        }
-        public void LogPlayerSword(EnemyController target, int damage)
-        {
-            BattleLogger?.OnPlayerSwordAction(target.name, damage);
-        }
-        public void LogPlayerDefend(string action,int defenseValue)
-        {
-            BattleLogger?.OnPlayerDefendAction(action,defenseValue);
-        }
-        public void LogEnemyAttack(EnemyController enemy, int damage)
-        {
-            BattleLogger?.OnEnemyAttack(enemy.name, damage);
-        }
-        public void LogEnemyDefeated(EnemyController enemy)
-        {
-            BattleLogger?.OnEnemyDefeated(enemy.name);
-        }
+
         public void LogPlayerDeath()
         {
-            BattleLogger?.OnPlayerDeath();
+            BattleLogger.OnPlayerDeath();
         }
-
-        public void LogPlayerTurnStart()
+        public void LogEnemyTurn(int playerHpAfter, int playerHpBefore, int totalDamage)
         {
-            BattleLogger?.OnPlayerTurnStart();
+            BattleLogger.OnEnemyTurn( playerHpAfter ,playerHpBefore,totalDamage);
         }
-        public void LogEnemyTurnStart(string enemyName)
-        {
-            BattleLogger?.OnEnemyTurnStart(enemyName);
-        }
-        public void LogMinigameResult(string minigameName, bool success, float difficulty)
-        {
-            BattleLogger?.OnMinigameCompleted(minigameName, success, difficulty);
-        }
-        public void LogRouletteResult(int damageMultiplier)
-        {
-            BattleLogger?.OnRouletteResult(damageMultiplier);
-        }
-
         #endregion
     }
 
