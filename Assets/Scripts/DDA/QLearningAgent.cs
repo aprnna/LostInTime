@@ -13,7 +13,7 @@ namespace DDA
         [SerializeField] private float _alpha = 0.1f;   // learning rate
         [SerializeField] private float _gamma = 0.9f;   // discount factor
         [SerializeField] private float _epsilon = 0.2f; // exploration rate
-        
+        [SerializeField] private float _epsilonStart = 0.3f;
         [Header("Logging")]
         [SerializeField] private int _snapshotEveryNEpisodes = 10;
 
@@ -22,9 +22,14 @@ namespace DDA
         private int _episodeCount = 0;
 
         public float Epsilon { get => _epsilon; set => _epsilon = value; }
+        public float EpsilonStart => _epsilonStart;
         public float Gamma => _gamma;
         public float Alpha => _alpha;
-        
+        public void ResetEpsilon()
+        {
+            _epsilon = _epsilonStart;
+            Debug.Log($"[QLearningAgent] Epsilon reset ke start: {_epsilon:F3}");
+        }
         private void InitializeState(State s)
         {
             if (!_qTable.ContainsKey(s))
@@ -58,46 +63,39 @@ namespace DDA
 
             return (DifficultyAction)bestAction;
         }
-        public float CalculateReward(
-            bool win,
-            HPState hpState,
-            TimeState timeState)
+        public float CalculateReward(bool win, HPState hpState, TimeState timeState)
         {
-            float reward = 0f;
+            // Base reward — sinyal paling kuat, menang selalu jauh lebih baik dari kalah
+            float reward = win ? 1.5f : -1.5f;
 
-            // Outcome reward
-            
-            // reward += win ? 1.0f : -1.0f;
-            if (win && hpState == HPState.High)
-                reward -= 0.5f;   // terlalu mudah
+            // HP modifier
+            if (win)
+            {
+                switch (hpState)
+                {
+                    case HPState.Medium: reward += 1.0f;  break;  // IDEAL: menang seimbang
+                    case HPState.High:   reward -= 0.8f;  break;  // Terlalu mudah
+                    case HPState.Low:    reward += 0.3f;  break;  // Susah tapi berhasil
+                }
+            }
+            else
+            {
+                switch (hpState)
+                {
+                    case HPState.Low:    reward += 0.5f;  break;  // Kalah tapi berjuang (-1.0 net)
+                    case HPState.Medium: reward -= 0.3f;  break;  // Difficulty terlalu tinggi
+                    case HPState.High:   reward -= 0.8f;  break;  // Sangat tidak seimbang
+                }
+            }
 
-            if (win && hpState == HPState.Medium)
-                reward += 0.5f;   // ideal
-
-            if (win && hpState == HPState.Low)
-                reward += 0.2f;   // menang tapi susah
-
-            if (!win && hpState == HPState.Low)
-                reward -= 0.2f;   // wajar kalah
-
-            if (!win && hpState == HPState.High)
-                reward -= 0.8f;   // terlalu sulit
-            
-            // HP reward
-            // switch (hpState)
-            // {
-            //     case HPState.Low: reward -= 0.3f; break;
-            //     case HPState.Medium: reward += 0.2f; break;
-            //     case HPState.High: reward += 0.1f; break;
-            // }
-
-            // Time reward
+            // Time modifier — durasi normal adalah yang paling ideal
             switch (timeState)
             {
-                case TimeState.Fast: reward -= 0.2f; break;
-                case TimeState.Normal: reward += 0.2f; break;
-                case TimeState.Slow: reward -= 0.2f; break;
+                case TimeState.Normal: reward += 0.3f;  break;  // Durasi ideal
+                case TimeState.Fast:   reward -= 0.2f;  break;  // Terlalu cepat = mudah
+                case TimeState.Slow:   reward -= 0.2f;  break;  // Terlalu lama = susah/bosan
             }
+
             _episodeTotalReward += reward;
             _episodeSteps++;
 

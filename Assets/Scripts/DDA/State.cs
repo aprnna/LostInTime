@@ -27,5 +27,9 @@ namespace DDA
         {
             return ((int)hp * 100) + ((int)time * 10) + (int)damage;
         }
+        public override string ToString()
+        {
+            return $"HP:{hp}_Time:{time}_Dmg:{damage}";
+        }
     }
 }

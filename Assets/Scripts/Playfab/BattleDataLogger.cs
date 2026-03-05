@@ -83,13 +83,13 @@ namespace Playfab
             battleStartTime = DateTime.UtcNow;
             playerStartHP = playerHP;
             
+            Enemies = enemies;
             totalEnemyStartHP = 0;
             foreach (var enemy in Enemies)
             {
                 totalEnemyStartHP += enemy.EnemyStats.Health;
             }
             totalEnemyEndHP = totalEnemyStartHP;
-            Enemies = enemies;
             
             ResetCounters();
             battleEvents.Clear();
@@ -198,8 +198,8 @@ namespace Playfab
             {
                 session_id = sessionId,
                 timestamp = battleStartTime.ToString("o"),
-                player_death_count = playerWonCount,
-                win_count = playerDeathCount,
+                player_death_count = playerDeathCount,
+                win_count = playerWonCount,
                 Battle_Record = new List<BattleRecord>()
             };
 
