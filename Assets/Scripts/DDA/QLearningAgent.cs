@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace DDA
 {
@@ -11,25 +10,28 @@ namespace DDA
 
         // Hyperparameters
         [SerializeField] private float _alpha = 0.1f;   // learning rate
-        [SerializeField] private float _gamma = 0.9f;   // discount factor
-        [SerializeField] private float _epsilon = 0.2f; // exploration rate
+        [SerializeField] private float _gamma = 0.9f; 
         [SerializeField] private float _epsilonStart = 0.3f;
         [Header("Logging")]
         [SerializeField] private int _snapshotEveryNEpisodes = 10;
-
+        private Dictionary<State, int> _stateVisitCount = new Dictionary<State, int>();
         private float _episodeTotalReward = 0f;
         private int _episodeSteps = 0;
         private int _episodeCount = 0;
 
         public float Epsilon { get => _epsilon; set => _epsilon = value; }
-        public float EpsilonStart => _epsilonStart;
-        public float Gamma => _gamma;
         public float Alpha => _alpha;
-        public void ResetEpsilon()
+        public float Gamma => _gamma;
+        public float EpsilonStart => _epsilonStart;
+        private float _epsilon; 
+
+        private void Awake()
         {
             _epsilon = _epsilonStart;
-            Debug.Log($"[QLearningAgent] Epsilon reset ke start: {_epsilon:F3}");
+            LoadQTable();
         }
+        
+        public bool HasQTable => _qTable.Count > 0;
         private void InitializeState(State s)
         {
             if (!_qTable.ContainsKey(s))
@@ -37,10 +39,17 @@ namespace DDA
                 _qTable[s] = new float[3]; 
             }
         }
+        public void TrackVisitation(State s)
+        {
+            if (!_stateVisitCount.ContainsKey(s)) _stateVisitCount[s] = 0;
+            _stateVisitCount[s]++;
+        }
+
+        public Dictionary<State, int> GetVisitationStats() => _stateVisitCount;
         public DifficultyAction ChooseAction(State state)
         {
             InitializeState(state);
-
+            TrackVisitation(state);
             // Exploration
             if (Random.value < _epsilon)
             {
@@ -63,38 +72,37 @@ namespace DDA
 
             return (DifficultyAction)bestAction;
         }
-        public float CalculateReward(bool win, HPState hpState, TimeState timeState)
+        public float CalculateReward(bool win, HPState hp, TimeState time, DamageState damage,
+            DifficultyAction action = DifficultyAction.Maintain)
         {
-            // Base reward — sinyal paling kuat, menang selalu jauh lebih baik dari kalah
             float reward = win ? 1.5f : -1.5f;
 
-            // HP modifier
-            if (win)
-            {
-                switch (hpState)
-                {
-                    case HPState.Medium: reward += 1.0f;  break;  // IDEAL: menang seimbang
-                    case HPState.High:   reward -= 0.8f;  break;  // Terlalu mudah
-                    case HPState.Low:    reward += 0.3f;  break;  // Susah tapi berhasil
-                }
-            }
-            else
-            {
-                switch (hpState)
-                {
-                    case HPState.Low:    reward += 0.5f;  break;  // Kalah tapi berjuang (-1.0 net)
-                    case HPState.Medium: reward -= 0.3f;  break;  // Difficulty terlalu tinggi
-                    case HPState.High:   reward -= 0.8f;  break;  // Sangat tidak seimbang
-                }
+            if (win) {
+                reward += hp switch { HPState.Medium => 1.0f, HPState.High => -0.8f, HPState.Low => 0.3f, _ => 0f };
+            } else {
+                reward += hp switch { HPState.Low => 0.5f, HPState.Medium => -0.3f, HPState.High => -0.8f, _ => 0f };
             }
 
-            // Time modifier — durasi normal adalah yang paling ideal
-            switch (timeState)
-            {
-                case TimeState.Normal: reward += 0.3f;  break;  // Durasi ideal
-                case TimeState.Fast:   reward -= 0.2f;  break;  // Terlalu cepat = mudah
-                case TimeState.Slow:   reward -= 0.2f;  break;  // Terlalu lama = susah/bosan
+            reward += time switch { TimeState.Normal => 0.3f, _ => -0.2f };
+            if (win) {
+                reward += damage switch {
+                    DamageState.Medium => 0.2f,  // ideal
+                    DamageState.High   => -0.1f, // susah tapi menang
+                    DamageState.Low    => -0.1f, // terlalu mudah
+                    _ => 0f
+                };
             }
+
+            // ── Action-based reward shaping ──────────────────────────────────
+            // Penalti untuk Decrease agar agent tidak selalu menurunkan difficulty
+            // Bonus untuk Increase saat player menang (challenge tercapai)
+            reward += action switch
+            {
+                DifficultyAction.Decrease => -0.3f,            // penalti: terlalu mudah
+                DifficultyAction.Increase => win ? 0.5f : 0f,  // bonus: menang meski sulit = ideal
+                DifficultyAction.Maintain => 0.1f,             // sedikit bonus: stabilitas
+                _ => 0f
+            };
 
             _episodeTotalReward += reward;
             _episodeSteps++;
@@ -115,7 +123,12 @@ namespace DDA
             float[] currentQ = _qTable[currentState];
             float[] nextQ = _qTable[nextState];
 
-            float maxNextQ = Mathf.Max(nextQ);
+            // Manual max — Mathf.Max() tidak menerima array
+            float maxNextQ = nextQ[0];
+            for (int i = 1; i < nextQ.Length; i++)
+            {
+                if (nextQ[i] > maxNextQ) maxNextQ = nextQ[i];
+            }
 
             currentQ[(int)action] += _alpha *
                                      (reward + _gamma * maxNextQ - currentQ[(int)action]);
@@ -156,12 +169,12 @@ namespace DDA
 
             Debug.Log("Q-table loaded");
         }
-        public void OnEpisodeEnd(float playerHP, float playerMaxHP, string currentDifficulty)
+        public void OnEpisodeEnd(float playerHp, float playerMaxHp, string currentDifficulty)
         {
             _episodeCount++;
 
             // 1. Log data episode
-            float hpRatio = playerMaxHP > 0 ? playerHP / playerMaxHP : 0f;
+            float hpRatio = playerMaxHp > 0 ? playerHp / playerMaxHp : 0f;
             QTableLogger.Instance.LogEpisode(
                 totalReward: _episodeTotalReward,
                 episodeLength: _episodeSteps,

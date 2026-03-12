@@ -9,7 +9,7 @@ namespace DDA
 
         [Header("Training Settings")]
         public int episodes       = 5000;
-        public float epsilonDecay = 0.995f;
+        public float epsilonDecay = 0.9996f;
         public float minEpsilon   = 0.05f;
 
         [Header("Logging")]
@@ -20,37 +20,62 @@ namespace DDA
 
         void Start()
         {
-            agent.ResetEpsilon();
-            Train();
+            // Load Q-table dari sesi sebelumnya sebagai warm-start (jika ada)
+            // Agent sudah LoadQTable di Awake, tapi pastikan sudah dimuat
+            if (!agent.HasQTable)
+            {
+                agent.LoadQTable();
+            }
+
             QTableLogger.Instance.LogHyperparameters(agent.Alpha, agent.Gamma, agent.EpsilonStart, epsilonDecay, minEpsilon, episodes);
+            Train();
+            Evaluate(500);
             agent.SaveQTable();
             Debug.Log("[QLearningTrainer] Training selesai. Q-table tersimpan.");
         }
-
-        void Train()
+        void Evaluate(int evalEpisodes)
         {
-            for (int i = 0; i < episodes; i++)
+            float savedEpsilon = agent.Epsilon;
+            agent.Epsilon = 0f; // Greedy policy
+    
+            int wins = 0;
+            float totalReward = 0f;
+    
+            for (int i = 0; i < evalEpisodes; i++)
             {
                 State s = RandomState();
-
                 DifficultyAction a = agent.ChooseAction(s);
-
-                BattleResult r = _sim.Simulate(a);
-
-                float reward = agent.CalculateReward(r.win, r.hp, r.time);
-
+                BattleResult r = _sim.Simulate(a, s);
+                float reward = agent.CalculateReward(r.win, r.hp, r.time, r.damage, a);
+                totalReward += reward;
+                if (r.win) wins++;
+            }
+    
+            Debug.Log($"[Evaluation] Win Rate: {(float)wins/evalEpisodes:P1} | " +
+                      $"Avg Reward: {totalReward/evalEpisodes:F3}");
+    
+            agent.Epsilon = savedEpsilon; // Restore
+        }
+        void Train()
+        {
+            State s = RandomState();
+            int resetInterval = 100;
+            for (int i = 0; i < episodes; i++)
+            {
+                DifficultyAction a = agent.ChooseAction(s);
+                BattleResult r = _sim.Simulate(a, s);
+                float reward = agent.CalculateReward(r.win, r.hp, r.time, r.damage, a);
                 State sNext = new State(r.hp, r.time, r.damage);
-
                 agent.UpdateQ(s, a, reward, sNext);
-
+                s = sNext;
+                if (i % resetInterval == 0) s = RandomState();
                 agent.OnEpisodeEnd(
-                    playerHP:          r.playerHPRatio * 100f,
-                    playerMaxHP:       100f,
+                    playerHp:          r.playerHPRatio * 100f,
+                    playerMaxHp:       100f,
                     currentDifficulty: a.ToString()
                 );
 
                 agent.Epsilon = Mathf.Max(minEpsilon, agent.Epsilon * epsilonDecay);
-
                 if (i % logInterval == 0)
                 {
                     Debug.Log($"[Trainer] Episode {i}/{episodes} | " +

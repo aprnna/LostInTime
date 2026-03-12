@@ -35,21 +35,40 @@ namespace DDA
     /// │ Maintain   │  60%     │ Low 20% / Medium 50% / High 30%    │
     /// │ Decrease   │  80%     │ Low 5%  / Medium 30% / High 65%    │
     /// └────────────┴──────────┴────────────────────────────────────┘
+    /// Win rate di-adjust berdasarkan current State (state-dependent):
+    /// - HP High → player kuat, win rate naik sedikit
+    /// - HP Low  → player lemah, win rate turun sedikit
     /// Dengan distribusi ini, Maintain akan optimal saat kondisi Medium (challenge pas)
     /// dan Increase akan optimal hanya saat player terlalu kuat (HP.High konsisten).
     /// </summary>
     public class BattleSimulator
     {
-        public BattleResult Simulate(DifficultyAction action)
+        /// <summary>
+        /// Simulate battle. Menerima current state agar outcome state-dependent.
+        /// </summary>
+        public BattleResult Simulate(DifficultyAction action, State currentState)
         {
-            // ── 1. Tentukan win/lose berdasarkan difficulty ──────────────────────
-            float winChance = action switch
+            // ── 1. Tentukan win/lose berdasarkan difficulty + current state ──────
+            float baseWinChance = action switch
             {
-                DifficultyAction.Increase => 0.40f,  // Lebih sulit → 40% menang
-                DifficultyAction.Maintain => 0.60f,  // Normal     → 60% menang
-                DifficultyAction.Decrease => 0.80f,  // Lebih mudah → 80% menang
+                DifficultyAction.Increase => 0.40f,
+                DifficultyAction.Maintain => 0.60f,
+                DifficultyAction.Decrease => 0.80f,
                 _                         => 0.60f
             };
+
+            // Modifier berdasarkan current HP state
+            // Jika HP tinggi → player lebih kuat → sedikit lebih mudah menang
+            // Jika HP rendah → player lemah → lebih susah menang
+            float hpModifier = currentState.hp switch
+            {
+                HPState.High   =>  0.10f,
+                HPState.Medium =>  0.00f,
+                HPState.Low    => -0.10f,
+                _              =>  0.00f
+            };
+
+            float winChance = Mathf.Clamp01(baseWinChance + hpModifier);
 
             bool win = Random.value < winChance;
 

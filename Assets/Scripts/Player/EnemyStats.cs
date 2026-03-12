@@ -1,4 +1,4 @@
-using System;
+using DDA;
 using UnityEngine;
 
 namespace Player
@@ -10,6 +10,32 @@ namespace Player
         public void Start()
         {
             _enemyModel = new EnemyModel(_enemyData);
+            ApplyDifficultyMultipliers();
+        }
+
+        /// <summary>
+        /// Terapkan multiplier dari DDA DifficultySettings ke HP dan Damage enemy.
+        /// Dipanggil saat Start. Bisa juga dipanggil ulang jika difficulty berubah mid-battle.
+        /// </summary>
+        private void ApplyDifficultyMultipliers()
+        {
+            if (DifficultySettings.Instance == null) return;
+
+            float hpMult = DifficultySettings.Instance.EnemyHPMultiplier;
+            float dmgMult = DifficultySettings.Instance.EnemyDamageMultiplier;
+
+            // Terapkan ke HP
+            int scaledMaxHp = Mathf.RoundToInt(_enemyData.MaxHealth * hpMult);
+            int scaledHp = Mathf.RoundToInt(_enemyData.Health * hpMult);
+            _enemyModel.MaxHealth = Mathf.Max(1, scaledMaxHp);
+            _enemyModel.Health = Mathf.Max(1, scaledHp);
+
+            // Terapkan ke Damage
+            int scaledDamage = Mathf.RoundToInt(_enemyData.BaseDamage * dmgMult);
+            _enemyModel.BaseDamage = Mathf.Max(1, scaledDamage);
+
+            Debug.Log($"[EnemyStats] {EnemyName} scaled: HP={_enemyModel.Health}/{_enemyModel.MaxHealth} " +
+                      $"Dmg={_enemyModel.BaseDamage} (hpMult={hpMult:F2}, dmgMult={dmgMult:F2})");
         }
         
         public string EnemyName
