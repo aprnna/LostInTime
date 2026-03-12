@@ -60,7 +60,7 @@ namespace Manager
             {
                 if (enemy == null || !enemy.EnemyStats.IsAlive())
                     continue;
-                totalDamage =+ damage;
+                totalDamage += damage;
                 _battleSystem.PlayerStats.GetHit(damage);
                 Debug.Log($"Enemy hit with {damage})");
 
