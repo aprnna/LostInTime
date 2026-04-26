@@ -59,12 +59,10 @@ namespace DDA
             return (float)_currentLevelIndex / (_difficultyLevels.Length - 1);
         }
 
+        private static readonly string[] s_LevelNames = { "Very Easy", "Easy", "Normal", "Hard", "Very Hard" };
+
         /// <summary>Gets the difficulty level name for display.</summary>
-        public string GetLevelName()
-        {
-            string[] names = { "Very Easy", "Easy", "Normal", "Hard", "Very Hard" };
-            return names[_currentLevelIndex];
-        }
+        public string GetLevelName() => s_LevelNames[_currentLevelIndex];
 
 #if UNITY_EDITOR
         [ContextMenu("Reset to Normal")]
