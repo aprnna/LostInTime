@@ -1,88 +1,93 @@
-using DDA;
 using UnityEngine;
 
 namespace Player
 {
-    public class EnemyStats:MonoBehaviour
+    public class EnemyStats : MonoBehaviour
     {
         [SerializeField] private EnemySO _enemyData;
         private EnemyModel _enemyModel;
+
+        // Track scaled values for DDA
+        private int _scaledMaxHealth;
+        private int _scaledBaseDamage;
+        private bool _isDifficultyApplied = false;
+
         public void Start()
         {
             _enemyModel = new EnemyModel(_enemyData);
-            ApplyDifficultyMultipliers();
+            _scaledMaxHealth = _enemyModel.MaxHealth;
+            _scaledBaseDamage = _enemyModel.BaseDamage;
         }
 
-        /// <summary>
-        /// Terapkan multiplier dari DDA DifficultySettings ke HP dan Damage enemy.
-        /// Dipanggil saat Start. Bisa juga dipanggil ulang jika difficulty berubah mid-battle.
-        /// </summary>
-        private void ApplyDifficultyMultipliers()
-        {
-            if (DifficultySettings.Instance == null) return;
-
-            float hpMult = DifficultySettings.Instance.EnemyHPMultiplier;
-            float dmgMult = DifficultySettings.Instance.EnemyDamageMultiplier;
-
-            // Terapkan ke HP
-            int scaledMaxHp = Mathf.RoundToInt(_enemyData.MaxHealth * hpMult);
-            int scaledHp = Mathf.RoundToInt(_enemyData.Health * hpMult);
-            _enemyModel.MaxHealth = Mathf.Max(1, scaledMaxHp);
-            _enemyModel.Health = Mathf.Max(1, scaledHp);
-
-            // Terapkan ke Damage
-            int scaledDamage = Mathf.RoundToInt(_enemyData.BaseDamage * dmgMult);
-            _enemyModel.BaseDamage = Mathf.Max(1, scaledDamage);
-
-            Debug.Log($"[EnemyStats] {EnemyName} scaled: HP={_enemyModel.Health}/{_enemyModel.MaxHealth} " +
-                      $"Dmg={_enemyModel.BaseDamage} (hpMult={hpMult:F2}, dmgMult={dmgMult:F2})");
-        }
-        
         public string EnemyName
         {
             get => _enemyModel.EnemyName;
-            private set
-            {
-                _enemyModel.EnemyName = value;
-            }
+            private set => _enemyModel.EnemyName = value;
         }
+
         public EnemyType EnemyType => _enemyData.EnemyType;
-            
+
         public int Health
         {
             get => _enemyModel.Health;
-            private set
-            {
-                _enemyModel.Health = value ;
-            }
+            private set => _enemyModel.Health = value;
         }
-        public int MaxHealth
-        {
-            get => _enemyModel.MaxHealth;
-            private set
-            {
-                _enemyModel.MaxHealth = value;
-            }
-        }
-        public int BaseDamage
-        {
-            get => _enemyModel.BaseDamage;
-            private set
-            {
-                _enemyModel.BaseDamage = value;
-            }
-        }
+
+        public int MaxHealth => _scaledMaxHealth;
+
+        public int BaseDamage => _scaledBaseDamage;
+
         public int MinDamage()
         {
             return BaseDamage - _enemyModel.IntervalDamage;
         }
+
         public int MaxDamage()
         {
             return BaseDamage + _enemyModel.IntervalDamage;
         }
+
+        /// <summary>
+        /// Applies difficulty multipliers to enemy stats.
+        /// Called by DifficultyApplier before battle.
+        /// </summary>
+        public void ApplyDifficultyMultiplier(float hpMultiplier, float damageMultiplier)
+        {
+            _scaledMaxHealth = Mathf.RoundToInt(_enemyModel.MaxHealth * hpMultiplier);
+            _scaledBaseDamage = Mathf.RoundToInt(_enemyModel.BaseDamage * damageMultiplier);
+            _isDifficultyApplied = true;
+
+            // Scale current health proportionally if already initialized
+            if (_enemyModel.Health > 0)
+            {
+                float healthRatio = (float)_enemyModel.Health / _enemyModel.MaxHealth;
+                _enemyModel.Health = Mathf.RoundToInt(_scaledMaxHealth * healthRatio);
+            }
+            else
+            {
+                _enemyModel.Health = _scaledMaxHealth;
+            }
+
+            Debug.Log($"[EnemyStats] Applied difficulty: HP={hpMultiplier:F2}x, DMG={damageMultiplier:F2}x. " +
+                      $"Result: HP={_scaledMaxHealth}, DMG={_scaledBaseDamage}");
+        }
+
+        /// <summary>
+        /// Resets difficulty to base values.
+        /// </summary>
+        public void ResetDifficulty()
+        {
+            _scaledMaxHealth = _enemyModel.MaxHealth;
+            _scaledBaseDamage = _enemyModel.BaseDamage;
+            _isDifficultyApplied = false;
+        }
+
         public void GetHit(int value)
         {
-            if(Health - value > 0) Health -= value;
+            if (Health - value > 0)
+            {
+                Health -= value;
+            }
             else
             {
                 Health = 0;
@@ -95,6 +100,7 @@ namespace Player
         {
             return _enemyData.EnemyPortrait;
         }
+
         public bool IsAlive()
         {
             return Health > 0;
