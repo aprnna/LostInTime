@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: mlagents-plugin-ddqn
+Version: 0.1.0
+Summary: DDQN (Double Deep Q-Network) trainer plugin for ML-Agents
+Author: SpaceJam DDA Team
+Requires-Python: >=3.8
+Requires-Dist: mlagents>=1.1.0
+Requires-Dist: torch>=2.2.0
+Requires-Dist: numpy>=1.23.0
+Dynamic: author
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

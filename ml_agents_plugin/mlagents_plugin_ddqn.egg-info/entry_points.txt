@@ -1,0 +1,2 @@
+[mlagents.trainer_type]
+ddqn = mlagents_plugin_ddqn:register_plugin

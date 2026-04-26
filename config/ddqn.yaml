@@ -1,5 +1,5 @@
 # DDQN Training Configuration for Unity ML-Agents
-# Uses custom ddqn trainer plugin (mlagents-ddqn-plugin)
+# Uses custom ddqn trainer plugin (mlagents-plugin-ddqn)
 #
 # Installation:
 #   cd ml_agents_plugin
@@ -15,7 +15,7 @@ behaviors:
     hyperparameters:
       # Learning
       learning_rate: 0.0003
-      learning_rate_schedule: linear
+      learning_rate_schedule: constant
 
       # Experience Replay
       batch_size: 64
@@ -23,10 +23,8 @@ behaviors:
 
       # DDQN - Target Network Update
       tau: 0.005              # Soft update rate
-      target_update_interval: 10000  # Hard update interval (steps)
 
       # Exploration (Epsilon-greedy)
-      exploration_schedule: linear
       exploration_initial_eps: 1.0
       exploration_final_eps: 0.01
       exploration_decay_steps: 50000
@@ -35,7 +33,7 @@ behaviors:
       gamma: 0.99
 
     network_settings:
-      normalize: true
+      normalize: false
       hidden_units: 128
       num_layers: 2
       vis_encode_type: simple
@@ -53,9 +51,6 @@ behaviors:
     checkpoint_interval: 10000
 
 # Environment settings
-default_settings:
-  trainer_type: ddqn
-
 env_settings:
   env_path: null
   base_port: 5005

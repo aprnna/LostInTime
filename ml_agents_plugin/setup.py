@@ -7,14 +7,14 @@ setup(
     author="SpaceJam DDA Team",
     packages=find_packages(),
     install_requires=[
-        "mlagents>=2.0.0",
-        "torch>=2.0.0",
-        "numpy>=1.24.0",
+        "mlagents>=1.1.0",
+        "torch>=2.2.0",
+        "numpy>=1.23.0",
     ],
     python_requires=">=3.8",
     entry_points={
-        "mlagents.trainers": [
-            "ddqn = mlagents_plugin_ddqn.ddqn_trainer:register_ddqn_trainer"
+        "mlagents.trainer_type": [
+            "ddqn = mlagents_plugin_ddqn:register_plugin"
         ]
     },
 )

@@ -1,0 +1,11 @@
+setup.py
+mlagents_plugin_ddqn/__init__.py
+mlagents_plugin_ddqn/ddqn_network.py
+mlagents_plugin_ddqn/ddqn_policy.py
+mlagents_plugin_ddqn/ddqn_trainer.py
+mlagents_plugin_ddqn.egg-info/PKG-INFO
+mlagents_plugin_ddqn.egg-info/SOURCES.txt
+mlagents_plugin_ddqn.egg-info/dependency_links.txt
+mlagents_plugin_ddqn.egg-info/entry_points.txt
+mlagents_plugin_ddqn.egg-info/requires.txt
+mlagents_plugin_ddqn.egg-info/top_level.txt
