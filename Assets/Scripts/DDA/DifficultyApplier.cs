@@ -28,7 +28,7 @@ namespace DDA
 
         /// <summary>
         /// Applies difficulty multipliers to enemy stats.
-        /// Call this before enemy is spawned in battle.
+        /// Call this after enemy is spawned, before battle starts.
         /// </summary>
         /// <param name="enemyStats">The enemy stats to modify.</param>
         public void ApplyDifficulty(EnemyStats enemyStats)

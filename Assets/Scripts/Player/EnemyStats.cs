@@ -12,8 +12,28 @@ namespace Player
         private int _scaledBaseDamage;
         private bool _isDifficultyApplied = false;
 
+        private void Awake()
+        {
+            // Initialize in Awake to ensure _enemyModel is ready before ApplyDifficultyMultiplier
+            InitializeModel();
+        }
+
         public void Start()
         {
+            // Ensure model is initialized (Awake may not run if component added at runtime)
+            if (_enemyModel == null)
+            {
+                InitializeModel();
+            }
+        }
+
+        private void InitializeModel()
+        {
+            if (_enemyData == null)
+            {
+                Debug.LogError($"[EnemyStats] No EnemySO assigned on {gameObject.name}");
+                return;
+            }
             _enemyModel = new EnemyModel(_enemyData);
             _scaledMaxHealth = _enemyModel.MaxHealth;
             _scaledBaseDamage = _enemyModel.BaseDamage;
@@ -49,10 +69,16 @@ namespace Player
 
         /// <summary>
         /// Applies difficulty multipliers to enemy stats.
-        /// Called by DifficultyApplier before battle.
+        /// Called after enemy is spawned, before battle starts.
         /// </summary>
         public void ApplyDifficultyMultiplier(float hpMultiplier, float damageMultiplier)
         {
+            // Ensure model is initialized
+            if (_enemyModel == null)
+            {
+                InitializeModel();
+            }
+
             _scaledMaxHealth = Mathf.RoundToInt(_enemyModel.MaxHealth * hpMultiplier);
             _scaledBaseDamage = Mathf.RoundToInt(_enemyModel.BaseDamage * damageMultiplier);
             _isDifficultyApplied = true;
@@ -77,6 +103,8 @@ namespace Player
         /// </summary>
         public void ResetDifficulty()
         {
+            if (_enemyModel == null) return;
+
             _scaledMaxHealth = _enemyModel.MaxHealth;
             _scaledBaseDamage = _enemyModel.BaseDamage;
             _isDifficultyApplied = false;
