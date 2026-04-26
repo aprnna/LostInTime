@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Audio;
 using Cysharp.Threading.Tasks;
+using DDA;
 using Minigames;
 using Player;
 using Player.Item;
@@ -39,6 +40,9 @@ namespace Manager
         public MinigameManager MinigameManager { get; private set; }
         public PlayfabManager PlayfabManager { get; private set; }
         public BattleLogger BattleLogger { get; private set; }
+
+        [Header("DDA")]
+        [SerializeField] private DDAIntegration _ddaIntegration;
         
         public void Awake()
         {
@@ -59,6 +63,13 @@ namespace Manager
         {
             await Initialize();
             await InitializeFSM();
+
+            // Notify DDA before spawning enemies so difficulty is set
+            if (_ddaIntegration != null && _ddaIntegration.IsEnabled)
+            {
+                _ddaIntegration.OnBattlePreStart(PlayerStats.Health);
+            }
+
             await SpawnEnemies();
             await StartBattleLogging();
         }
@@ -102,7 +113,14 @@ namespace Manager
             for (int i = 0; i < enemies.Length; i++)
             {
                 var enemy= Instantiate(enemies[i].Prefab, enemiesPos[i]);
-                Enemies.Add(enemy.GetComponent<EnemyController>());
+                var enemyController = enemy.GetComponent<EnemyController>();
+                Enemies.Add(enemyController);
+
+                // Apply DDA difficulty to enemy stats
+                if (_ddaIntegration != null && _ddaIntegration.IsEnabled)
+                {
+                    _ddaIntegration.ApplyDifficultyToEnemy(enemyController.EnemyStats);
+                }
             }
             await UniTask.Yield();
         }
@@ -216,14 +234,20 @@ namespace Manager
         public void OnBattleEnd()
         {
             bool playerWon = BattleResult == BattleResult.PlayerWin;
-            
+
             // Calculate total enemy HP
             int totalEnemyHP = 0;
             foreach (var enemy in Enemies)
             {
                 totalEnemyHP += enemy.EnemyStats.Health;
             }
-            
+
+            // Notify DDA of battle end
+            if (_ddaIntegration != null && _ddaIntegration.IsEnabled)
+            {
+                _ddaIntegration.OnBattleEnd(playerWon, PlayerStats.Health);
+            }
+
             // End logging
             if (BattleLogger != null)
             {
