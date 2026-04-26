@@ -88,7 +88,8 @@ namespace DDA
 
             // State 3: Turn count normalized (0-1)
             // Turns taken / expected turns
-            float turnNormalized = _turnCount / (float)_expectedTurnsPerBattle;
+            int expectedTurns = Mathf.Max(1, _expectedTurnsPerBattle);
+            float turnNormalized = _turnCount / (float)expectedTurns;
             sensor.AddObservation(Mathf.Clamp01(turnNormalized));
 
             // State 4: Current difficulty normalized (0-1)
