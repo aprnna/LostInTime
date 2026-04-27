@@ -296,13 +296,7 @@ namespace DDA
             Debug.Log($"[DDAAgent] Run end. Won: {runWon}, Areas: {areasCompleted}/{totalAreas}");
         }
 
-        /// <summary>
-        /// Get cumulative reward for current episode.
-        /// </summary>
-        public float GetCumulativeReward()
-        {
-            return GetStepReward();
-        }
+        // GetCumulativeReward() is inherited from Agent base class
 
         /// <summary>
         /// Calculates reward based on battle outcome.

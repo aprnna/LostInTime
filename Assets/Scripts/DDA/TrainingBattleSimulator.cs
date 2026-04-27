@@ -47,8 +47,9 @@ namespace DDA
         private bool _runInProgress;
 
         // Training stats
-        private int _episodeCount;
-        private int _runCount;
+        private int _battleCount;     // Counts individual battles
+        private int _runCount;        // Counts full runs (episodes)
+        private int _episodeCount;    // Counts episodes (1 episode = 1 area)
         private int _winCount;
         private int _lossCount;
         private int _totalTurns;
@@ -68,10 +69,11 @@ namespace DDA
         public static TrainingBattleSimulator Instance { get; private set; }
 
         // Public properties
-        public int EpisodeCount => _episodeCount;
+        public int BattleCount => _battleCount;        // Total battles fought
+        public int EpisodeCount => _episodeCount;      // Episodes = areas
         public int WinCount => _winCount;
-        public float WinRate => _episodeCount > 0 ? (float)_winCount / _episodeCount : 0f;
-        public float AvgReward => _episodeCount > 0 ? _totalReward / _episodeCount : 0f;
+        public float WinRate => _battleCount > 0 ? (float)_winCount / _battleCount : 0f;
+        public float AvgReward => _battleCount > 0 ? _totalReward / _battleCount : 0f;
         public float LastReward => _lastReward;
         public int CurrentDifficulty => _difficultySettings?.CurrentLevelIndex ?? 2;
         public string DifficultyName => _difficultySettings?.GetLevelName() ?? "Normal";
@@ -255,12 +257,32 @@ namespace DDA
             // Reset player for new run
             _player.Reset();
 
+            // Notify agent that run is starting
+            _ddaAgent?.OnRunStart();
+
+            // Reset difficulty to default at start of run
+            _difficultySettings?.ResetToNormal();
+
             Debug.Log($"[TrainingSim] Starting run {_runCount} with {_areas.Count} areas");
 
             // Process each area
             while (_currentAreaIndex < _areas.Count && _player.IsAlive())
             {
+                // Apply difficulty that was set at end of PREVIOUS area
+                // (or default difficulty for first area)
+                float hpMult = _difficultySettings?.HPMultiplier ?? 1.0f;
+                float dmgMult = _difficultySettings?.DamageMultiplier ?? 1.0f;
+                _areas[_currentAreaIndex].ApplyDifficulty(hpMult, dmgMult);
+
+                // Notify agent we're entering this area (no decision request, just state update)
+                _ddaAgent?.OnAreaEnter(_currentAreaIndex, _areas.Count);
+
                 yield return StartCoroutine(ProcessArea(_areas[_currentAreaIndex]));
+
+                // Notify agent that area is complete (ends episode, requests difficulty for next)
+                bool areaWon = _player.IsAlive();
+                _ddaAgent?.OnAreaComplete(areaWon);
+                _episodeCount++;  // Increment episode count
 
                 if (!_player.IsAlive())
                 {
@@ -287,6 +309,9 @@ namespace DDA
 
             OnRunComplete?.Invoke(runResult);
 
+            // Notify agent that run ended (for logging only, episode already ended in OnAreaComplete)
+            _ddaAgent?.OnRunEnd(runWon, _currentAreaIndex, _areas.Count);
+
             Debug.Log($"[TrainingSim] Run {_runCount} complete. Won: {runWon}, " +
                       $"Areas: {_currentAreaIndex}/{_areas.Count}, HP: {_player.CurrentHP}");
 
@@ -300,11 +325,7 @@ namespace DDA
 
         private IEnumerator ProcessArea(SimArea area)
         {
-            // Apply difficulty to enemies
-            float hpMult = _difficultySettings?.HPMultiplier ?? 1.0f;
-            float dmgMult = _difficultySettings?.DamageMultiplier ?? 1.0f;
-            area.ApplyDifficulty(hpMult, dmgMult);
-
+            // Difficulty is already applied in RunTrainingRun before this is called
             switch (area.AreaType)
             {
                 case MapType.Enemy:
@@ -369,7 +390,7 @@ namespace DDA
         private IEnumerator RunBattleEpisode()
         {
             _battleInProgress = true;
-            _episodeCount++;
+            _battleCount++;
             _turnCount = 0;
 
             // Notify DDA agent battle starting
@@ -381,7 +402,7 @@ namespace DDA
                 _ddaAgent.OnDifficultyChanged += HandleDifficultyChanged;
             }
 
-            Debug.Log($"[TrainingSim] Episode {_episodeCount} started. " +
+            Debug.Log($"[TrainingSim] Battle {_battleCount} started. " +
                       $"Enemy: {_currentEnemy.Name} (HP: {_currentEnemy.MaxHP}), " +
                       $"Difficulty: {DifficultyName}");
 
@@ -396,7 +417,7 @@ namespace DDA
             bool playerWon = _currentEnemy.CurrentHP <= 0 && _player.IsAlive();
             int playerEndHP = _player.CurrentHP;
 
-            // Calculate reward
+            // Calculate reward (for logging/stats only)
             _lastReward = CalculateReward(playerWon, playerEndHP, _player.MaxHP, _turnCount);
 
             // Update stats
@@ -416,7 +437,7 @@ namespace DDA
             _totalTurns += _turnCount;
             _totalReward += _lastReward;
 
-            // Notify DDA agent battle ended
+            // Notify DDA agent battle ended (accumulates reward, does NOT end episode)
             _ddaAgent?.OnBattleEnd(playerWon, playerEndHP);
 
             // Unsubscribe
@@ -426,10 +447,10 @@ namespace DDA
             }
 
             // Fire events for UI
-            OnBattleEnded?.Invoke(playerWon, _lastReward, _episodeCount);
+            OnBattleEnded?.Invoke(playerWon, _lastReward, _battleCount);
             OnStatsUpdated?.Invoke(GetStats());
 
-            Debug.Log($"[TrainingSim] Episode {_episodeCount} ended. " +
+            Debug.Log($"[TrainingSim] Battle {_battleCount} ended. " +
                       $"Won: {playerWon}, HP: {playerEndHP}/{_player.MaxHP}, " +
                       $"Turns: {_turnCount}, Reward: {_lastReward:F3}, " +
                       $"WinRate: {WinRate:P1}");
@@ -648,6 +669,7 @@ namespace DDA
         {
             return new TrainingStats
             {
+                BattleCount = _battleCount,
                 EpisodeCount = _episodeCount,
                 WinCount = _winCount,
                 WinRate = WinRate,
@@ -658,7 +680,7 @@ namespace DDA
                 DifficultyName = DifficultyName,
                 ConsecutiveWins = _consecutiveWins,
                 ConsecutiveLosses = _consecutiveLosses,
-                AvgTurnsPerBattle = _episodeCount > 0 ? (float)_totalTurns / _episodeCount : 0f,
+                AvgTurnsPerBattle = _battleCount > 0 ? (float)_totalTurns / _battleCount : 0f,
             };
         }
 
@@ -667,10 +689,11 @@ namespace DDA
         /// </summary>
         public void ResetStats()
         {
-            _episodeCount = 0;
+            _battleCount = 0;
             _winCount = 0;
             _lossCount = 0;
             _runCount = 0;
+            _episodeCount = 0;
             _totalTurns = 0;
             _totalReward = 0;
             _lastReward = 0;
@@ -710,7 +733,8 @@ namespace DDA
     [Serializable]
     public struct TrainingStats
     {
-        public int EpisodeCount;
+        public int BattleCount;          // Individual battles fought
+        public int EpisodeCount;         // Areas completed (1 episode = 1 area)
         public int WinCount;
         public float WinRate;
         public float AvgReward;
