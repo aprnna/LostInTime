@@ -114,7 +114,7 @@ namespace DDA
         /// <summary>Rest area: heal player 10-24 HP.</summary>
         public void ApplyRest(SimPlayer player)
         {
-            int healAmount = Random.Range(10, 25);
+            int healAmount = UnityEngine.Random.Range(10, 25);
             player.Heal(healAmount);
         }
 

@@ -71,7 +71,7 @@ namespace DDA
         {
             int min = GetMinDamage();
             int max = GetMaxDamage();
-            return Random.Range(min, max + 1);
+            return UnityEngine.Random.Range(min, max + 1);
         }
 
         /// <summary>Take damage.</summary>
@@ -95,7 +95,7 @@ namespace DDA
         /// <summary>Check if enemy is boss type.</summary>
         public bool IsBoss()
         {
-            return Type == EnemyType.Boss;
+            return Type == EnemyType.trex_basic || Type == EnemyType.triceratops_basic;
         }
     }
 }

@@ -150,15 +150,15 @@ namespace DDA
         {
             // Default sequence based on design spec
             // 12 areas: Enemy x5, Rest x2, Shop x2, Boss x1
-            _areas.Add(CreateEnemyArea("Caveman", EnemyType.Normal, 15, 6, 2));
-            _areas.Add(CreateEnemyArea("Sabertooth+Caveman", EnemyType.Normal, 18, 8, 3, addSecondEnemy: true));
+            _areas.Add(CreateEnemyArea("Caveman", EnemyType.caveman_basic, 15, 6, 2));
+            _areas.Add(CreateEnemyArea("Sabertooth+Caveman", EnemyType.sabertooth_basic, 18, 8, 3, addSecondEnemy: true));
             _areas.Add(CreateRestArea());
-            _areas.Add(CreateEnemyArea("Sabertooth+Caveman", EnemyType.Normal, 18, 8, 3, addSecondEnemy: true));
-            _areas.Add(CreateEnemyArea("Raptor x2", EnemyType.Normal, 24, 9, 5, addSecondEnemy: true));
-            _areas.Add(CreateEnemyArea("Raptor x2", EnemyType.Normal, 24, 9, 5, addSecondEnemy: true));
+            _areas.Add(CreateEnemyArea("Sabertooth+Caveman", EnemyType.sabertooth_basic, 18, 8, 3, addSecondEnemy: true));
+            _areas.Add(CreateEnemyArea("Raptor x2", EnemyType.raptor_basic, 24, 9, 5, addSecondEnemy: true));
+            _areas.Add(CreateEnemyArea("Raptor x2", EnemyType.raptor_basic, 24, 9, 5, addSecondEnemy: true));
             _areas.Add(CreateShopArea());
-            _areas.Add(CreateEnemyArea("Raptor+Sabertooth+Caveman", EnemyType.Normal, 24, 9, 5, addSecondEnemy: true, addThirdEnemy: true));
-            _areas.Add(CreateEnemyArea("Raptor+Sabertooth+Caveman", EnemyType.Normal, 24, 9, 5, addSecondEnemy: true, addThirdEnemy: true));
+            _areas.Add(CreateEnemyArea("Raptor+Sabertooth+Caveman", EnemyType.raptor_basic, 24, 9, 5, addSecondEnemy: true, addThirdEnemy: true));
+            _areas.Add(CreateEnemyArea("Raptor+Sabertooth+Caveman", EnemyType.raptor_basic, 24, 9, 5, addSecondEnemy: true, addThirdEnemy: true));
             _areas.Add(CreateRestArea());
             _areas.Add(CreateShopArea());
             _areas.Add(CreateBossArea("Trex", 35, 20, 5));
@@ -184,12 +184,12 @@ namespace DDA
 
             if (addSecondEnemy)
             {
-                area.Enemies.Add(new SimEnemy("Sabertooth", EnemyType.Normal, 18, 8, 3));
+                area.Enemies.Add(new SimEnemy("Sabertooth", EnemyType.sabertooth_basic, 18, 8, 3));
             }
 
             if (addThirdEnemy)
             {
-                area.Enemies.Add(new SimEnemy("Caveman", EnemyType.Normal, 15, 6, 2));
+                area.Enemies.Add(new SimEnemy("Caveman", EnemyType.caveman_basic, 15, 6, 2));
             }
 
             return area;
@@ -229,7 +229,7 @@ namespace DDA
                 }
             };
 
-            area.Enemies.Add(new SimEnemy(name, EnemyType.Boss, hp, baseDmg, interval));
+            area.Enemies.Add(new SimEnemy(name, EnemyType.trex_basic, hp, baseDmg, interval));
 
             return area;
         }

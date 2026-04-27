@@ -119,7 +119,7 @@ namespace DDA
             float defendWeight = (state.DefendUsesRemaining > 0 && state.PlayerHP < state.PlayerMaxHP * 0.7f) ? 0.15f : 0f;
             float punchWeight = 1f - swordWeight - gunWeight - defendWeight;
 
-            float roll = Random.value;
+            float roll = UnityEngine.Random.value;
             if (roll < punchWeight)
             {
                 return SimAction.Punch;
@@ -168,16 +168,16 @@ namespace DDA
             }
 
             // Variance: base ± interval
-            int damage = Random.Range(baseDamage - interval, baseDamage + interval + 1);
+            int damage = UnityEngine.Random.Range(baseDamage - interval, baseDamage + interval + 1);
 
             // Critical hit (20% chance)
-            if (Random.value < player.CriticalHitChance / 100f)
+            if (UnityEngine.Random.value < player.CriticalHitChance / 100f)
             {
                 damage = Mathf.RoundToInt(damage * (1 + player.CriticalHitBonus / 100f));
             }
 
             // Accuracy check (85% for player)
-            if (Random.value > 0.85f)
+            if (UnityEngine.Random.value > 0.85f)
             {
                 return 0; // Miss
             }
@@ -193,7 +193,7 @@ namespace DDA
             int baseDefendHP = player.BaseDefend * player.DefendMultiple;
             int min = baseDefendHP - player.DefendInterval;
             int max = baseDefendHP + player.DefendInterval;
-            return Random.Range(min, max + 1);
+            return UnityEngine.Random.Range(min, max + 1);
         }
     }
 }
