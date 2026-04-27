@@ -37,6 +37,7 @@ namespace DDA
         private int _currentArea;
         private int _totalAreas;
         private int _areasWon;
+        private int _lastDifficultyLevel = -1;
 
         // Components
         private BattleLogger _battleLogger;
@@ -84,15 +85,29 @@ namespace DDA
 
         /// <summary>
         /// Called when entering new area.
+        /// Does NOT request decision - difficulty was already set for this area.
         /// </summary>
         public void OnAreaEnter(int areaIndex, int totalAreas)
         {
             _currentArea = areaIndex;
             _totalAreas = totalAreas;
+
+            // DO NOT request decision here - difficulty was set at end of previous area
+            // First area uses default difficulty
+
+            if (_difficultySettings != null &&
+                _difficultySettings.CurrentLevelIndex != _lastDifficultyLevel)
+            {
+                OnDifficultyChanged?.Invoke(_difficultySettings.CurrentLevelIndex);
+                Debug.Log($"[DDAAgent] Area {areaIndex}: Difficulty = {_difficultySettings.GetLevelName()}");
+                _lastDifficultyLevel = _difficultySettings.CurrentLevelIndex;
+            }
         }
 
         /// <summary>
         /// Called when area completed (won or lost).
+        /// This ends the episode (1 episode = 1 area).
+        /// Requests difficulty decision for NEXT area.
         /// </summary>
         public void OnAreaComplete(bool won)
         {
@@ -104,15 +119,38 @@ namespace DDA
             {
                 _areasWon = 0; // Reset streak on loss
             }
+
+            if (!_isTrainingMode)
+            {
+                return;
+            }
+
+            // Calculate reward for this area
+            float reward = CalculateRewardForArea(won);
+            AddReward(reward);
+
+            Debug.Log($"[DDAAgent] Area complete. Won: {won}, Areas won streak: {_areasWon}, " +
+                      $"Reward: {reward:F3}, Cumulative: {GetCumulativeReward():F3}");
+
+            // Request difficulty decision for NEXT area
+            RequestDecision();
+
+            // End episode (1 episode = 1 area)
+            EndEpisode();
         }
 
         /// <summary>
-        /// Called when training run starts.
+        /// Called when training run starts (beginning of episode).
         /// </summary>
         public void OnRunStart()
         {
             _currentArea = 0;
             _areasWon = 0;
+            _battleStartHP = 0;
+            _damageDealt = 0;
+            _turnCount = 0;
+            _battleInProgress = false;
+            _lastDifficultyLevel = -1;
         }
 
         public override void CollectObservations(VectorSensor sensor)
@@ -202,6 +240,7 @@ namespace DDA
 
         /// <summary>
         /// Called when battle starts. Records initial state.
+        /// Does NOT request decision - difficulty was set at area enter.
         /// </summary>
         public void OnBattleStart(int playerStartHP)
         {
@@ -210,8 +249,8 @@ namespace DDA
             _turnCount = 0;
             _battleInProgress = true;
 
-            // Request decision from agent
-            RequestDecision();
+            // DO NOT request decision here - difficulty is set once per area
+            // Decision was requested in previous OnAreaComplete()
         }
 
         /// <summary>
@@ -224,7 +263,8 @@ namespace DDA
         }
 
         /// <summary>
-        /// Called when battle ends. Calculates and applies reward.
+        /// Called when battle ends. Accumulates reward.
+        /// Does NOT end episode - episode ends at OnAreaComplete.
         /// </summary>
         public void OnBattleEnd(bool playerWon, int playerEndHP)
         {
@@ -232,18 +272,36 @@ namespace DDA
 
             if (!_isTrainingMode)
             {
-                // Inference mode: no reward, just end episode
-                EndEpisode();
+                // Inference mode: no reward calculation
                 return;
             }
 
+            // Calculate reward for this battle and accumulate
             float reward = CalculateReward(playerWon, playerEndHP, _battleStartHP, _turnCount);
             AddReward(reward);
 
             Debug.Log($"[DDAAgent] Battle end. Won: {playerWon}, HP: {playerEndHP}/{_battleStartHP}, " +
-                      $"Turns: {_turnCount}, Reward: {reward:F3}");
+                      $"Turns: {_turnCount}, Reward: {reward:F3}, Cumulative: {GetCumulativeReward():F3}");
+        }
 
-            EndEpisode();
+        /// <summary>
+        /// Called when training run ends (all areas or player died).
+        /// Note: Episodes are already ended per-area in OnAreaComplete.
+        /// This is for logging only.
+        /// </summary>
+        public void OnRunEnd(bool runWon, int areasCompleted, int totalAreas)
+        {
+            // Episodes are already ended per-area
+            // This method is for run-level logging only
+            Debug.Log($"[DDAAgent] Run end. Won: {runWon}, Areas: {areasCompleted}/{totalAreas}");
+        }
+
+        /// <summary>
+        /// Get cumulative reward for current episode.
+        /// </summary>
+        public float GetCumulativeReward()
+        {
+            return GetStepReward();
         }
 
         /// <summary>
@@ -297,6 +355,48 @@ namespace DDA
             }
 
             // Clamp reward to reasonable range
+            return Mathf.Clamp(reward, -2f, 2f);
+        }
+
+        /// <summary>
+        /// Calculates reward based on area outcome.
+        /// </summary>
+        private float CalculateRewardForArea(bool won)
+        {
+            float reward = 0f;
+
+            if (won)
+            {
+                // Base win reward
+                reward += 1.0f;
+
+                // Win streak bonus
+                reward += 0.1f * Mathf.Min(_areasWon, 5);
+
+                // HP ratio consideration (from last battle)
+                float hpRatio = GetLastBattleHPRatio();
+                if (hpRatio >= 0.4f && hpRatio <= 0.6f)
+                {
+                    // Flow state bonus
+                    reward += 0.3f;
+                }
+                else if (hpRatio > 0.6f)
+                {
+                    // Too easy - small penalty
+                    reward -= 0.05f * (hpRatio - 0.6f);
+                }
+                else if (hpRatio < 0.4f)
+                {
+                    // Too hard - small penalty
+                    reward -= 0.05f * (0.4f - hpRatio);
+                }
+            }
+            else
+            {
+                // Loss penalty
+                reward -= 1.0f;
+            }
+
             return Mathf.Clamp(reward, -2f, 2f);
         }
 
