@@ -5,6 +5,7 @@ using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
 using Player;
 using Playfab;
+using UnityEngine.InputSystem;
 
 namespace DDA
 {
@@ -31,6 +32,11 @@ namespace DDA
         private int _damageDealt;
         private int _turnCount;
         private bool _battleInProgress;
+
+        // Area progression tracking
+        private int _currentArea;
+        private int _totalAreas;
+        private int _areasWon;
 
         // Components
         private BattleLogger _battleLogger;
@@ -66,12 +72,47 @@ namespace DDA
             _damageDealt = 0;
             _turnCount = 0;
             _battleInProgress = false;
+            _currentArea = 0;
+            _areasWon = 0;
 
             // Reset difficulty to normal for new episode
             if (_difficultySettings != null)
             {
                 _difficultySettings.ResetToNormal();
             }
+        }
+
+        /// <summary>
+        /// Called when entering new area.
+        /// </summary>
+        public void OnAreaEnter(int areaIndex, int totalAreas)
+        {
+            _currentArea = areaIndex;
+            _totalAreas = totalAreas;
+        }
+
+        /// <summary>
+        /// Called when area completed (won or lost).
+        /// </summary>
+        public void OnAreaComplete(bool won)
+        {
+            if (won)
+            {
+                _areasWon++;
+            }
+            else
+            {
+                _areasWon = 0; // Reset streak on loss
+            }
+        }
+
+        /// <summary>
+        /// Called when training run starts.
+        /// </summary>
+        public void OnRunStart()
+        {
+            _currentArea = 0;
+            _areasWon = 0;
         }
 
         public override void CollectObservations(VectorSensor sensor)
@@ -97,6 +138,14 @@ namespace DDA
                 ? _difficultySettings.GetNormalizedDifficulty()
                 : 0.5f;
             sensor.AddObservation(difficultyNormalized);
+
+            // State 5: Area progress normalized (0-1)
+            float areaProgress = _totalAreas > 0 ? (float)_currentArea / _totalAreas : 0f;
+            sensor.AddObservation(Mathf.Clamp01(areaProgress));
+
+            // State 6: Win streak normalized (-1 to 1)
+            float winStreak = Mathf.Clamp((_areasWon - 1) / 5f, -1f, 1f);
+            sensor.AddObservation(winStreak);
         }
 
         public override void OnActionReceived(ActionBuffers actions)
@@ -140,12 +189,12 @@ namespace DDA
             discreteActions[0] = 0;
 
             // Increase with I key
-            if (Input.GetKey(KeyCode.I))
+            if (UnityEngine.Input.GetKey(KeyCode.I))
             {
                 discreteActions[0] = 1;
             }
             // Decrease with D key
-            else if (Input.GetKey(KeyCode.D))
+            else if (UnityEngine.Input.GetKey(KeyCode.D))
             {
                 discreteActions[0] = 2;
             }

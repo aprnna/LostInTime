@@ -1,14 +1,14 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
-using DDA;
 using Player;
 
 namespace DDA
 {
     /// <summary>
     /// Simulates battles automatically for ML-Agents training.
-    /// Runs rapid battle cycles without player input.
+    /// Game-accurate mechanics: actions, damage roulette, area progression.
     /// Shows learning progress in real-time.
     /// </summary>
     public class TrainingBattleSimulator : MonoBehaviour
@@ -17,37 +17,40 @@ namespace DDA
         [SerializeField] private DDAAgent _ddaAgent;
         [SerializeField] private DifficultySettings _difficultySettings;
         [SerializeField] private DifficultyApplier _difficultyApplier;
+        [SerializeField] private MapData _mapData;
 
-        [Header("Battle Configuration")]
-        [SerializeField] private int _playerBaseHP = 100;
-        [SerializeField] private int _playerBaseDamage = 20;
-        [SerializeField] private int _enemyBaseHP = 80;
-        [SerializeField] private int _enemyBaseDamage = 15;
+        [Header("Area Configuration")]
+        [SerializeField] private bool _loadFromMapData = true;
+        [SerializeField] private int _areasPerRun = 12;
+
+        [Header("Player Configuration")]
+        [SerializeField] private PlayerSO _playerData;
         [SerializeField] private float _playerAccuracy = 0.85f;
-        [SerializeField] private float _enemyAccuracy = 0.80f;
 
         [Header("Training Configuration")]
         [SerializeField] private bool _autoTrain = true;
-        [SerializeField] private float _battleDelay = 0.1f; // Delay between battles (seconds)
-        [SerializeField] private float _turnDelay = 0.05f; // Delay between turns
+        [SerializeField] private float _battleDelay = 0.1f;
+        [SerializeField] private float _turnDelay = 0.05f;
         [SerializeField] private int _maxTurnsPerBattle = 20;
+        [SerializeField] private bool _useSmartAI = true;
+        [SerializeField] [Range(0f, 1f)] private float _playerSkill = 0.5f;
+        [SerializeField] private bool _resetOnRunComplete = true;
 
-        [Header("Simulated Player Skill")]
-        [SerializeField] [Range(0f, 1f)] private float _playerSkill = 0.5f; // 0=random, 1=optimal
-        [SerializeField] private bool _useSmartPlayer = false;
-
-        // Battle state
-        private int _playerCurrentHP;
-        private int _enemyCurrentHP;
-        private int _enemyMaxHP;
-        private int _enemyDamage;
+        // Simulated state
+        private SimPlayer _player;
+        private List<SimArea> _areas;
+        private SimEnemy _currentEnemy;
+        private int _currentAreaIndex;
+        private int _enemyIndex; // Current enemy in area
         private int _turnCount;
-        private int _damageDealtThisBattle;
         private bool _battleInProgress;
+        private bool _runInProgress;
 
         // Training stats
         private int _episodeCount;
+        private int _runCount;
         private int _winCount;
+        private int _lossCount;
         private int _totalTurns;
         private float _totalReward;
         private float _lastReward;
@@ -58,11 +61,13 @@ namespace DDA
         public event Action<int, int, int> OnBattleStateChanged; // (playerHP, enemyHP, turn)
         public event Action<bool, float, int> OnBattleEnded; // (won, reward, episode)
         public event Action<int> OnDifficultyChanged; // (level)
+        public event Action<int, int> OnAreaChanged; // (areaIndex, totalAreas)
         public event Action<TrainingStats> OnStatsUpdated;
+        public event Action<RunResult> OnRunComplete;
 
         public static TrainingBattleSimulator Instance { get; private set; }
 
-        // Public properties for UI
+        // Public properties
         public int EpisodeCount => _episodeCount;
         public int WinCount => _winCount;
         public float WinRate => _episodeCount > 0 ? (float)_winCount / _episodeCount : 0f;
@@ -70,9 +75,10 @@ namespace DDA
         public float LastReward => _lastReward;
         public int CurrentDifficulty => _difficultySettings?.CurrentLevelIndex ?? 2;
         public string DifficultyName => _difficultySettings?.GetLevelName() ?? "Normal";
-        public int PlayerHP => _playerCurrentHP;
-        public int EnemyHP => _enemyCurrentHP;
-        public int TurnCount => _turnCount;
+        public int CurrentArea => _currentAreaIndex + 1;
+        public int TotalAreas => _areas?.Count ?? _areasPerRun;
+        public string CurrentEnemyName => _currentEnemy?.Name ?? "None";
+        public SimPlayer Player => _player;
 
         private void Awake()
         {
@@ -88,6 +94,7 @@ namespace DDA
 
         private void Start()
         {
+            // Load references
             if (_difficultySettings == null)
             {
                 _difficultySettings = Resources.Load<DifficultySettings>("DDA/DefaultDifficultySettings");
@@ -98,44 +105,275 @@ namespace DDA
                 _ddaAgent = FindObjectOfType<DDAAgent>();
             }
 
+            if (_playerData == null)
+            {
+                _playerData = Resources.Load<PlayerSO>("Player/CurrentPlayerData");
+            }
+
+            // Initialize areas
+            InitializeAreas();
+
+            // Initialize player
+            _player = new SimPlayer();
+
+            // Start training
             if (_autoTrain)
             {
                 StartCoroutine(TrainingLoop());
             }
         }
 
+        private void InitializeAreas()
+        {
+            _areas = new List<SimArea>();
+
+            if (_loadFromMapData && _mapData != null)
+            {
+                // Load from MapData ScriptableObject
+                foreach (var node in _mapData.mapItems)
+                {
+                    if (node != null)
+                    {
+                        _areas.Add(new SimArea(node));
+                    }
+                }
+                Debug.Log($"[TrainingSim] Loaded {_areas.Count} areas from MapData");
+            }
+            else
+            {
+                // Generate default 12-area sequence
+                GenerateDefaultAreas();
+            }
+        }
+
+        private void GenerateDefaultAreas()
+        {
+            // Default sequence based on design spec
+            // 12 areas: Enemy x5, Rest x2, Shop x2, Boss x1
+            _areas.Add(CreateEnemyArea("Caveman", EnemyType.Normal, 15, 6, 2));
+            _areas.Add(CreateEnemyArea("Sabertooth+Caveman", EnemyType.Normal, 18, 8, 3, addSecondEnemy: true));
+            _areas.Add(CreateRestArea());
+            _areas.Add(CreateEnemyArea("Sabertooth+Caveman", EnemyType.Normal, 18, 8, 3, addSecondEnemy: true));
+            _areas.Add(CreateEnemyArea("Raptor x2", EnemyType.Normal, 24, 9, 5, addSecondEnemy: true));
+            _areas.Add(CreateEnemyArea("Raptor x2", EnemyType.Normal, 24, 9, 5, addSecondEnemy: true));
+            _areas.Add(CreateShopArea());
+            _areas.Add(CreateEnemyArea("Raptor+Sabertooth+Caveman", EnemyType.Normal, 24, 9, 5, addSecondEnemy: true, addThirdEnemy: true));
+            _areas.Add(CreateEnemyArea("Raptor+Sabertooth+Caveman", EnemyType.Normal, 24, 9, 5, addSecondEnemy: true, addThirdEnemy: true));
+            _areas.Add(CreateRestArea());
+            _areas.Add(CreateShopArea());
+            _areas.Add(CreateBossArea("Trex", 35, 20, 5));
+
+            Debug.Log($"[TrainingSim] Generated {_areas.Count} default areas");
+        }
+
+        private SimArea CreateEnemyArea(string name, EnemyType type, int hp, int baseDmg, int interval,
+            bool addSecondEnemy = false, bool addThirdEnemy = false)
+        {
+            var area = new SimArea
+            {
+                AreaType = MapType.Enemy,
+                Enemies = new List<SimEnemy>(),
+                Drops = new List<SimDropItem>
+                {
+                    new SimDropItem(ConsumableType.Coin, 30),
+                    new SimDropItem(ConsumableType.Exp, 15)
+                }
+            };
+
+            area.Enemies.Add(new SimEnemy(name, type, hp, baseDmg, interval));
+
+            if (addSecondEnemy)
+            {
+                area.Enemies.Add(new SimEnemy("Sabertooth", EnemyType.Normal, 18, 8, 3));
+            }
+
+            if (addThirdEnemy)
+            {
+                area.Enemies.Add(new SimEnemy("Caveman", EnemyType.Normal, 15, 6, 2));
+            }
+
+            return area;
+        }
+
+        private SimArea CreateRestArea()
+        {
+            return new SimArea
+            {
+                AreaType = MapType.Rest,
+                Enemies = new List<SimEnemy>(),
+                Drops = new List<SimDropItem>()
+            };
+        }
+
+        private SimArea CreateShopArea()
+        {
+            return new SimArea
+            {
+                AreaType = MapType.Shop,
+                Enemies = new List<SimEnemy>(),
+                Drops = new List<SimDropItem>()
+            };
+        }
+
+        private SimArea CreateBossArea(string name, int hp, int baseDmg, int interval)
+        {
+            var area = new SimArea
+            {
+                AreaType = MapType.Boss,
+                IsBossArea = true,
+                Enemies = new List<SimEnemy>(),
+                Drops = new List<SimDropItem>
+                {
+                    new SimDropItem(ConsumableType.Coin, 50),
+                    new SimDropItem(ConsumableType.Exp, 20)
+                }
+            };
+
+            area.Enemies.Add(new SimEnemy(name, EnemyType.Boss, hp, baseDmg, interval));
+
+            return area;
+        }
+
         private IEnumerator TrainingLoop()
         {
             while (true)
             {
-                if (!_battleInProgress)
+                if (!_runInProgress)
                 {
-                    yield return StartCoroutine(RunBattleEpisode());
+                    yield return StartCoroutine(RunTrainingRun());
                 }
                 yield return new WaitForSeconds(_battleDelay);
             }
+        }
+
+        private IEnumerator RunTrainingRun()
+        {
+            _runInProgress = true;
+            _currentAreaIndex = 0;
+            _runCount++;
+
+            // Reset player for new run
+            _player.Reset();
+
+            Debug.Log($"[TrainingSim] Starting run {_runCount} with {_areas.Count} areas");
+
+            // Process each area
+            while (_currentAreaIndex < _areas.Count && _player.IsAlive())
+            {
+                yield return StartCoroutine(ProcessArea(_areas[_currentAreaIndex]));
+
+                if (!_player.IsAlive())
+                {
+                    break; // Player died, end run
+                }
+
+                _currentAreaIndex++;
+                OnAreaChanged?.Invoke(_currentAreaIndex, _areas.Count);
+            }
+
+            // Run complete
+            bool runWon = _player.IsAlive() && _currentAreaIndex >= _areas.Count;
+
+            var runResult = new RunResult
+            {
+                RunNumber = _runCount,
+                AreasCompleted = _currentAreaIndex,
+                TotalAreas = _areas.Count,
+                Won = runWon,
+                FinalHP = _player.CurrentHP,
+                Coin = _player.Coin,
+                Level = _player.Level
+            };
+
+            OnRunComplete?.Invoke(runResult);
+
+            Debug.Log($"[TrainingSim] Run {_runCount} complete. Won: {runWon}, " +
+                      $"Areas: {_currentAreaIndex}/{_areas.Count}, HP: {_player.CurrentHP}");
+
+            if (_resetOnRunComplete)
+            {
+                _player.Reset();
+            }
+
+            _runInProgress = false;
+        }
+
+        private IEnumerator ProcessArea(SimArea area)
+        {
+            // Apply difficulty to enemies
+            float hpMult = _difficultySettings?.HPMultiplier ?? 1.0f;
+            float dmgMult = _difficultySettings?.DamageMultiplier ?? 1.0f;
+            area.ApplyDifficulty(hpMult, dmgMult);
+
+            switch (area.AreaType)
+            {
+                case MapType.Enemy:
+                case MapType.Boss:
+                    yield return StartCoroutine(ProcessBattleArea(area));
+                    break;
+
+                case MapType.Rest:
+                    ProcessRestArea(area);
+                    break;
+
+                case MapType.Shop:
+                    ProcessShopArea(area);
+                    break;
+            }
+        }
+
+        private IEnumerator ProcessBattleArea(SimArea area)
+        {
+            // Fight all enemies in sequence
+            foreach (var enemy in area.Enemies)
+            {
+                if (!_player.IsAlive())
+                {
+                    yield break;
+                }
+
+                _currentEnemy = enemy;
+                yield return StartCoroutine(RunBattleEpisode());
+
+                if (!_player.IsAlive())
+                {
+                    yield break; // Lost, don't process drops
+                }
+            }
+
+            // Apply drops after winning
+            area.ApplyDrops(_player);
+
+            // Reset action uses for next area
+            _player.ResetActionUses();
+        }
+
+        private void ProcessRestArea(SimArea area)
+        {
+            int healAmount = UnityEngine.Random.Range(10, 25);
+            _player.Heal(healAmount);
+
+            Debug.Log($"[TrainingSim] Rest area: Healed {healAmount} HP. " +
+                      $"HP: {_player.CurrentHP}/{_player.MaxHP}");
+        }
+
+        private void ProcessShopArea(SimArea area)
+        {
+            // Smart AI shopping
+            area.ApplyShop(_player, _useSmartAI);
+
+            Debug.Log($"[TrainingSim] Shop area: Coin={_player.Coin}, " +
+                      $"Shield={_player.CurrentShield}/{_player.MaxShield}");
         }
 
         private IEnumerator RunBattleEpisode()
         {
             _battleInProgress = true;
             _episodeCount++;
-
-            // Apply difficulty multipliers to enemy
-            float hpMult = _difficultySettings?.HPMultiplier ?? 1.0f;
-            float dmgMult = _difficultySettings?.DamageMultiplier ?? 1.0f;
-
-            _enemyMaxHP = Mathf.RoundToInt(_enemyBaseHP * hpMult);
-            _enemyDamage = Mathf.RoundToInt(_enemyBaseDamage * dmgMult);
-
-            // Initialize battle state
-            _playerCurrentHP = _playerBaseHP;
-            _enemyCurrentHP = _enemyMaxHP;
             _turnCount = 0;
-            _damageDealtThisBattle = 0;
 
             // Notify DDA agent battle starting
-            _ddaAgent?.OnBattleStart(_playerBaseHP);
+            _ddaAgent?.OnBattleStart(_player.CurrentHP);
 
             // Difficulty changed callback
             if (_ddaAgent != null)
@@ -144,21 +382,22 @@ namespace DDA
             }
 
             Debug.Log($"[TrainingSim] Episode {_episodeCount} started. " +
-                      $"Difficulty: {DifficultyName} (HP: {hpMult:F2}x, DMG: {dmgMult:F2}x)");
+                      $"Enemy: {_currentEnemy.Name} (HP: {_currentEnemy.MaxHP}), " +
+                      $"Difficulty: {DifficultyName}");
 
             // Run battle turns
-            while (_playerCurrentHP > 0 && _enemyCurrentHP > 0 && _turnCount < _maxTurnsPerBattle)
+            while (_player.IsAlive() && _currentEnemy.IsAlive() && _turnCount < _maxTurnsPerBattle)
             {
                 yield return StartCoroutine(RunTurn());
                 yield return new WaitForSeconds(_turnDelay);
             }
 
             // Determine outcome
-            bool playerWon = _enemyCurrentHP <= 0;
-            int playerEndHP = _playerCurrentHP;
+            bool playerWon = _currentEnemy.CurrentHP <= 0 && _player.IsAlive();
+            int playerEndHP = _player.CurrentHP;
 
             // Calculate reward
-            _lastReward = CalculateReward(playerWon, playerEndHP, _playerBaseHP, _turnCount);
+            _lastReward = CalculateReward(playerWon, playerEndHP, _player.MaxHP, _turnCount);
 
             // Update stats
             if (playerWon)
@@ -169,6 +408,7 @@ namespace DDA
             }
             else
             {
+                _lossCount++;
                 _consecutiveLosses++;
                 _consecutiveWins = 0;
             }
@@ -190,7 +430,7 @@ namespace DDA
             OnStatsUpdated?.Invoke(GetStats());
 
             Debug.Log($"[TrainingSim] Episode {_episodeCount} ended. " +
-                      $"Won: {playerWon}, HP: {playerEndHP}/{_playerBaseHP}, " +
+                      $"Won: {playerWon}, HP: {playerEndHP}/{_player.MaxHP}, " +
                       $"Turns: {_turnCount}, Reward: {_lastReward:F3}, " +
                       $"WinRate: {WinRate:P1}");
 
@@ -202,16 +442,15 @@ namespace DDA
             _turnCount++;
 
             // --- Player Turn ---
-            int playerDamage = SimulatePlayerAttack();
+            int playerDamage = ExecutePlayerTurn();
             if (playerDamage > 0)
             {
-                _enemyCurrentHP = Mathf.Max(0, _enemyCurrentHP - playerDamage);
-                _damageDealtThisBattle += playerDamage;
+                _currentEnemy.TakeDamage(playerDamage);
             }
 
-            OnBattleStateChanged?.Invoke(_playerCurrentHP, _enemyCurrentHP, _turnCount);
+            OnBattleStateChanged?.Invoke(_player.CurrentHP, _currentEnemy.CurrentHP, _turnCount);
 
-            if (_enemyCurrentHP <= 0)
+            if (!_currentEnemy.IsAlive())
             {
                 yield break; // Enemy defeated
             }
@@ -219,62 +458,132 @@ namespace DDA
             yield return new WaitForSeconds(_turnDelay / 2f);
 
             // --- Enemy Turn ---
-            int enemyDamage = SimulateEnemyAttack();
+            int enemyDamage = ExecuteEnemyTurn();
             if (enemyDamage > 0)
             {
-                _playerCurrentHP = Mathf.Max(0, _playerCurrentHP - enemyDamage);
+                _player.TakeDamage(enemyDamage);
             }
 
-            OnBattleStateChanged?.Invoke(_playerCurrentHP, _enemyCurrentHP, _turnCount);
+            OnBattleStateChanged?.Invoke(_player.CurrentHP, _currentEnemy.CurrentHP, _turnCount);
 
             // Notify DDA agent turn ended
             _ddaAgent?.OnTurnEnd(playerDamage);
         }
 
-        private int SimulatePlayerAttack()
+        private int ExecutePlayerTurn()
         {
-            // Check hit (accuracy)
-            if (UnityEngine.Random.value > _playerAccuracy)
+            // Build battle state for AI
+            var state = new BattleState
             {
-                return 0; // Miss
+                PlayerHP = _player.CurrentHP,
+                PlayerMaxHP = _player.MaxHP,
+                PlayerShield = _player.CurrentShield,
+                EnemyHP = _currentEnemy.CurrentHP,
+                EnemyMaxHP = _currentEnemy.MaxHP,
+                SwordUsesRemaining = _player.SwordUses,
+                GunUsesRemaining = _player.GunUses,
+                DefendUsesRemaining = _player.DefendUses,
+                TurnCount = _turnCount
+            };
+
+            // Choose action
+            SimAction action;
+            if (_useSmartAI)
+            {
+                action = SmartBattleAI.ChooseAction(state);
+            }
+            else
+            {
+                // Random action
+                action = GetRandomAction(state);
             }
 
-            // Base damage with variance
-            int damage = _playerBaseDamage;
-
-            // Add variance (±20%)
-            damage = Mathf.RoundToInt(damage * UnityEngine.Random.Range(0.8f, 1.2f));
-
-            // Smart player optimization
-            if (_useSmartPlayer)
+            // Execute action
+            int damage = 0;
+            switch (action)
             {
-                // Use skill to improve damage
-                float skillBonus = _playerSkill * 0.3f; // Up to +30% damage
-                damage = Mathf.RoundToInt(damage * (1f + skillBonus));
+                case SimAction.Punch:
+                    damage = SmartBattleAI.CalculateDamage(SimAction.Punch, _player);
+                    break;
 
-                // Higher skill = more consistent damage
-                if (UnityEngine.Random.value < _playerSkill)
-                {
-                    damage = Mathf.RoundToInt(damage * 1.1f); // +10% critical
-                }
+                case SimAction.Sword:
+                    if (_player.SwordUses > 0)
+                    {
+                        damage = SmartBattleAI.CalculateDamage(SimAction.Sword, _player);
+                        _player.SwordUses--;
+                    }
+                    break;
+
+                case SimAction.Gun:
+                    if (_player.GunUses > 0)
+                    {
+                        damage = SmartBattleAI.CalculateDamage(SimAction.Gun, _player);
+                        _player.GunUses--;
+                    }
+                    break;
+
+                case SimAction.Defend:
+                    if (_player.DefendUses > 0)
+                    {
+                        int shieldHP = SmartBattleAI.CalculateDefend(_player);
+                        _player.CurrentShield = Mathf.Min(_player.MaxShield, _player.CurrentShield + shieldHP);
+                        _player.DefendUses--;
+                    }
+                    break;
             }
 
             return damage;
         }
 
-        private int SimulateEnemyAttack()
+        private SimAction GetRandomAction(BattleState state)
         {
-            // Check hit (accuracy)
-            if (UnityEngine.Random.value > _enemyAccuracy)
+            // Weighted random with skill influence
+            float skill = _playerSkill;
+            float punchWeight = 0.35f - skill * 0.15f;  // Less punch at high skill
+            float swordWeight = state.SwordUsesRemaining > 0 ? 0.25f + skill * 0.1f : 0f;
+            float gunWeight = state.GunUsesRemaining > 0 ? 0.25f + skill * 0.1f : 0f;
+            float defendWeight = state.DefendUsesRemaining > 0 ? 0.15f : 0f;
+
+            // Normalize
+            float total = punchWeight + swordWeight + gunWeight + defendWeight;
+            if (total > 0)
+            {
+                punchWeight /= total;
+                swordWeight /= total;
+                gunWeight /= total;
+                defendWeight /= total;
+            }
+
+            float roll = UnityEngine.Random.value;
+            if (roll < punchWeight)
+            {
+                return SimAction.Punch;
+            }
+            else if (roll < punchWeight + swordWeight)
+            {
+                return SimAction.Sword;
+            }
+            else if (roll < punchWeight + swordWeight + gunWeight)
+            {
+                return SimAction.Gun;
+            }
+            else
+            {
+                return SimAction.Defend;
+            }
+        }
+
+        private int ExecuteEnemyTurn()
+        {
+            // Accuracy check (80% for enemy)
+            if (UnityEngine.Random.value > 0.80f)
             {
                 return 0; // Miss
             }
 
-            // Base damage with variance
-            int damage = _enemyDamage;
-            damage = Mathf.RoundToInt(damage * UnityEngine.Random.Range(0.8f, 1.2f));
-
-            return damage;
+            // Calculate damage with variance
+            int damage = _currentEnemy.CalculateDamage();
+            return Mathf.Max(1, damage);
         }
 
         private float CalculateReward(bool playerWon, int playerEndHP, int playerStartHP, int turns)
@@ -292,7 +601,6 @@ namespace DDA
                 // HP Target bonus (flow state: 40-60% HP remaining)
                 if (hpRatio >= 0.4f && hpRatio <= 0.6f)
                 {
-                    // Maximum bonus at 50% HP
                     float distanceFromOptimal = Mathf.Abs(hpRatio - 0.5f);
                     float hpBonus = 0.5f * (1.0f - distanceFromOptimal * 2f);
                     reward += hpBonus;
@@ -361,11 +669,14 @@ namespace DDA
         {
             _episodeCount = 0;
             _winCount = 0;
+            _lossCount = 0;
+            _runCount = 0;
             _totalTurns = 0;
             _totalReward = 0;
             _lastReward = 0;
             _consecutiveWins = 0;
             _consecutiveLosses = 0;
+            _currentAreaIndex = 0;
         }
 
         /// <summary>
@@ -382,6 +693,14 @@ namespace DDA
         public void SetAutoTrain(bool enabled)
         {
             _autoTrain = enabled;
+        }
+
+        /// <summary>
+        /// Sets use smart AI flag.
+        /// </summary>
+        public void SetUseSmartAI(bool useSmart)
+        {
+            _useSmartAI = useSmart;
         }
     }
 
@@ -402,5 +721,20 @@ namespace DDA
         public int ConsecutiveWins;
         public int ConsecutiveLosses;
         public float AvgTurnsPerBattle;
+    }
+
+    /// <summary>
+    /// Result of a training run (12 areas).
+    /// </summary>
+    [Serializable]
+    public struct RunResult
+    {
+        public int RunNumber;
+        public int AreasCompleted;
+        public int TotalAreas;
+        public bool Won;
+        public int FinalHP;
+        public int Coin;
+        public int Level;
     }
 }

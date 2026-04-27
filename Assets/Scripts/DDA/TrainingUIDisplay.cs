@@ -46,8 +46,26 @@ namespace DDA
         [SerializeField] private RectTransform _graphContainer;
         [SerializeField] private GameObject _graphBarPrefab;
 
+        [Header("Area Progress")]
+        [SerializeField] private TextMeshProUGUI _areaText;
+        [SerializeField] private TextMeshProUGUI _enemyText;
+        [SerializeField] private Slider _areaProgressSlider;
+
+        [Header("Run Stats")]
+        [SerializeField] private TextMeshProUGUI _runText;
+        [SerializeField] private TextMeshProUGUI _playerHPText;
+        [SerializeField] private TextMeshProUGUI _playerStatsText;
+        [SerializeField] private TextMeshProUGUI _actionText;
+
+        [Header("Run Result")]
+        [SerializeField] private GameObject _runResultPanel;
+        [SerializeField] private TextMeshProUGUI _runResultText;
+        [SerializeField] private float _runResultDisplayTime = 2f;
+
         // State
         private int _lastEpisode;
+        private int _lastArea = -1;
+        private int _lastRun = -1;
         private float[] _rewardHistory;
         private int _historyIndex;
         private float _maxReward = 2f;
@@ -75,6 +93,8 @@ namespace DDA
                 _simulator.OnBattleEnded += HandleBattleEnd;
                 _simulator.OnDifficultyChanged += HandleDifficultyChange;
                 _simulator.OnStatsUpdated += UpdateStats;
+                _simulator.OnAreaChanged += HandleAreaChange;
+                _simulator.OnRunComplete += HandleRunComplete;
             }
 
             // Initialize UI
@@ -89,6 +109,8 @@ namespace DDA
                 _simulator.OnBattleEnded -= HandleBattleEnd;
                 _simulator.OnDifficultyChanged -= HandleDifficultyChange;
                 _simulator.OnStatsUpdated -= UpdateStats;
+                _simulator.OnAreaChanged -= HandleAreaChange;
+                _simulator.OnRunComplete -= HandleRunComplete;
             }
         }
 
@@ -197,6 +219,67 @@ namespace DDA
             }
         }
 
+        private void HandleAreaChange(int areaIndex, int totalAreas)
+        {
+            if (_areaText != null)
+            {
+                _areaText.text = $"Area: {areaIndex}/{totalAreas}";
+            }
+
+            if (_areaProgressSlider != null)
+            {
+                _areaProgressSlider.value = (float)areaIndex / totalAreas;
+            }
+
+            if (_enemyText != null)
+            {
+                _enemyText.text = $"Enemy: {_simulator.CurrentEnemyName}";
+            }
+        }
+
+        private void HandleRunComplete(RunResult result)
+        {
+            if (_runText != null)
+            {
+                _runText.text = $"Run: {result.RunNumber}";
+            }
+
+            if (_playerHPText != null)
+            {
+                _playerHPText.text = $"HP: {result.FinalHP}";
+            }
+
+            if (_playerStatsText != null)
+            {
+                _playerStatsText.text = $"Lv.{result.Level} | Coin: {result.Coin}";
+            }
+
+            // Show run result
+            if (_runResultPanel != null && _runResultText != null)
+            {
+                _runResultPanel.SetActive(true);
+                string resultStr = result.Won ? "RUN COMPLETE!" : "GAME OVER";
+                _runResultText.text = $"{resultStr}\n" +
+                                      $"Areas: {result.AreasCompleted}/{result.TotalAreas}\n" +
+                                      $"HP: {result.FinalHP} | Lv.{result.Level}";
+                _runResultText.color = result.Won ? _easyColor : _hardColor;
+
+                StartCoroutine(HideRunResultAfterDelay(_runResultDisplayTime));
+            }
+
+            Debug.Log($"[TrainingUI] Run {result.RunNumber}: Won={result.Won}, " +
+                      $"Areas={result.AreasCompleted}/{result.TotalAreas}");
+        }
+
+        private System.Collections.IEnumerator HideRunResultAfterDelay(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            if (_runResultPanel != null)
+            {
+                _runResultPanel.SetActive(false);
+            }
+        }
+
         private void UpdateUI()
         {
             if (_simulator == null) return;
@@ -227,6 +310,18 @@ namespace DDA
 
             // Difficulty indicator color
             UpdateDifficultyIndicator(_simulator.CurrentDifficulty);
+
+            // Player stats
+            var player = _simulator.Player;
+            if (_playerHPText != null && player != null)
+            {
+                _playerHPText.text = $"HP: {player.CurrentHP}/{player.MaxHP}";
+            }
+
+            if (_actionText != null && player != null)
+            {
+                _actionText.text = $"Sword: {player.SwordUses}/{player.MaxSwordUses} | Gun: {player.GunUses}/{player.MaxGunUses} | Def: {player.DefendUses}/{player.MaxDefendUses}";
+            }
         }
 
         private void UpdateDifficultyIndicator(int level)
