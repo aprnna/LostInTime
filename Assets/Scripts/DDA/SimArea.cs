@@ -102,12 +102,26 @@ namespace DDA
             }
         }
 
-        /// <summary>Apply drops to player after winning.</summary>
+        /// <summary>Apply drops to player after winning. Handles level-up.</summary>
         public void ApplyDrops(SimPlayer player)
         {
             foreach (var drop in Drops)
             {
-                drop.Apply(player);
+                if (drop.Type == ConsumableType.Exp)
+                {
+                    // Check for level-up and apply bonus
+                    if (player.AddExp(drop.Amount))
+                    {
+                        var choice = SmartBattleAI.ChooseLevelUp(player);
+                        int bonus = SmartBattleAI.GetLevelUpBonus(choice);
+                        player.ApplyLevelUp(choice, bonus);
+                        Debug.Log($"[SimArea] Level up! Level {player.Level}, Choice: {choice}, Bonus: +{bonus}");
+                    }
+                }
+                else
+                {
+                    drop.Apply(player);
+                }
             }
         }
 

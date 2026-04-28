@@ -140,8 +140,9 @@ namespace DDA
 
         /// <summary>
         /// Calculate damage for action with variance and critical.
+        /// Simulates tap-roll mechanic: higher skill = stop closer to max damage.
         /// </summary>
-        public static int CalculateDamage(SimAction action, SimPlayer player)
+        public static int CalculateDamage(SimAction action, SimPlayer player, float skill = 0.5f)
         {
             int baseDamage;
             int interval;
@@ -167,10 +168,17 @@ namespace DDA
                     return 0; // Defend deals no damage
             }
 
-            // Variance: base ± interval
-            int damage = UnityEngine.Random.Range(baseDamage - interval, baseDamage + interval + 1);
+            // Tap-roll simulation: skill determines position in damage range
+            // Skill 1.0 = always max, skill 0.5 = 50/50, skill 0.0 = pure random
+            int minDamage = baseDamage - interval;
+            int maxDamage = baseDamage + interval;
 
-            // Critical hit (20% chance)
+            // Weighted roll: skill biases toward max
+            float roll = UnityEngine.Random.value;
+            float weightedRoll = skill * skill + roll * (1f - skill * skill);
+            int damage = Mathf.RoundToInt(Mathf.Lerp(minDamage, maxDamage, weightedRoll));
+
+            // Critical hit (player-specific crit chance)
             if (UnityEngine.Random.value < player.CriticalHitChance / 100f)
             {
                 damage = Mathf.RoundToInt(damage * (1 + player.CriticalHitBonus / 100f));
@@ -194,6 +202,47 @@ namespace DDA
             int min = baseDefendHP - player.DefendInterval;
             int max = baseDefendHP + player.DefendInterval;
             return UnityEngine.Random.Range(min, max + 1);
+        }
+
+        /// <summary>
+        /// Choose level-up bonus based on current state.
+        /// Strategy: Prioritize HP if low, else damage for faster clears.
+        /// </summary>
+        public static SimPlayer.LevelUpChoice ChooseLevelUp(SimPlayer player)
+        {
+            float hpRatio = player.GetHPRatio();
+
+            // Low HP - prioritize health for survival
+            if (hpRatio < 0.4f)
+            {
+                return SimPlayer.LevelUpChoice.Health;
+            }
+
+            // Medium HP - balance between damage and health
+            if (hpRatio < 0.6f)
+            {
+                // 50/50 chance
+                return UnityEngine.Random.value < 0.5f
+                    ? SimPlayer.LevelUpChoice.Health
+                    : SimPlayer.LevelUpChoice.Damage;
+            }
+
+            // High HP - prioritize damage for faster clears
+            return SimPlayer.LevelUpChoice.Damage;
+        }
+
+        /// <summary>
+        /// Get bonus amount for level-up choice.
+        /// </summary>
+        public static int GetLevelUpBonus(SimPlayer.LevelUpChoice choice)
+        {
+            return choice switch
+            {
+                SimPlayer.LevelUpChoice.Damage => 3,   // +3 base damage
+                SimPlayer.LevelUpChoice.Health => 15,   // +15 max HP
+                SimPlayer.LevelUpChoice.Shield => 1,    // +1 base defend
+                _ => 3
+            };
         }
     }
 }

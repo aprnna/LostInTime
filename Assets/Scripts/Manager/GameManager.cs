@@ -1,13 +1,11 @@
 using System;
 using Audio;
 using Cysharp.Threading.Tasks;
-using DDA;
 using Input;
 using Player;
 using Player.Item;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.Serialization;
 
 namespace Manager
 {
@@ -163,112 +161,5 @@ namespace Manager
             SessionID = Guid.NewGuid().ToString();
             Debug.Log("SESSION ID: " + SessionID);
         }
-
-        #region  DDA
-
-        public QLearningAgent Agent;
-
-        private State _lastState;
-        private DifficultyAction _lastAction;
-        private bool _hasLastState;
-
-        [Header("DDA Runtime Settings")]
-        [SerializeField] private float _runtimeEpsilonDecay = 0.995f;
-        [SerializeField] private float _runtimeMinEpsilon = 0.05f;
-        [SerializeField] private int _saveEveryNBattles = 5;
-        private int _battleCount;
-
-        /// <summary>
-        /// Panggil sebelum area/battle dimulai.
-        /// Jika belum ada state sebelumnya (awal game), gunakan default state Medium.
-        /// </summary>
-        public void StartNextArea(
-            HPState hp,
-            TimeState time,
-            DamageState damage)
-        {
-            _lastState = new State(hp, time, damage);
-            _hasLastState = true;
-            _lastAction = Agent.ChooseAction(_lastState);
-
-            ApplyDifficulty(_lastAction);
-        }
-
-        /// <summary>
-        /// Overload tanpa parameter — untuk battle pertama saat belum ada data sebelumnya.
-        /// Menggunakan default state (Medium/Normal/Medium).
-        /// </summary>
-        public void StartNextArea()
-        {
-            if (!_hasLastState)
-            {
-                _lastState = new State(HPState.Medium, TimeState.Normal, DamageState.Medium);
-                _hasLastState = true;
-            }
-            _lastAction = Agent.ChooseAction(_lastState);
-            ApplyDifficulty(_lastAction);
-        }
-
-        public void EndArea(
-            bool win,
-            HPState hp,
-            TimeState time,
-            DamageState damage)
-        {
-            State nextState = new State(hp, time, damage);
-            float reward = Agent.CalculateReward(win, hp, time, damage, _lastAction);
-
-            Agent.UpdateQ(_lastState, _lastAction, reward, nextState);
-
-            // Update state untuk area berikutnya
-            _lastState = nextState;
-
-            // Epsilon decay saat runtime (online learning)
-            Agent.Epsilon = Mathf.Max(_runtimeMinEpsilon, Agent.Epsilon * _runtimeEpsilonDecay);
-
-            // Logging
-            float playerHp = _playerStats != null ? _playerStats.Health : 0f;
-            float playerMaxHp = _playerStats != null ? _playerStats.MaxHealth : 100f;
-            string diffLabel = DifficultySettings.Instance != null
-                ? DifficultySettings.Instance.GetCurrentDifficultyLabel()
-                : _lastAction.ToString();
-            Agent.OnEpisodeEnd(playerHp, playerMaxHp, diffLabel);
-
-            // Save Q-table periodik
-            _battleCount++;
-            if (_battleCount % _saveEveryNBattles == 0)
-            {
-                Agent.SaveQTable();
-            }
-        }
-
-        private void ApplyDifficulty(DifficultyAction action)
-        {
-            // Terapkan ke DifficultySettings (mengubah multiplier enemy HP & damage)
-            if (DifficultySettings.Instance != null)
-            {
-                DifficultySettings.Instance.ApplyAction(action);
-            }
-            else
-            {
-                Debug.LogWarning("[GameManager] DifficultySettings.Instance belum tersedia! " +
-                                 "Pastikan ada GameObject dengan DifficultySettings di scene.");
-            }
-
-            switch (action)
-            {
-                case DifficultyAction.Maintain:
-                    Debug.Log($"[DDA] Difficulty maintained");
-                    break;
-                case DifficultyAction.Increase:
-                    Debug.Log($"[DDA] Difficulty increased (enemy stats up)");
-                    break;
-                case DifficultyAction.Decrease:
-                    Debug.Log($"[DDA] Difficulty decreased (enemy stats down)");
-                    break;
-            }
-        }
-
-        #endregion
     }
 }

@@ -36,6 +36,10 @@ namespace DDA
         [SerializeField] [Range(0f, 1f)] private float _playerSkill = 0.5f;
         [SerializeField] private bool _resetOnRunComplete = true;
 
+        [Header("Fast Training Mode")]
+        [Tooltip("Simulate battles instantly without yields - much faster training")]
+        [SerializeField] private bool _instantMode = true;
+
         // Simulated state
         private SimPlayer _player;
         private List<SimArea> _areas;
@@ -80,7 +84,44 @@ namespace DDA
         public int CurrentArea => _currentAreaIndex + 1;
         public int TotalAreas => _areas?.Count ?? _areasPerRun;
         public string CurrentEnemyName => _currentEnemy?.Name ?? "None";
+        public SimEnemy CurrentEnemy => _currentEnemy;
         public SimPlayer Player => _player;
+
+        // Area info properties
+        public MapType CurrentAreaType => _currentAreaIndex < _areas?.Count ? _areas[_currentAreaIndex].AreaType : MapType.Enemy;
+        public int EnemiesInArea => _currentAreaIndex < _areas?.Count ? _areas[_currentAreaIndex].Enemies.Count : 0;
+        public int EnemiesDefeatedInArea => _currentAreaIndex < _areas?.Count
+            ? _areas[_currentAreaIndex].Enemies.FindAll(e => !e.IsAlive()).Count
+            : 0;
+        public string CurrentAreaEnemyList => GetEnemyListString();
+
+        private string GetEnemyListString()
+        {
+            if (_currentAreaIndex >= _areas?.Count || _areas[_currentAreaIndex].Enemies.Count == 0)
+                return "None";
+
+            var enemies = _areas[_currentAreaIndex].Enemies;
+            var enemyCounts = new System.Text.StringBuilder();
+            var counts = new System.Collections.Generic.Dictionary<string, int>();
+
+            foreach (var enemy in enemies)
+            {
+                if (counts.ContainsKey(enemy.Name))
+                    counts[enemy.Name]++;
+                else
+                    counts[enemy.Name] = 1;
+            }
+
+            bool first = true;
+            foreach (var kvp in counts)
+            {
+                if (!first) enemyCounts.Append(", ");
+                enemyCounts.Append($"{kvp.Key}{(kvp.Value > 1 ? $" x{kvp.Value}" : "")}");
+                first = false;
+            }
+
+            return enemyCounts.ToString();
+        }
 
         private void Awake()
         {
@@ -274,15 +315,21 @@ namespace DDA
                 float dmgMult = _difficultySettings?.DamageMultiplier ?? 1.0f;
                 _areas[_currentAreaIndex].ApplyDifficulty(hpMult, dmgMult);
 
-                // Notify agent we're entering this area (no decision request, just state update)
-                _ddaAgent?.OnAreaEnter(_currentAreaIndex, _areas.Count);
+                // Notify agent we're entering this area with area type for observation
+                MapType areaType = _areas[_currentAreaIndex].AreaType;
+                _ddaAgent?.OnAreaEnter(_currentAreaIndex, _areas.Count, areaType);
 
                 yield return StartCoroutine(ProcessArea(_areas[_currentAreaIndex]));
 
-                // Notify agent that area is complete (ends episode, requests difficulty for next)
+                // Update agent with player level after area (may have leveled up)
+                _ddaAgent?.SetPlayerLevel(_player.Level);
+
+                // Notify agent that area is complete (requests difficulty for next)
                 bool areaWon = _player.IsAlive();
                 _ddaAgent?.OnAreaComplete(areaWon);
-                _episodeCount++;  // Increment episode count
+                _episodeCount++;
+
+                OnStatsUpdated?.Invoke(GetStats());
 
                 if (!_player.IsAlive())
                 {
@@ -291,6 +338,9 @@ namespace DDA
 
                 _currentAreaIndex++;
                 OnAreaChanged?.Invoke(_currentAreaIndex, _areas.Count);
+
+                // Yield to allow Academy to process decision before next area
+                yield return null;
             }
 
             // Run complete
@@ -354,7 +404,15 @@ namespace DDA
                 }
 
                 _currentEnemy = enemy;
-                yield return StartCoroutine(RunBattleEpisode());
+
+                if (_instantMode)
+                {
+                    RunBattleInstant();
+                }
+                else
+                {
+                    yield return StartCoroutine(RunBattleEpisode());
+                }
 
                 if (!_player.IsAlive())
                 {
@@ -458,6 +516,83 @@ namespace DDA
             _battleInProgress = false;
         }
 
+        /// <summary>
+        /// Instant battle simulation - no yields, much faster for training.
+        /// </summary>
+        private void RunBattleInstant()
+        {
+            _battleInProgress = true;
+            _battleCount++;
+            _turnCount = 0;
+
+            _ddaAgent?.OnBattleStart(_player.CurrentHP);
+
+            if (_ddaAgent != null)
+            {
+                _ddaAgent.OnDifficultyChanged += HandleDifficultyChanged;
+            }
+
+            // Run battle turns instantly (no yields)
+            while (_player.IsAlive() && _currentEnemy.IsAlive() && _turnCount < _maxTurnsPerBattle)
+            {
+                _turnCount++;
+
+                // Player turn
+                int playerDamage = ExecutePlayerTurn();
+                if (playerDamage > 0)
+                {
+                    _currentEnemy.TakeDamage(playerDamage);
+                }
+
+                if (!_currentEnemy.IsAlive()) break;
+
+                // Enemy turn
+                int enemyDamage = ExecuteEnemyTurn();
+                if (enemyDamage > 0)
+                {
+                    _player.TakeDamage(enemyDamage);
+                }
+
+                // Update UI sliders each turn
+                OnBattleStateChanged?.Invoke(_player.CurrentHP, _currentEnemy.CurrentHP, _turnCount);
+
+                _ddaAgent?.OnTurnEnd(playerDamage);
+            }
+
+            // Determine outcome
+            bool playerWon = _currentEnemy.CurrentHP <= 0 && _player.IsAlive();
+            int playerEndHP = _player.CurrentHP;
+
+            _lastReward = CalculateReward(playerWon, playerEndHP, _player.MaxHP, _turnCount);
+
+            if (playerWon)
+            {
+                _winCount++;
+                _consecutiveWins++;
+                _consecutiveLosses = 0;
+            }
+            else
+            {
+                _lossCount++;
+                _consecutiveLosses++;
+                _consecutiveWins = 0;
+            }
+
+            _totalTurns += _turnCount;
+            _totalReward += _lastReward;
+
+            _ddaAgent?.OnBattleEnd(playerWon, playerEndHP);
+
+            if (_ddaAgent != null)
+            {
+                _ddaAgent.OnDifficultyChanged -= HandleDifficultyChanged;
+            }
+
+            OnBattleEnded?.Invoke(playerWon, _lastReward, _battleCount);
+
+            _battleInProgress = false;
+        }
+
         private IEnumerator RunTurn()
         {
             _turnCount++;
@@ -519,18 +654,18 @@ namespace DDA
                 action = GetRandomAction(state);
             }
 
-            // Execute action
+            // Execute action with skill-based damage roll
             int damage = 0;
             switch (action)
             {
                 case SimAction.Punch:
-                    damage = SmartBattleAI.CalculateDamage(SimAction.Punch, _player);
+                    damage = SmartBattleAI.CalculateDamage(SimAction.Punch, _player, _playerSkill);
                     break;
 
                 case SimAction.Sword:
                     if (_player.SwordUses > 0)
                     {
-                        damage = SmartBattleAI.CalculateDamage(SimAction.Sword, _player);
+                        damage = SmartBattleAI.CalculateDamage(SimAction.Sword, _player, _playerSkill);
                         _player.SwordUses--;
                     }
                     break;
@@ -538,7 +673,7 @@ namespace DDA
                 case SimAction.Gun:
                     if (_player.GunUses > 0)
                     {
-                        damage = SmartBattleAI.CalculateDamage(SimAction.Gun, _player);
+                        damage = SmartBattleAI.CalculateDamage(SimAction.Gun, _player, _playerSkill);
                         _player.GunUses--;
                     }
                     break;

@@ -3,6 +3,7 @@ using UnityEngine;
 using Manager;
 using Player;
 using DDA;
+using Playfab;
 
 namespace DDA
 {

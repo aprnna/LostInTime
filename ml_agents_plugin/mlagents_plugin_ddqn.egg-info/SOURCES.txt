@@ -1,7 +1,9 @@
 setup.py
+dqn/__init__.py
+dqn/dqn_optimizer.py
+dqn/dqn_trainer.py
 mlagents_plugin_ddqn/__init__.py
-mlagents_plugin_ddqn/ddqn_network.py
-mlagents_plugin_ddqn/ddqn_policy.py
+mlagents_plugin_ddqn/ddqn_optimizer.py
 mlagents_plugin_ddqn/ddqn_trainer.py
 mlagents_plugin_ddqn.egg-info/PKG-INFO
 mlagents_plugin_ddqn.egg-info/SOURCES.txt

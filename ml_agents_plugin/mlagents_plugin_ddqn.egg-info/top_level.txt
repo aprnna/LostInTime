@@ -1,1 +1,2 @@
+dqn
 mlagents_plugin_ddqn

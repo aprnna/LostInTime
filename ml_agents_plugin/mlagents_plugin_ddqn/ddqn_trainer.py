@@ -1,37 +1,33 @@
 """
 DDQN Trainer implementation for ML-Agents.
+Based on DQN trainer with Double Q-Learning extension.
 """
-import torch
-import torch.nn as nn
-import torch.optim as optim
+from typing import cast
+
 import numpy as np
-from typing import Dict, List, Any, Optional, cast
-
-from mlagents_envs.base_env import BehaviorSpec
 from mlagents_envs.logging_util import get_logger
-from mlagents.trainers.trainer.trainer import Trainer
-from mlagents.trainers.policy import Policy
-from mlagents.trainers.trajectory import Trajectory
-from mlagents.trainers.settings import TrainerSettings
+from mlagents.trainers.buffer import BufferKey
+from mlagents.trainers.policy.torch_policy import TorchPolicy
+from mlagents.trainers.trainer.off_policy_trainer import OffPolicyTrainer
+from mlagents.trainers.optimizer.torch_optimizer import TorchOptimizer
+from mlagents.trainers.trajectory import Trajectory, ObsUtil
 from mlagents.trainers.behavior_id_utils import BehaviorIdentifiers
-
-from .ddqn_network import QNetwork, ReplayBuffer
-from .ddqn_policy import DDQNPolicy
-from . import DDQNSettings
+from mlagents_envs.base_env import BehaviorSpec
+from mlagents.trainers.settings import TrainerSettings
+from .ddqn_optimizer import DDQNOptimizer, DDQNSettings, QNetworkDDQN
 
 logger = get_logger(__name__)
-
 TRAINER_NAME = "ddqn"
 
 
-class DDQNTrainer(Trainer):
+class DDQNTrainer(OffPolicyTrainer):
     """
     Double Deep Q-Network trainer for ML-Agents.
 
-    Implements DDQN algorithm with:
-    - Experience replay buffer
-    - Target network with soft updates
-    - Double Q-learning (online network for action selection, target for evaluation)
+    Implements DDQN algorithm:
+    - Uses online network for action selection
+    - Uses target network for value estimation
+    - Reduces overestimation bias compared to standard DQN
     """
 
     def __init__(
@@ -57,228 +53,119 @@ class DDQNTrainer(Trainer):
         """
         super().__init__(
             behavior_name,
+            reward_buff_cap,
             trainer_settings,
             training,
             load,
+            seed,
             artifact_path,
-            reward_buff_cap,
         )
-
-        self.hyperparameters: DDQNSettings = cast(
-            DDQNSettings, self.trainer_settings.hyperparameters
-        )
-
-        self.seed = seed
-        self.policy: DDQNPolicy = None  # type: ignore
-
-        # Training configuration from hyperparameters
-        self.learning_rate = self.hyperparameters.learning_rate
-        self.batch_size = self.hyperparameters.batch_size
-        self.buffer_size = self.hyperparameters.buffer_size
-        self.gamma = self.hyperparameters.gamma
-        self.tau = self.hyperparameters.tau
-
-        # Exploration schedule
-        self.exploration_initial_eps = self.hyperparameters.exploration_initial_eps
-        self.exploration_final_eps = self.hyperparameters.exploration_final_eps
-        self.exploration_decay_steps = self.hyperparameters.exploration_decay_steps
-
-        # Training state
-        self._step = 0
-        self._episode_rewards: List[float] = []
-
-        # Initialize replay buffer
-        self.replay_buffer = ReplayBuffer(capacity=self.buffer_size)
-
-        # Loss function
-        self.loss_fn = nn.MSELoss()
-
-        # Device
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    def _get_current_epsilon(self) -> float:
-        """
-        Calculate current epsilon for exploration.
-        Linear decay from initial to final.
-        """
-        if self._step >= self.exploration_decay_steps:
-            return self.exploration_final_eps
-
-        progress = self._step / self.exploration_decay_steps
-        return self.exploration_initial_eps - progress * (
-            self.exploration_initial_eps - self.exploration_final_eps
-        )
-
-    def create_policy(
-        self,
-        parsed_behavior_id: BehaviorIdentifiers,
-        behavior_spec: BehaviorSpec,
-    ) -> DDQNPolicy:
-        """
-        Creates a DDQN policy for this trainer.
-
-        :param parsed_behavior_id: Parsed behavior identifier
-        :param behavior_spec: Behavior specifications
-        :return: DDQNPolicy instance
-        """
-        policy = DDQNPolicy(
-            seed=self.seed,
-            behavior_spec=behavior_spec,
-            network_settings=self.trainer_settings.network_settings,
-            trainer_settings=self.trainer_settings,
-        )
-        return policy
-
-    def add_policy(
-        self, parsed_behavior_id: BehaviorIdentifiers, policy: Policy
-    ) -> None:
-        """
-        Adds policy to trainer.
-
-        :param parsed_behavior_id: Parsed behavior identifier
-        :param policy: Policy to add
-        """
-        self.policy = policy
-        self.policies[parsed_behavior_id.behavior_id] = policy
-
-        # Initialize optimizer now that policy exists
-        self.optimizer = optim.Adam(
-            self.policy.q_network.parameters(),
-            lr=self.learning_rate,
-        )
-
-    def save_model(self) -> None:
-        """Saves model file(s) for the policy associated with this trainer."""
-        if self.policy is not None:
-            self.policy.save_checkpoint(self.artifact_path)
-
-    def end_episode(self) -> None:
-        """Signal that episode has ended. Reset episode-specific state."""
-        pass
-
-    def save_model_checkpoint(self, checkpoint_path: str) -> None:
-        """Save model checkpoint."""
-        if self.policy is not None:
-            self.policy.save_checkpoint(checkpoint_path)
-
-    def load_model_checkpoint(self, checkpoint_path: str) -> None:
-        """Load model checkpoint."""
-        if self.policy is not None:
-            self.policy.load_checkpoint(checkpoint_path)
+        self.policy: TorchPolicy = None  # type: ignore
+        self.optimizer: DDQNOptimizer = None  # type: ignore
 
     def _process_trajectory(self, trajectory: Trajectory) -> None:
         """
-        Process a trajectory and store experiences in replay buffer.
-
-        :param trajectory: The trajectory to process
+        Takes a trajectory and processes it, putting it into the replay buffer.
         """
-        # Extract steps from trajectory
-        agent_buffer = trajectory.to_agentbuffer()
+        super()._process_trajectory(trajectory)
+        last_step = trajectory.steps[-1]
+        agent_id = trajectory.agent_id
 
-        # Get observations, actions, rewards
-        n_obs = len(self.policy.behavior_spec.observation_specs)
-        obs_list = [agent_buffer[f"obs_{i}"] for i in range(n_obs)]
+        agent_buffer_trajectory = trajectory.to_agentbuffer()
+        self._warn_if_group_reward(agent_buffer_trajectory)
 
-        # Convert to tensors
-        states = torch.tensor(obs_list[0], dtype=torch.float32, device=self.device)
+        # Update normalization
+        if self.is_training:
+            self.policy.actor.update_normalization(agent_buffer_trajectory)
+            self.optimizer.critic.update_normalization(agent_buffer_trajectory)
 
-        actions = np.array(agent_buffer["actions"])
-        rewards = np.array(agent_buffer["rewards"])
-
-        # Get next observations
-        next_obs_list = [trajectory.next_obs[i] for i in range(n_obs)]
-        next_states = torch.tensor(
-            np.array(next_obs_list[0]), dtype=torch.float32, device=self.device
+        # Evaluate all reward functions for reporting
+        self.collected_rewards["environment"][agent_id] += np.sum(
+            agent_buffer_trajectory[BufferKey.ENVIRONMENT_REWARDS]
         )
+        for name, reward_signal in self.optimizer.reward_signals.items():
+            evaluate_result = (
+                reward_signal.evaluate(agent_buffer_trajectory) * reward_signal.strength
+            )
+            self.collected_rewards[name][agent_id] += np.sum(evaluate_result)
 
-        done = trajectory.done_reached
+        # Get value estimates for reporting
+        (
+            value_estimates,
+            _,
+            value_memories,
+        ) = self.optimizer.get_trajectory_value_estimates(
+            agent_buffer_trajectory, trajectory.next_obs, trajectory.done_reached
+        )
+        if value_memories is not None:
+            agent_buffer_trajectory[BufferKey.CRITIC_MEMORY].set(value_memories)
 
-        # Store transitions
-        for i in range(len(rewards)):
-            state_i = states[i] if states.dim() > 1 else states
-            next_state_i = next_states[i] if next_states.dim() > 1 else next_states
-
-            self.replay_buffer.push(
-                state=state_i,
-                action=int(actions[i] if isinstance(actions[i], (int, np.integer)) else actions[i][0]),
-                reward=float(rewards[i]),
-                next_state=next_state_i,
-                done=done,
+        for name, v in value_estimates.items():
+            self._stats_reporter.add_stat(
+                f"Policy/{self.optimizer.reward_signals[name].name.capitalize()} Value",
+                np.mean(v),
             )
 
-        # Track episode rewards
-        if done:
-            total_reward = np.sum(rewards)
-            self._episode_rewards.append(total_reward)
-            self._reward_buffer.append(total_reward)
+        # Handle interrupted trajectories
+        if last_step.interrupted:
+            last_step_obs = last_step.obs
+            for i, obs in enumerate(last_step_obs):
+                agent_buffer_trajectory[ObsUtil.get_name_at_next(i)][-1] = obs
+            agent_buffer_trajectory[BufferKey.DONE][-1] = False
 
-    def update_policy(self) -> Dict[str, float]:
+        self._append_to_update_buffer(agent_buffer_trajectory)
+
+        if trajectory.done_reached:
+            self._update_end_episode_stats(agent_id, self.optimizer)
+
+    def create_optimizer(self) -> TorchOptimizer:
+        """Creates the DDQN optimizer."""
+        return DDQNOptimizer(
+            cast(TorchPolicy, self.policy),
+            self.trainer_settings
+        )
+
+    def create_policy(
+        self, parsed_behavior_id: BehaviorIdentifiers, behavior_spec: BehaviorSpec
+    ) -> TorchPolicy:
         """
-        Update Q-network using sampled batch from replay buffer.
-        DDQN: Use online network for action selection, target for evaluation.
+        Creates a policy with PyTorch backend and DDQN hyperparameters.
 
-        :return: Dictionary of loss values for logging
+        :param parsed_behavior_id: Parsed behavior identifier
+        :param behavior_spec: Specifications for policy construction
+        :return: TorchPolicy instance
         """
-        # Check if enough samples
-        if not self.replay_buffer.is_ready(self.batch_size):
-            return {}
+        exploration_initial_eps = cast(
+            DDQNSettings, self.trainer_settings.hyperparameters
+        ).exploration_initial_eps
+        actor_kwargs = {
+            "exploration_initial_eps": exploration_initial_eps,
+            "stream_names": [
+                signal.value for signal in self.trainer_settings.reward_signals.keys()
+            ],
+        }
+        policy = TorchPolicy(
+            self.seed,
+            behavior_spec,
+            self.trainer_settings.network_settings,
+            actor_cls=QNetworkDDQN,
+            actor_kwargs=actor_kwargs,
+        )
+        self.maybe_load_replay_buffer()
+        return policy
 
-        # Sample batch
-        batch = self.replay_buffer.sample(self.batch_size)
-
-        states = batch["states"].to(self.device)
-        actions = batch["actions"].to(self.device)
-        rewards = batch["rewards"].to(self.device)
-        next_states = batch["next_states"].to(self.device)
-        dones = batch["dones"].to(self.device)
-
-        # Compute current Q values
-        q_values = self.policy.q_network(states)
-        current_q = q_values.gather(1, actions.unsqueeze(1)).squeeze(1)
-
-        # DDQN: Use online network to select best action
-        with torch.no_grad():
-            next_q_online = self.policy.q_network(next_states)
-            next_actions = next_q_online.argmax(dim=1)
-
-            # Use target network to evaluate the action
-            next_q_target = self.policy.target_network(next_states)
-            next_q_values = next_q_target.gather(1, next_actions.unsqueeze(1)).squeeze(1)
-
-            # Compute target Q values
-            target_q = rewards + self.gamma * next_q_values * (1 - dones)
-
-        # Compute loss
-        loss = self.loss_fn(current_q, target_q)
-
-        # Optimize
-        self.optimizer.zero_grad()
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.policy.q_network.parameters(), 1.0)
-        self.optimizer.step()
-
-        # Soft update target network
-        self.policy.update_target_network(tau=self.tau)
-
-        self._step += 1
-
-        return {"Losses/DDQN Loss": loss.item()}
-
-    def advance(self) -> None:
-        """Advance training step and update epsilon."""
-        if self.policy is not None:
-            self.policy.epsilon = self._get_current_epsilon()
-
-    def get_step(self) -> int:
-        """Get current training step."""
-        return self._step
-
-    @property
-    def get_max_steps(self) -> int:
-        """Get maximum training steps."""
-        return self.trainer_settings.max_steps
+    @staticmethod
+    def get_settings_type():
+        return DDQNSettings
 
     @staticmethod
     def get_trainer_name() -> str:
-        """Get trainer name for registration."""
         return TRAINER_NAME
+
+
+def get_type_and_setting():
+    """Entry point for ML-Agents trainer registration."""
+    return (
+        {DDQNTrainer.get_trainer_name(): DDQNTrainer},
+        {DDQNTrainer.get_trainer_name(): DDQNTrainer.get_settings_type()}
+    )

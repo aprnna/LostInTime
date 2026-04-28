@@ -1,0 +1,47 @@
+{
+    "ddqn_dda": {
+        "checkpoints": [
+            {
+                "steps": 19984,
+                "file_path": "results\\nineRun\\ddqn_dda\\ddqn_dda-19984.onnx",
+                "reward": null,
+                "creation_time": 1777332665.1269782,
+                "auxillary_file_paths": [
+                    "results\\nineRun\\ddqn_dda\\ddqn_dda-19984.pt"
+                ]
+            },
+            {
+                "steps": 39984,
+                "file_path": "results\\nineRun\\ddqn_dda\\ddqn_dda-39984.onnx",
+                "reward": null,
+                "creation_time": 1777333179.2656908,
+                "auxillary_file_paths": [
+                    "results\\nineRun\\ddqn_dda\\ddqn_dda-39984.pt"
+                ]
+            },
+            {
+                "steps": 50001,
+                "file_path": "results\\nineRun\\ddqn_dda\\ddqn_dda-50001.onnx",
+                "reward": -0.09999996423721313,
+                "creation_time": 1777333438.0912826,
+                "auxillary_file_paths": [
+                    "results\\nineRun\\ddqn_dda\\ddqn_dda-50001.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 50001,
+            "file_path": "results\\nineRun\\ddqn_dda.onnx",
+            "reward": -0.09999996423721313,
+            "creation_time": 1777333438.0912826,
+            "auxillary_file_paths": [
+                "results\\nineRun\\ddqn_dda\\ddqn_dda-50001.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.2.2+cu121"
+    }
+}

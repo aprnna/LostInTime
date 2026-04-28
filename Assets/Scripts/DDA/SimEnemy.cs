@@ -52,18 +52,19 @@ namespace DDA
             MaxHP = Mathf.RoundToInt(MaxHP * hpMult);
             CurrentHP = MaxHP;
             BaseDamage = Mathf.RoundToInt(BaseDamage * dmgMult);
+            IntervalDamage = Mathf.RoundToInt(IntervalDamage * dmgMult);
         }
 
-        /// <summary>Get min damage.</summary>
+        /// <summary>Get min damage (clamped to 1).</summary>
         public int GetMinDamage()
         {
-            return BaseDamage - IntervalDamage;
+            return Mathf.Max(1, BaseDamage - IntervalDamage);
         }
 
         /// <summary>Get max damage.</summary>
         public int GetMaxDamage()
         {
-            return BaseDamage + IntervalDamage;
+            return Mathf.Max(2, BaseDamage + IntervalDamage);
         }
 
         /// <summary>Calculate damage with variance.</summary>

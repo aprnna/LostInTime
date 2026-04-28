@@ -10,6 +10,7 @@ namespace Player
         // Track scaled values for DDA
         private int _scaledMaxHealth;
         private int _scaledBaseDamage;
+        private int _scaledIntervalDamage;
         private bool _isDifficultyApplied = false;
 
         private void Awake()
@@ -37,6 +38,7 @@ namespace Player
             _enemyModel = new EnemyModel(_enemyData);
             _scaledMaxHealth = _enemyModel.MaxHealth;
             _scaledBaseDamage = _enemyModel.BaseDamage;
+            _scaledIntervalDamage = _enemyModel.IntervalDamage;
         }
 
         public string EnemyName
@@ -57,14 +59,16 @@ namespace Player
 
         public int BaseDamage => _scaledBaseDamage;
 
+        public int IntervalDamage => _scaledIntervalDamage;
+
         public int MinDamage()
         {
-            return BaseDamage - _enemyModel.IntervalDamage;
+            return Mathf.Max(1, _scaledBaseDamage - _scaledIntervalDamage);
         }
 
         public int MaxDamage()
         {
-            return BaseDamage + _enemyModel.IntervalDamage;
+            return Mathf.Max(2, _scaledBaseDamage + _scaledIntervalDamage);
         }
 
         /// <summary>
@@ -81,6 +85,7 @@ namespace Player
 
             _scaledMaxHealth = Mathf.RoundToInt(_enemyModel.MaxHealth * hpMultiplier);
             _scaledBaseDamage = Mathf.RoundToInt(_enemyModel.BaseDamage * damageMultiplier);
+            _scaledIntervalDamage = Mathf.RoundToInt(_enemyModel.IntervalDamage * damageMultiplier);
             _isDifficultyApplied = true;
 
             // Scale current health proportionally if already initialized
@@ -95,7 +100,7 @@ namespace Player
             }
 
             Debug.Log($"[EnemyStats] Applied difficulty: HP={hpMultiplier:F2}x, DMG={damageMultiplier:F2}x. " +
-                      $"Result: HP={_scaledMaxHealth}, DMG={_scaledBaseDamage}");
+                      $"Result: HP={_scaledMaxHealth}, DMG={_scaledBaseDamage}, Interval={_scaledIntervalDamage}");
         }
 
         /// <summary>
@@ -107,6 +112,7 @@ namespace Player
 
             _scaledMaxHealth = _enemyModel.MaxHealth;
             _scaledBaseDamage = _enemyModel.BaseDamage;
+            _scaledIntervalDamage = _enemyModel.IntervalDamage;
             _isDifficultyApplied = false;
         }
 

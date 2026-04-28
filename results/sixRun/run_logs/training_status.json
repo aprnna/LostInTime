@@ -1,0 +1,47 @@
+{
+    "ddqn_dda": {
+        "checkpoints": [
+            {
+                "steps": 19967,
+                "file_path": "results\\sixRun\\ddqn_dda\\ddqn_dda-19967.onnx",
+                "reward": null,
+                "creation_time": 1777324665.9477143,
+                "auxillary_file_paths": [
+                    "results\\sixRun\\ddqn_dda\\ddqn_dda-19967.pt"
+                ]
+            },
+            {
+                "steps": 39984,
+                "file_path": "results\\sixRun\\ddqn_dda\\ddqn_dda-39984.onnx",
+                "reward": null,
+                "creation_time": 1777325236.4970293,
+                "auxillary_file_paths": [
+                    "results\\sixRun\\ddqn_dda\\ddqn_dda-39984.pt"
+                ]
+            },
+            {
+                "steps": 50048,
+                "file_path": "results\\sixRun\\ddqn_dda\\ddqn_dda-50048.onnx",
+                "reward": null,
+                "creation_time": 1777325525.3841774,
+                "auxillary_file_paths": [
+                    "results\\sixRun\\ddqn_dda\\ddqn_dda-50048.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 50048,
+            "file_path": "results\\sixRun\\ddqn_dda.onnx",
+            "reward": null,
+            "creation_time": 1777325525.3841774,
+            "auxillary_file_paths": [
+                "results\\sixRun\\ddqn_dda\\ddqn_dda-50048.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.2.2+cu121"
+    }
+}

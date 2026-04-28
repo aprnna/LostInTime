@@ -1,0 +1,17 @@
+# DDQN Training Dependencies
+# Install: pip install -r requirements.txt
+
+# Core ML
+torch>=2.0.0
+numpy>=1.24.0
+
+# Unity ML-Agents
+mlagents>=2.2.0
+gym>=0.26.0
+
+# Optional: Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Optional: Progress bars
+tqdm>=4.65.0

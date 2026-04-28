@@ -26,6 +26,7 @@ namespace DDA
         [SerializeField] private Slider _enemyHPSlider;
         [SerializeField] private TextMeshProUGUI _turnText;
         [SerializeField] private TextMeshProUGUI _battleStatusText;
+        [SerializeField] private TextMeshProUGUI _enemyText;
 
         [Header("Statistics")]
         [SerializeField] private TextMeshProUGUI _statsText;
@@ -40,15 +41,10 @@ namespace DDA
         [SerializeField] private GameObject _lossFlash;
         [SerializeField] private float _flashDuration = 0.3f;
 
-        [Header("Learning Graph")]
-        [SerializeField] private bool _showGraph = true;
-        [SerializeField] private int _graphHistorySize = 100;
-        [SerializeField] private RectTransform _graphContainer;
-        [SerializeField] private GameObject _graphBarPrefab;
-
         [Header("Area Progress")]
         [SerializeField] private TextMeshProUGUI _areaText;
-        [SerializeField] private TextMeshProUGUI _enemyText;
+        [SerializeField] private TextMeshProUGUI _areaTypeText;
+        [SerializeField] private TextMeshProUGUI _enemyListText;
         [SerializeField] private Slider _areaProgressSlider;
 
         [Header("Run Stats")]
@@ -56,6 +52,10 @@ namespace DDA
         [SerializeField] private TextMeshProUGUI _playerHPText;
         [SerializeField] private TextMeshProUGUI _playerStatsText;
         [SerializeField] private TextMeshProUGUI _actionText;
+
+        [Header("Damage Intervals")]
+        [SerializeField] private TextMeshProUGUI _playerDamageText;
+        [SerializeField] private TextMeshProUGUI _enemyDamageText;
 
         [Header("Run Result")]
         [SerializeField] private GameObject _runResultPanel;
@@ -66,10 +66,6 @@ namespace DDA
         private int _lastEpisode;
         private int _lastArea = -1;
         private int _lastRun = -1;
-        private float[] _rewardHistory;
-        private int _historyIndex;
-        private float _maxReward = 2f;
-        private float _minReward = -2f;
 
         private void Start()
         {
@@ -82,9 +78,6 @@ namespace DDA
             {
                 _agent = FindObjectOfType<DDAAgent>();
             }
-
-            // Initialize history
-            _rewardHistory = new float[_graphHistorySize];
 
             // Subscribe to events
             if (_simulator != null)
@@ -128,21 +121,41 @@ namespace DDA
 
         private void UpdateBattleState(int playerHP, int enemyHP, int turn)
         {
-            // Update HP bars
-            if (_playerHPSlider != null)
+            // Update HP bars using actual MaxHP from simulator
+            if (_simulator != null)
             {
-                _playerHPSlider.value = playerHP / 100f; // Assuming 100 base HP
-            }
+                if (_playerHPSlider != null)
+                {
+                    int maxHP = _simulator.Player?.MaxHP ?? 100;
+                    _playerHPSlider.value = (float)playerHP / maxHP;
+                }
 
-            if (_enemyHPSlider != null)
-            {
-                float maxEnemyHP = enemyHP > _enemyHPSlider.value * 80f ? enemyHP : 80f;
-                _enemyHPSlider.value = enemyHP / maxEnemyHP;
+                if (_enemyHPSlider != null)
+                {
+                    int maxEnemyHP = _simulator.CurrentEnemy?.MaxHP ?? 100;
+                    _enemyHPSlider.value = maxEnemyHP > 0 ? (float)enemyHP / maxEnemyHP : 0f;
+                }
             }
 
             if (_turnText != null)
             {
                 _turnText.text = $"Turn: {turn}";
+            }
+
+            // Update enemy progress during battle
+            if (_enemyListText != null && _simulator != null)
+            {
+                int total = _simulator.EnemiesInArea;
+                int defeated = _simulator.EnemiesDefeatedInArea;
+                if (total > 0)
+                {
+                    _enemyListText.text = $"Enemies ({defeated}/{total}): {_simulator.CurrentAreaEnemyList}";
+                }
+            }
+
+            if (_enemyText != null && _simulator != null)
+            {
+                _enemyText.text = $"Fighting: {_simulator.CurrentEnemyName}";
             }
         }
 
@@ -168,16 +181,7 @@ namespace DDA
                 }
             }
 
-            // Add to history
-            _rewardHistory[_historyIndex] = reward;
-            _historyIndex = (_historyIndex + 1) % _graphHistorySize;
-
-            // Update max/min for graph scaling
-            if (reward > _maxReward) _maxReward = reward;
-            if (reward < _minReward) _minReward = reward;
-
             UpdateUI();
-            UpdateGraph();
         }
 
         private void HandleDifficultyChange(int newLevel)
@@ -203,17 +207,17 @@ namespace DDA
                 float winRate = stats.WinRate;
                 if (winRate >= 0.55f && winRate <= 0.65f)
                 {
-                    _flowStateText.text = "🎯 FLOW STATE";
+                    _flowStateText.text = "FLOW STATE";
                     _flowStateText.color = Color.cyan;
                 }
                 else if (winRate > 0.65f)
                 {
-                    _flowStateText.text = "😊 Too Easy";
+                    _flowStateText.text = "Too Easy";
                     _flowStateText.color = _easyColor;
                 }
                 else
                 {
-                    _flowStateText.text = "😰 Too Hard";
+                    _flowStateText.text = "Too Hard";
                     _flowStateText.color = _hardColor;
                 }
             }
@@ -231,10 +235,60 @@ namespace DDA
                 _areaProgressSlider.value = (float)areaIndex / totalAreas;
             }
 
+            // Update area type display
+            if (_areaTypeText != null)
+            {
+                string areaTypeStr = GetAreaTypeString(_simulator.CurrentAreaType);
+                _areaTypeText.text = $"Type: {areaTypeStr}";
+                _areaTypeText.color = GetAreaTypeColor(_simulator.CurrentAreaType);
+            }
+
+            // Update enemy list display
+            if (_enemyListText != null)
+            {
+                int total = _simulator.EnemiesInArea;
+                int defeated = _simulator.EnemiesDefeatedInArea;
+
+                if (total > 0)
+                {
+                    _enemyListText.text = $"Enemies ({defeated}/{total}): {_simulator.CurrentAreaEnemyList}";
+                }
+                else
+                {
+                    _enemyListText.text = _simulator.CurrentAreaType == MapType.Rest ? "Healing..."
+                                        : _simulator.CurrentAreaType == MapType.Shop ? "Shopping..."
+                                        : "No enemies";
+                }
+            }
+
             if (_enemyText != null)
             {
-                _enemyText.text = $"Enemy: {_simulator.CurrentEnemyName}";
+                _enemyText.text = $"Current: {_simulator.CurrentEnemyName}";
             }
+        }
+
+        private string GetAreaTypeString(MapType type)
+        {
+            return type switch
+            {
+                MapType.Enemy => "Enemy",
+                MapType.Boss => "BOSS",
+                MapType.Rest => "Rest",
+                MapType.Shop => "Shop",
+                _ => type.ToString()
+            };
+        }
+
+        private Color GetAreaTypeColor(MapType type)
+        {
+            return type switch
+            {
+                MapType.Enemy => _normalColor,
+                MapType.Boss => _hardColor,
+                MapType.Rest => _easyColor,
+                MapType.Shop => Color.cyan,
+                _ => Color.white
+            };
         }
 
         private void HandleRunComplete(RunResult result)
@@ -311,17 +365,55 @@ namespace DDA
             // Difficulty indicator color
             UpdateDifficultyIndicator(_simulator.CurrentDifficulty);
 
-            // Player stats
+            // Player stats (live update)
             var player = _simulator.Player;
             if (_playerHPText != null && player != null)
             {
                 _playerHPText.text = $"HP: {player.CurrentHP}/{player.MaxHP}";
             }
 
+            if (_playerStatsText != null && player != null)
+            {
+                _playerStatsText.text = $"Lv.{player.Level} | Coin: {player.Coin}";
+            }
+
             if (_actionText != null && player != null)
             {
                 _actionText.text = $"Sword: {player.SwordUses}/{player.MaxSwordUses} | Gun: {player.GunUses}/{player.MaxGunUses} | Def: {player.DefendUses}/{player.MaxDefendUses}";
             }
+
+            // Damage intervals
+            if (_playerDamageText != null && player != null)
+            {
+                int punchMin = Mathf.RoundToInt(player.BaseDamage * player.PunchPercentage / 100f) - player.PunchInterval;
+                int punchMax = Mathf.RoundToInt(player.BaseDamage * player.PunchPercentage / 100f) + player.PunchInterval;
+                int swordMin = Mathf.RoundToInt(player.BaseDamage * player.SwordPercentage / 100f) - player.SwordInterval;
+                int swordMax = Mathf.RoundToInt(player.BaseDamage * player.SwordPercentage / 100f) + player.SwordInterval;
+                int gunMin = Mathf.RoundToInt(player.BaseDamage * player.GunPercentage / 100f) - player.GunInterval;
+                int gunMax = Mathf.RoundToInt(player.BaseDamage * player.GunPercentage / 100f) + player.GunInterval;
+
+                _playerDamageText.text = $"Player DMG:\n" +
+                    $"Punch: {punchMin}-{punchMax}\n" +
+                    $"Sword: {swordMin}-{swordMax}\n" +
+                    $"Gun: {gunMin}-{gunMax}";
+            }
+
+            // Enemy damage interval
+            if (_enemyDamageText != null)
+            {
+                var enemy = _simulator.CurrentEnemy;
+                if (enemy != null)
+                {
+                    int enemyMin = enemy.GetMinDamage();
+                    int enemyMax = enemy.GetMaxDamage();
+                    _enemyDamageText.text = $"Enemy DMG: {enemyMin}-{enemyMax}";
+                }
+                else
+                {
+                    _enemyDamageText.text = "Enemy DMG: -";
+                }
+            }
+
         }
 
         private void UpdateDifficultyIndicator(int level)
@@ -349,49 +441,6 @@ namespace DDA
             _difficultyIndicator.color = color;
         }
 
-        private void UpdateGraph()
-        {
-            if (!_showGraph || _graphContainer == null || _graphBarPrefab == null) return;
-
-            // Clear existing bars
-            foreach (Transform child in _graphContainer)
-            {
-                Destroy(child.gameObject);
-            }
-
-            // Create bars for history
-            float containerHeight = _graphContainer.rect.height;
-            float barWidth = _graphContainer.rect.width / _graphHistorySize;
-
-            for (int i = 0; i < _graphHistorySize; i++)
-            {
-                int historyIdx = (_historyIndex + i) % _graphHistorySize;
-                float reward = _rewardHistory[historyIdx];
-
-                if (reward == 0 && i > 0) continue; // Skip uninitialized
-
-                GameObject bar = Instantiate(_graphBarPrefab, _graphContainer);
-                RectTransform rt = bar.GetComponent<RectTransform>();
-
-                // Position
-                rt.anchorMin = new Vector2(i / (float)_graphHistorySize, 0);
-                rt.anchorMax = new Vector2((i + 1) / (float)_graphHistorySize, 1);
-                rt.offsetMin = Vector2.zero;
-                rt.offsetMax = Vector2.zero;
-
-                // Height based on reward
-                float normalizedReward = (reward - _minReward) / (_maxReward - _minReward);
-                rt.sizeDelta = new Vector2(rt.sizeDelta.x, containerHeight * normalizedReward);
-
-                // Color based on positive/negative
-                Image img = bar.GetComponent<Image>();
-                if (img != null)
-                {
-                    img.color = reward >= 0 ? _easyColor : _hardColor;
-                }
-            }
-        }
-
         private System.Collections.IEnumerator FlashEffect(GameObject flash)
         {
             flash.SetActive(true);
@@ -405,8 +454,6 @@ namespace DDA
         public void ResetDisplay()
         {
             _lastEpisode = 0;
-            _rewardHistory = new float[_graphHistorySize];
-            _historyIndex = 0;
             UpdateUI();
         }
     }

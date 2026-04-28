@@ -349,6 +349,41 @@ namespace Playfab
         }
 
         #endregion
+
+        #region DDA Logging
+
+        /// <summary>
+        /// Log event DDA (Dynamic Difficulty Adjustment) ke PlayFab.
+        /// </summary>
+        /// <param name="payload">Payload data DDA.</param>
+        public void LogDDAEvent(DDALogPayload payload)
+        {
+            if (currentLog == null)
+            {
+                Debug.LogWarning("[BattleLogger] LogDDAEvent dipanggil tanpa session!");
+                return;
+            }
+
+            // Tambahkan data DDA ke battle record terakhir
+            var lastRecord = currentLog.Battle_Record.Count > 0
+                ? currentLog.Battle_Record[currentLog.Battle_Record.Count - 1]
+                : null;
+
+            if (lastRecord != null)
+            {
+                lastRecord.dda_action_taken = payload.dda_action_taken;
+                lastRecord.dda_reward = payload.dda_reward;
+                lastRecord.dda_obs_snapshot = payload.dda_obs_snapshot;
+                lastRecord.dda_episode_count = payload.dda_episode_count;
+            }
+
+            if (Application.isEditor)
+            {
+                Debug.Log($"[BattleLogger] DDA Event: Action={payload.dda_action_taken}, Reward={payload.dda_reward:F3}");
+            }
+        }
+
+        #endregion
     }
 
     [Serializable]
@@ -372,6 +407,12 @@ namespace Playfab
         public PlayerBehavior player_behavior;
         public List<TurnLog> turn_logs;
         public AppliedDifficultyParams applied_difficulty_params;
+
+        // DDA fields
+        public string dda_action_taken;
+        public float dda_reward;
+        public float[] dda_obs_snapshot;
+        public int dda_episode_count;
     }
 
     [Serializable]
@@ -424,6 +465,19 @@ namespace Playfab
         public int gun_used;
         public int sword_used;
         public int defend_used;
+    }
+
+    [Serializable]
+    public class DDALogPayload
+    {
+        public string dda_action_taken;
+        public float dda_reward;
+        public float[] dda_obs_snapshot;
+        public int dda_episode_count;
+        public float player_hp_ratio;
+        public int total_turns;
+        public int damage_taken;
+        public int heals_used;
     }
     
     [Serializable]

@@ -10,7 +10,7 @@
 
 behaviors:
   ddqn_dda:
-    trainer_type: ddqn  # Custom DDQN trainer from plugin
+    trainer_type: ddqn # Custom DDQN trainer from plugin
 
     hyperparameters:
       # Learning
@@ -22,7 +22,7 @@ behaviors:
       buffer_size: 10000
 
       # DDQN - Target Network Update
-      tau: 0.005              # Soft update rate
+      tau: 0.005 # Soft update rate
 
       # Exploration (Epsilon-greedy)
       exploration_initial_eps: 1.0
@@ -44,11 +44,12 @@ behaviors:
         strength: 1.0
 
     # Training settings
+
     keep_checkpoints: 5
-    max_steps: 500000
+    max_steps: 100000
     time_horizon: 64
-    summary_freq: 10000
-    checkpoint_interval: 10000
+    summary_freq: 20000
+    checkpoint_interval: 50000
 
 # Environment settings
 env_settings:

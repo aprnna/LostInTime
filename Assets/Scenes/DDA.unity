@@ -287,7 +287,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _alpha: 0.01
   _gamma: 0.7
-  _epsilon: 0.2
   _epsilonStart: 0.3
   _snapshotEveryNEpisodes: 50
 --- !u!4 &1037178265
@@ -362,6 +361,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1734852912}
   - component: {fileID: 1734852911}
+  - component: {fileID: 1734852913}
   m_Layer: 0
   m_Name: Trainning
   m_TagString: Untagged
@@ -382,9 +382,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agent: {fileID: 1037178264}
-  episodes: 15000
+  episodes: 500000
   epsilonDecay: 0.999
   minEpsilon: 0.05
+  baselineEvaluator: {fileID: 1734852913}
+  resetInterval: 100
+  randomSeed: 42
   logInterval: 500
 --- !u!4 &1734852912
 Transform:
@@ -401,6 +404,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1734852913
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1734852910}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d58d77e2c964d29958a01aad44563bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  agent: {fileID: 1037178264}
+  evalEpisodes: 500
+  logInterval: 100
+  evalSeed: 99
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
