@@ -1,212 +1,125 @@
-using System;
+    using System;
 using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
 using Player;
-using UnityEngine.InputSystem;
 
 namespace DDA
 {
-    /// <summary>
-    /// ML-Agents Agent for Dynamic Difficulty Adjustment.
-    /// Observes battle state and adjusts difficulty to achieve flow state.
-    /// </summary>
+
     public class DDAAgent : Agent
     {
-        [Header("References")]
-        [SerializeField] private DifficultySettings _difficultySettings;
+        [Header("References")] [SerializeField]
+        private DifficultySettings _difficultySettings;
+
         [SerializeField] private DifficultyApplier _difficultyApplier;
 
-        [Header("State Configuration")]
-        [Tooltip("Expected turns per battle for normalization")]
-        [SerializeField] private int _expectedTurnsPerBattle = 10;
+        [Header("State Configuration")] [SerializeField]
+        private int _expectedTurnsPerBattle = 10;
 
-        [Header("Training Configuration")]
-        [Tooltip("Enable training mode (rewards calculated)")]
         [SerializeField] private bool _isTrainingMode = true;
 
-        // State tracking
+        // --- Battle state (per-battle) ---
         private int _battleStartHP;
+        private int _battleEndHP;
         private int _damageDealt;
         private int _turnCount;
         private bool _battleInProgress;
 
-        // Area progression tracking
+        // --- Battle phase features ---
+        private float _currentHPRatio = 1f;
+        private float _resourceDepletion = 0f;
+        private float _enemyHPRatio = 1f;
+        private int _swordUsesRemaining = 15;
+        private int _gunUsesRemaining = 10;
+        private int _defendUsesRemaining = 3;
+
+        // --- Area / Run state ---
         private int _currentArea;
         private int _totalAreas;
-        private int _areasWon;
-        private int _lastDifficultyLevel = -1;
-        private bool _decisionPending; // Only true when we explicitly want a decision
-
-        // HP tracking for reward calculation (works in training without BattleLogger)
-        private int _lastBattleEndHP;
-        private int _lastBattleStartHP;
-
-        // Player power tracking
         private int _playerLevel = 1;
         private MapType _nextAreaType = MapType.Enemy;
 
-        // Components
-        private PlayerStats _playerStats;
+        // --- Running win-rate window (last 20 battles) ---
+        private const int WIN_WINDOW = 20;
+        private bool[] _winHistory = new bool[WIN_WINDOW];
+        private int _winHistoryIdx = 0;
+        private int _winHistoryCount = 0; // how many slots filled
+        private int _totalBattles = 0;
 
-        // Events
+        // --- Episode control ---
+        private bool _decisionPending = false;
+        private int _lastDifficultyLevel = -1;
+
+        // --- Accumulated reward dalam satu area (bisa multi-battle) ---
+        private float _areaAccumulatedReward = 0f;
+
         public event Action<int> OnDifficultyChanged;
 
-        /// <summary>Current episode's starting player HP.</summary>
-        public int BattleStartHP => _battleStartHP;
-
-        /// <summary>Current episode's total damage dealt by player.</summary>
-        public int DamageDealt => _damageDealt;
-
-        /// <summary>Current episode's turn count.</summary>
-        public int TurnCount => _turnCount;
+        // ----------------------------------------------------------------
+        // ML-Agents overrides
+        // ----------------------------------------------------------------
 
         public override void Initialize()
         {
-            _playerStats = PlayerStats.Instance;
-
             if (_difficultySettings == null)
-            {
                 _difficultySettings = Resources.Load<DifficultySettings>("DDA/DefaultDifficultySettings");
-            }
         }
 
         public override void OnEpisodeBegin()
         {
-            // Reset PER-EPISODE state only (battle-specific)
-            // Do NOT reset: _currentArea, _areasWon, difficulty (those are RUN-level)
+            // Reset hanya state yang bersifat per-episode
             _battleStartHP = 0;
-            _damageDealt = 0;
-            _turnCount = 0;
-            _battleInProgress = false;
-            _decisionPending = false; // Reset decision flag for new episode
-
-            // Difficulty persists across episodes within a run
-            // It gets reset at run start (OnRunStart) and set by agent decisions
-        }
-
-        /// <summary>
-        /// Called when area completed (won or lost).
-        /// Requests difficulty decision for NEXT area.
-        /// Episode will end when next area starts.
-        /// </summary>
-        public void OnAreaComplete(bool won)
-        {
-            if (won)
-            {
-                _areasWon++;
-            }
-            else
-            {
-                _areasWon = 0; // Reset streak on loss
-            }
-
-            if (!_isTrainingMode)
-            {
-                return;
-            }
-
-            // Calculate reward for this area
-            float reward = CalculateRewardForArea(won);
-            AddReward(reward);
-
-            Debug.Log($"[DDAAgent] Area complete. Won: {won}, Areas won streak: {_areasWon}, " +
-                      $"Reward: {reward:F3}, Cumulative: {GetCumulativeReward():F3}");
-
-            // Request difficulty decision for NEXT area
-            // Set flag to allow action processing (prevents DecisionRequester interference)
-            _decisionPending = true;
-            RequestDecision();
-
-            // DO NOT call EndEpisode() here - let it happen on next area enter
-            // This ensures the action is processed before episode reset
-        }
-
-        /// <summary>
-        /// Called when entering new area.
-        /// Ends previous episode and starts new one.
-        /// </summary>
-        public void OnAreaEnter(int areaIndex, int totalAreas, MapType areaType = MapType.Enemy)
-        {
-            // End previous episode if this isn't the first area
-            if (areaIndex > 0 && _isTrainingMode)
-            {
-                EndEpisode();
-            }
-
-            _currentArea = areaIndex;
-            _totalAreas = totalAreas;
-            _nextAreaType = areaType;
-
-            if (_difficultySettings != null &&
-                _difficultySettings.CurrentLevelIndex != _lastDifficultyLevel)
-            {
-                OnDifficultyChanged?.Invoke(_difficultySettings.CurrentLevelIndex);
-                Debug.Log($"[DDAAgent] Area {areaIndex}: Difficulty = {_difficultySettings.GetLevelName()}");
-                _lastDifficultyLevel = _difficultySettings.CurrentLevelIndex;
-            }
-        }
-
-        /// <summary>
-        /// Called when training run starts (beginning of episode).
-        /// </summary>
-        public void OnRunStart()
-        {
-            _currentArea = 0;
-            _areasWon = 0;
-            _battleStartHP = 0;
+            _battleEndHP = 0;
             _damageDealt = 0;
             _turnCount = 0;
             _battleInProgress = false;
             _decisionPending = false;
-            _lastDifficultyLevel = -1;
-            _lastBattleStartHP = 0;
-            _lastBattleEndHP = 0;
-            _playerLevel = 1;
-            _nextAreaType = MapType.Enemy;
+            _areaAccumulatedReward = 0f;
+
+            // Reset battle phase features
+            _currentHPRatio = 1f;
+            _resourceDepletion = 0f;
+            _enemyHPRatio = 1f;
+            _swordUsesRemaining = 15;
+            _gunUsesRemaining = 10;
+            _defendUsesRemaining = 3;
         }
 
+        /// <summary>
+        /// 12 observasi — SEMUA dinormalisasi ke [0,1]
+        /// Battle phase aware untuk better decision making.
+        /// </summary>
         public override void CollectObservations(VectorSensor sensor)
         {
-            // State 1: HP Ratio (0-1)
-            // Use last battle's end HP ratio, or 1.0 if first battle
-            float hpRatio = GetLastBattleHPRatio();
-            sensor.AddObservation(Mathf.Clamp01(hpRatio));
+            // 1. HP ratio SETELAH battle terakhir (0=mati, 1=full)
+            float hpRatio = _battleStartHP > 0
+                ? Mathf.Clamp01((float)_battleEndHP / _battleStartHP)
+                : 1.0f;
+            sensor.AddObservation(hpRatio);
 
-            // State 2: Damage Ratio (0-2 typically)
-            // Damage dealt / HP at battle start
-            float damageRatio = GetDamageRatio();
-            sensor.AddObservation(Mathf.Clamp(damageRatio, 0f, 2f));
+            // 2. Running win rate window terakhir (target ~0.6)
+            float winRate = GetRunningWinRate();
+            sensor.AddObservation(winRate);
 
-            // State 3: Turn count normalized (0-1)
-            // Turns taken / expected turns
-            int expectedTurns = Mathf.Max(1, _expectedTurnsPerBattle);
-            float turnNormalized = _turnCount / (float)expectedTurns;
-            sensor.AddObservation(Mathf.Clamp01(turnNormalized));
+            // 3. Turn count normalized
+            sensor.AddObservation(Mathf.Clamp01(_turnCount / (float)Mathf.Max(1, _expectedTurnsPerBattle)));
 
-            // State 4: Current difficulty normalized (0-1)
-            float difficultyNormalized = _difficultySettings != null
+            // 4. Difficulty normalized
+            float diffNorm = _difficultySettings != null
                 ? _difficultySettings.GetNormalizedDifficulty()
                 : 0.5f;
-            sensor.AddObservation(difficultyNormalized);
+            sensor.AddObservation(diffNorm);
 
-            // State 5: Area progress normalized (0-1)
-            float areaProgress = _totalAreas > 0 ? (float)_currentArea / _totalAreas : 0f;
-            sensor.AddObservation(Mathf.Clamp01(areaProgress));
+            // 5. Area progress
+            sensor.AddObservation(_totalAreas > 0 ? Mathf.Clamp01((float)_currentArea / _totalAreas) : 0f);
 
-            // State 6: Win streak normalized (-1 to 1)
-            float winStreak = Mathf.Clamp((_areasWon - 1) / 5f, -1f, 1f);
-            sensor.AddObservation(winStreak);
+            // 6. Player level normalized (maks 10)
+            sensor.AddObservation(Mathf.Clamp01(_playerLevel / 10f));
 
-            // State 7: Player level normalized (0-1)
-            // Max expected level around 10
-            float playerLevelNormalized = Mathf.Clamp01(_playerLevel / 10f);
-            sensor.AddObservation(playerLevelNormalized);
-
-            // State 8: Next area type (one-hot encoded would be better, but using single value)
-            // Rest=0, Enemy=0.33, Shop=0.67, Boss=1.0
-            float areaTypeNormalized = _nextAreaType switch
+            // 7. Area type
+            float areaTypeNorm = _nextAreaType switch
             {
                 MapType.Rest => 0.0f,
                 MapType.Enemy => 0.33f,
@@ -214,294 +127,258 @@ namespace DDA
                 MapType.Boss => 1.0f,
                 _ => 0.33f
             };
-            sensor.AddObservation(areaTypeNormalized);
+            sensor.AddObservation(areaTypeNorm);
+
+            // 8. Damage dealt ratio (relatif ke HP awal, cap di 2.0 lalu scale)
+            float dmgRatio = _battleStartHP > 0
+                ? Mathf.Clamp01(_damageDealt / (float)(_battleStartHP * 2))
+                : 0f;
+            sensor.AddObservation(dmgRatio);
+
+            // === BATTLE PHASE FEATURES ===
+
+            // 9. Current HP ratio (real-time during battle)
+            sensor.AddObservation(_currentHPRatio);
+
+            // 10. Resource depletion (actions used ratio)
+            sensor.AddObservation(_resourceDepletion);
+
+            // 11. Enemy HP ratio (remaining enemy health)
+            sensor.AddObservation(_enemyHPRatio);
+
+            // 12. Critical phase flag (HP < 30%)
+            float criticalFlag = _currentHPRatio < 0.3f ? 1f : 0f;
+            sensor.AddObservation(criticalFlag);
         }
 
         public override void OnActionReceived(ActionBuffers actions)
         {
-            // SAFETY: Only process ONE action per area completion
-            // This prevents DecisionRequester component from triggering multiple decisions
-            if (!_decisionPending)
-            {
-                // Silently ignore - not our requested decision
-                return;
-            }
-
-            // Reset flag - we're processing the decision now
+            if (!_decisionPending) return;
             _decisionPending = false;
 
-            // Also check battle state (shouldn't happen, but extra safety)
-            if (_battleInProgress)
-            {
-                Debug.LogWarning("[DDAAgent] Ignoring action during battle - decisions only allowed between areas");
-                return;
-            }
+            if (_difficultySettings == null) return;
 
+            int prevLevel = _difficultySettings.CurrentLevelIndex;
             int action = actions.DiscreteActions[0];
-
-            if (_difficultySettings == null)
-            {
-                Debug.LogWarning("[DDAAgent] No DifficultySettings assigned.");
-                return;
-            }
-
-            int previousLevel = _difficultySettings.CurrentLevelIndex;
 
             switch (action)
             {
-                case 0: // Maintain
-                    // No change
-                    break;
-                case 1: // Increase difficulty
+                case 0: /* Maintain */ break;
+                case 1:
                     _difficultySettings.IncreaseDifficulty();
                     break;
-                case 2: // Decrease difficulty
+                case 2:
                     _difficultySettings.DecreaseDifficulty();
                     break;
             }
 
-            if (_difficultySettings.CurrentLevelIndex != previousLevel)
+            if (_difficultySettings.CurrentLevelIndex != prevLevel)
             {
+                _lastDifficultyLevel = _difficultySettings.CurrentLevelIndex;
                 OnDifficultyChanged?.Invoke(_difficultySettings.CurrentLevelIndex);
-                Debug.Log($"[DDAAgent] Difficulty changed: {_difficultySettings.GetLevelName()}");
             }
         }
 
         public override void Heuristic(in ActionBuffers actionsOut)
         {
-            // Manual control for testing
-            var discreteActions = actionsOut.DiscreteActions;
-
-            // Default: Maintain
-            discreteActions[0] = 0;
-
-            // Increase with I key
-            if (UnityEngine.Input.GetKey(KeyCode.I))
-            {
-                discreteActions[0] = 1;
-            }
-            // Decrease with D key
-            else if (UnityEngine.Input.GetKey(KeyCode.D))
-            {
-                discreteActions[0] = 2;
-            }
+            var disc = actionsOut.DiscreteActions;
+            disc[0] = 0;
+            if (UnityEngine.Input.GetKey(KeyCode.I)) disc[0] = 1;
+            else if (UnityEngine.Input.GetKey(KeyCode.D)) disc[0] = 2;
         }
 
-        /// <summary>
-        /// Called when battle starts. Records initial state.
-        /// Does NOT request decision - difficulty was set at area enter.
-        /// </summary>
+        // ----------------------------------------------------------------
+        // Battle lifecycle hooks (dipanggil dari TrainingBattleSimulator)
+        // ----------------------------------------------------------------
+
+        public void OnRunStart()
+        {
+            _currentArea = 0;
+            _totalAreas = 0;
+            _battleStartHP = 0;
+            _battleEndHP = 0;
+            _damageDealt = 0;
+            _turnCount = 0;
+            _battleInProgress = false;
+            _decisionPending = false;
+            _lastDifficultyLevel = -1;
+            _areaAccumulatedReward = 0f;
+            _playerLevel = 1;
+            _nextAreaType = MapType.Enemy;
+            // Jangan reset win history — biarkan continuous
+        }
+
+        public void OnAreaEnter(int areaIndex, int totalAreas, MapType areaType = MapType.Enemy)
+        {
+            // End episode SEBELUM state di-update → reward sudah ter-flush di OnAreaComplete
+            if (areaIndex > 0 && _isTrainingMode)
+                EndEpisode(); // ← episode lama berakhir DI SINI
+
+            _currentArea = areaIndex;
+            _totalAreas = totalAreas;
+            _nextAreaType = areaType;
+            _areaAccumulatedReward = 0f;
+        }
+
         public void OnBattleStart(int playerStartHP)
         {
             _battleStartHP = playerStartHP;
-            _lastBattleStartHP = playerStartHP;  // Track for area reward
+            _battleEndHP = playerStartHP; // default jika tidak ada update
             _damageDealt = 0;
             _turnCount = 0;
             _battleInProgress = true;
-
-            // DO NOT request decision here - difficulty is set once per area
-            // Decision was requested in previous OnAreaComplete()
         }
 
-        /// <summary>
-        /// Called after each turn. Updates state.
-        /// </summary>
         public void OnTurnEnd(int damageDealtThisTurn)
         {
             _damageDealt += damageDealtThisTurn;
             _turnCount++;
         }
 
-        /// <summary>
-        /// Called when battle ends. Stores state for area reward calculation.
-        /// Does NOT add reward - reward only at area completion.
-        /// </summary>
         public void OnBattleEnd(bool playerWon, int playerEndHP)
         {
             _battleInProgress = false;
+            _battleEndHP = playerEndHP;
 
-            // Store last battle HP for area reward calculation
-            _lastBattleEndHP = playerEndHP;
+            // Simpan ke win history
+            _winHistory[_winHistoryIdx % WIN_WINDOW] = playerWon;
+            _winHistoryIdx++;
+            _winHistoryCount = Mathf.Min(_winHistoryCount + 1, WIN_WINDOW);
+            _totalBattles++;
 
-            if (!_isTrainingMode)
+            // Reward per-battle (kecil, sebagai shaped reward)
+            if (_isTrainingMode)
             {
-                // Inference mode: no reward calculation
-                return;
+                float battleReward = CalculateBattleReward(playerWon, playerEndHP, _battleStartHP, _turnCount);
+                _areaAccumulatedReward += battleReward;
+                // Tidak di-AddReward di sini — tunggu area complete
             }
 
-            // No battle-level reward - only area reward at OnAreaComplete
-            Debug.Log($"[DDAAgent] Battle end. Won: {playerWon}, HP: {playerEndHP}/{_battleStartHP}, " +
-                      $"Turns: {_turnCount}, Cumulative: {GetCumulativeReward():F3}");
+            Debug.Log($"[DDAAgent] Battle end. Won={playerWon}, HP={playerEndHP}/{_battleStartHP}, " +
+                      $"WinRate={GetRunningWinRate():P1}, Difficulty={_difficultySettings?.GetLevelName()}");
         }
 
-        /// <summary>
-        /// Called when training run ends (all areas or player died).
-        /// Note: Episodes are already ended per-area in OnAreaComplete.
-        /// This is for logging only.
-        /// </summary>
+        public void OnAreaComplete(bool areaWon)
+        {
+            if (!_isTrainingMode) return;
+
+            // Reward utama: seberapa dekat win rate ke target 0.6
+            float finalReward = _areaAccumulatedReward + CalculateFlowStateBonus();
+
+            AddReward(finalReward);
+
+            Debug.Log($"[DDAAgent] Area {_currentArea} complete. Won={areaWon}, " +
+                      $"Reward={finalReward:F3}, Cumulative={GetCumulativeReward():F3}, " +
+                      $"WinRate={GetRunningWinRate():P1}");
+
+            // Request decision untuk area BERIKUTNYA
+            _decisionPending = true;
+            RequestDecision();
+            // EndEpisode akan dipanggil di OnAreaEnter berikutnya
+        }
+
         public void OnRunEnd(bool runWon, int areasCompleted, int totalAreas)
         {
-            // Episodes are already ended per-area
-            // This method is for run-level logging only
-            Debug.Log($"[DDAAgent] Run end. Won: {runWon}, Areas: {areasCompleted}/{totalAreas}");
+            // Run-level bonus/penalty kecil
+            if (_isTrainingMode)
+            {
+                float runBonus = runWon ? 0.2f : -0.1f;
+                AddReward(runBonus);
+                // Episode akhir
+                EndEpisode();
+            }
         }
 
-        // GetCumulativeReward() is inherited from Agent base class
+        public void SetPlayerLevel(int level) => _playerLevel = level;
+        public void SetTrainingMode(bool v) => _isTrainingMode = v;
 
         /// <summary>
-        /// Calculates reward based on battle outcome.
-        /// Shaped reward: Win +1, Loss -1, HP target bonus, efficiency penalty.
+        /// Updates battle phase features from simulator.
+        /// Call each turn to provide real-time battle state.
         /// </summary>
-        private float CalculateReward(bool playerWon, int playerEndHP, int playerStartHP, int turns)
+        public void UpdateBattlePhase(float hpRatio, float resourceDepletion, float enemyHPRatio,
+            int swordUses, int gunUses, int defendUses)
         {
-            float reward = 0f;
+            _currentHPRatio = hpRatio;
+            _resourceDepletion = resourceDepletion;
+            _enemyHPRatio = enemyHPRatio;
+            _swordUsesRemaining = swordUses;
+            _gunUsesRemaining = gunUses;
+            _defendUsesRemaining = defendUses;
+        }
 
-            if (playerWon)
-            {
-                // Calculate HP ratio
-                float hpRatio = playerStartHP > 0 ? (float)playerEndHP / playerStartHP : 0f;
+        // ----------------------------------------------------------------
+        // Reward helpers
+        // ----------------------------------------------------------------
 
-                // Reward based on HP ratio - flow state is optimal
-                if (hpRatio >= 0.4f && hpRatio <= 0.6f)
-                {
-                    // FLOW STATE - Maximum reward
-                    // Peak at 50% HP with Gaussian-like curve
-                    float distanceFromOptimal = Mathf.Abs(hpRatio - 0.5f);
-                    float flowBonus = 1.0f * (1.0f - distanceFromOptimal * 2f);
-                    reward += 1.0f + flowBonus; // Base + flow bonus = 1.0 to 2.0
-                }
-                else if (hpRatio > 0.6f)
-                {
-                    // TOO EASY - Strong penalty proportional to excess
-                    // 60-70%: small penalty, 70-80%: medium, 80-100%: heavy
-                    float excess = hpRatio - 0.6f;
-                    float penalty = 1.5f * excess; // Much stronger penalty
-                    reward += 0.5f - penalty; // Diminishing returns for easy wins
-                    // 60% HP: +0.5, 80% HP: +0.2, 100% HP: -0.1
-                }
-                else if (hpRatio < 0.4f)
-                {
-                    // TOO HARD - Won but barely survived
-                    float deficit = 0.4f - hpRatio;
-                    float penalty = 0.5f * deficit;
-                    reward += 0.5f - penalty;
-                    // 30% HP: +0.35, 20% HP: +0.2, 10% HP: +0.05
-                }
-            }
+        /// <summary>
+        /// Reward per-battle: fokus pada HP ratio, BUKAN win/lose binary.
+        /// Range: [-0.3, +0.5] agar tidak terlalu dominan.
+        /// </summary>
+        private float CalculateBattleReward(bool won, int endHP, int startHP, int turns)
+        {
+            if (!won) return -0.3f; // Penalti kalah, tapi tidak terlalu besar
+
+            float hpRatio = startHP > 0 ? (float)endHP / startHP : 0f;
+
+            // Target HP zone: 40-60% (flow state)
+            // Gaussian-like bell curve dengan peak di 50%
+            float target = 0.50f;
+            float width = 0.10f; // half-width of zone
+            float dist = Mathf.Abs(hpRatio - target);
+
+            float hpScore;
+            if (dist <= width)
+                hpScore = 0.5f * (1f - dist / width); // +0.0 to +0.5
             else
-            {
-                // Loss penalty
-                reward -= 1.0f;
-            }
+                hpScore = -0.1f * ((dist - width) / (1f - width)); // kecil negatif di ekstrem
 
-            // Efficiency penalty (turns over expected)
-            if (turns > _expectedTurnsPerBattle)
-            {
-                float efficiencyPenalty = 0.01f * (turns - _expectedTurnsPerBattle);
-                reward -= efficiencyPenalty;
-            }
+            // Efficiency: slight bonus untuk turns normal
+            float efficiencyBonus = 0f;
+            if (turns <= _expectedTurnsPerBattle * 1.5f)
+                efficiencyBonus = 0.05f;
 
-            // Clamp reward to reasonable range
-            return Mathf.Clamp(reward, -2f, 2f);
+            return Mathf.Clamp(hpScore + efficiencyBonus, -0.3f, 0.55f);
         }
 
         /// <summary>
-        /// Calculates reward based on area outcome.
-        /// No streak bonus - loss terminates run (reset from beginning).
+        /// Bonus jika win rate mendekati target 0.6 (flow state).
+        /// Range: [-0.2, +0.3]
         /// </summary>
-        private float CalculateRewardForArea(bool won)
+        private float CalculateFlowStateBonus()
         {
-            float reward = 0f;
+            if (_winHistoryCount < 5) return 0f; // Butuh data cukup dulu
 
-            if (won)
-            {
-                // HP ratio is PRIMARY reward factor
-                float hpRatio = GetLastBattleHPRatio();
+            float winRate = GetRunningWinRate();
+            float targetWinRate = 0.60f;
+            float dist = Mathf.Abs(winRate - targetWinRate);
 
-                if (hpRatio >= 0.4f && hpRatio <= 0.6f)
-                {
-                    // FLOW STATE - Best reward
-                    float distanceFromOptimal = Mathf.Abs(hpRatio - 0.5f);
-                    float flowBonus = 0.7f * (1.0f - distanceFromOptimal * 2f);
-                    reward += 1.0f + flowBonus;
-                }
-                else if (hpRatio > 0.6f)
-                {
-                    // Too easy - diminishing returns
-                    float excess = hpRatio - 0.6f;
-                    float penalty = 1.5f * excess;
-                    reward += 0.5f - penalty;
-                }
-                else if (hpRatio < 0.4f)
-                {
-                    // Too hard - survived but barely
-                    float deficit = 0.4f - hpRatio;
-                    float penalty = 0.5f * deficit;
-                    reward += 0.5f - penalty;
-                }
-                else
-                {
-                    // Default small win reward
-                    reward += 0.3f;
-                }
-            }
+            // Bonus bell curve: puncak di 60% win rate
+            if (dist < 0.10f)
+                return 0.3f * (1f - dist / 0.10f); // 0 to +0.3
             else
-            {
-                // Loss penalty - run terminates
-                reward -= 1.5f;
-            }
-
-            return Mathf.Clamp(reward, -2f, 2f);
+                return -0.2f * Mathf.Clamp01((dist - 0.10f) / 0.30f); // 0 to -0.2
         }
 
-        /// <summary>
-        /// Get HP ratio from last battle for reward calculation.
-        /// Uses tracked HP values (works in training without BattleLogger).
-        /// </summary>
-        private float GetLastBattleHPRatio()
+        private float GetRunningWinRate()
         {
-            if (_lastBattleStartHP <= 0)
-            {
-                return 1.0f; // First battle: assume full HP
-            }
-
-            return Mathf.Clamp01((float)_lastBattleEndHP / _lastBattleStartHP);
+            if (_winHistoryCount == 0) return 0.5f;
+            int wins = 0;
+            int count = Mathf.Min(_winHistoryCount, WIN_WINDOW);
+            for (int i = 0; i < count; i++)
+                if (_winHistory[i])
+                    wins++;
+            return (float)wins / count;
         }
 
-        private float GetDamageRatio()
-        {
-            if (_battleStartHP <= 0) return 0f;
-            return _damageDealt / (float)_battleStartHP;
-        }
-
-        /// <summary>
-        /// Sets training mode at runtime.
-        /// </summary>
-        public void SetTrainingMode(bool isTraining)
-        {
-            _isTrainingMode = isTraining;
-        }
-
-        /// <summary>
-        /// Sets the player level for observation normalization.
-        /// Called by TrainingBattleSimulator after level-up.
-        /// </summary>
-        public void SetPlayerLevel(int level)
-        {
-            _playerLevel = level;
-        }
-
-        #if UNITY_EDITOR
-        /// <summary>
-        /// Editor-only: Get current state for debugging.
-        /// </summary>
+#if UNITY_EDITOR
         public string GetDebugState()
         {
-            return $"HP Ratio: {GetLastBattleHPRatio():F2}, " +
-                   $"Damage Ratio: {GetDamageRatio():F2}, " +
-                   $"Turns: {_turnCount}, " +
-                   $"Difficulty: {(_difficultySettings != null ? _difficultySettings.GetLevelName() : "None")}";
+            return $"WinRate(win{WIN_WINDOW})={GetRunningWinRate():P1} | " +
+                   $"HP={_battleEndHP}/{_battleStartHP} | " +
+                   $"Turns={_turnCount} | " +
+                   $"Diff={_difficultySettings?.GetLevelName() ?? "N/A"}";
         }
-        #endif
+#endif
     }
 }

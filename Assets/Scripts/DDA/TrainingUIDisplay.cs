@@ -30,7 +30,7 @@ namespace DDA
 
         [Header("Statistics")]
         [SerializeField] private TextMeshProUGUI _statsText;
-        [SerializeField] private TextMeshProUGUI _flowStateText;
+        [SerializeField] private TextMeshProUGUI _turnBattleText;
 
         [Header("Visual Indicators")]
         [SerializeField] private Image _difficultyIndicator;
@@ -88,6 +88,7 @@ namespace DDA
                 _simulator.OnStatsUpdated += UpdateStats;
                 _simulator.OnAreaChanged += HandleAreaChange;
                 _simulator.OnRunComplete += HandleRunComplete;
+                _simulator.OnTurnChanged += HandleTurnChanged;
             }
 
             // Initialize UI
@@ -104,6 +105,7 @@ namespace DDA
                 _simulator.OnStatsUpdated -= UpdateStats;
                 _simulator.OnAreaChanged -= HandleAreaChange;
                 _simulator.OnRunComplete -= HandleRunComplete;
+                _simulator.OnTurnChanged -= HandleTurnChanged;
             }
         }
 
@@ -157,6 +159,9 @@ namespace DDA
             {
                 _enemyText.text = $"Fighting: {_simulator.CurrentEnemyName}";
             }
+
+            // Update enemy damage display during battle
+            UpdateEnemyDamageDisplay();
         }
 
         private void HandleBattleEnd(bool won, float reward, int episode)
@@ -201,24 +206,49 @@ namespace DDA
                                   $"Streak: +{stats.ConsecutiveWins}/-{stats.ConsecutiveLosses}";
             }
 
-            // Flow state indicator
-            if (_flowStateText != null)
+            UpdateTurnBattleDisplay();
+        }
+
+        private void HandleTurnChanged(bool isPlayerTurn)
+        {
+            UpdateTurnBattleDisplay();
+            UpdateEnemyDamageDisplay();
+        }
+
+        private void UpdateTurnBattleDisplay()
+        {
+            if (_turnBattleText != null && _simulator != null)
             {
-                float winRate = stats.WinRate;
-                if (winRate >= 0.55f && winRate <= 0.65f)
+                string turnPhase = _simulator.IsPlayerTurn ? "PLAYER TURN" : "ENEMY TURN";
+                var player = _simulator.Player;
+
+                if (player != null)
                 {
-                    _flowStateText.text = "FLOW STATE";
-                    _flowStateText.color = Color.cyan;
-                }
-                else if (winRate > 0.65f)
-                {
-                    _flowStateText.text = "Too Easy";
-                    _flowStateText.color = _easyColor;
+                    _turnBattleText.text = $"{turnPhase}\n" +
+                                           $"HP: {player.CurrentHP}/{player.MaxHP}\n" +
+                                           $"Actions: S:{player.SwordUses} G:{player.GunUses} D:{player.DefendUses}";
                 }
                 else
                 {
-                    _flowStateText.text = "Too Hard";
-                    _flowStateText.color = _hardColor;
+                    _turnBattleText.text = turnPhase;
+                }
+            }
+        }
+
+        private void UpdateEnemyDamageDisplay()
+        {
+            if (_enemyDamageText != null && _simulator != null)
+            {
+                var enemy = _simulator.AttackingEnemy ?? _simulator.CurrentEnemy;
+                if (enemy != null)
+                {
+                    int enemyMin = enemy.GetMinDamage();
+                    int enemyMax = enemy.GetMaxDamage();
+                    _enemyDamageText.text = $"{enemy.Name} DMG: {enemyMin}-{enemyMax}";
+                }
+                else
+                {
+                    _enemyDamageText.text = "Enemy DMG: -";
                 }
             }
         }
@@ -382,36 +412,20 @@ namespace DDA
                 _actionText.text = $"Sword: {player.SwordUses}/{player.MaxSwordUses} | Gun: {player.GunUses}/{player.MaxGunUses} | Def: {player.DefendUses}/{player.MaxDefendUses}";
             }
 
-            // Damage intervals
+            // Absolute damage values (no interval variance)
             if (_playerDamageText != null && player != null)
             {
-                int punchMin = Mathf.RoundToInt(player.BaseDamage * player.PunchPercentage / 100f) - player.PunchInterval;
-                int punchMax = Mathf.RoundToInt(player.BaseDamage * player.PunchPercentage / 100f) + player.PunchInterval;
-                int swordMin = Mathf.RoundToInt(player.BaseDamage * player.SwordPercentage / 100f) - player.SwordInterval;
-                int swordMax = Mathf.RoundToInt(player.BaseDamage * player.SwordPercentage / 100f) + player.SwordInterval;
-                int gunMin = Mathf.RoundToInt(player.BaseDamage * player.GunPercentage / 100f) - player.GunInterval;
-                int gunMax = Mathf.RoundToInt(player.BaseDamage * player.GunPercentage / 100f) + player.GunInterval;
+                int punchDmg = Mathf.RoundToInt(player.BaseDamage * player.PunchPercentage / 100f);
+                int swordDmg = Mathf.RoundToInt(player.BaseDamage * player.SwordPercentage / 100f);
+                int gunDmg = Mathf.RoundToInt(player.BaseDamage * player.GunPercentage / 100f);
+                int punchCrit = Mathf.RoundToInt(punchDmg * 1.1f);
+                int swordCrit = Mathf.RoundToInt(swordDmg * 1.1f);
+                int gunCrit = Mathf.RoundToInt(gunDmg * 1.1f);
 
-                _playerDamageText.text = $"Player DMG:\n" +
-                    $"Punch: {punchMin}-{punchMax}\n" +
-                    $"Sword: {swordMin}-{swordMax}\n" +
-                    $"Gun: {gunMin}-{gunMax}";
-            }
-
-            // Enemy damage interval
-            if (_enemyDamageText != null)
-            {
-                var enemy = _simulator.CurrentEnemy;
-                if (enemy != null)
-                {
-                    int enemyMin = enemy.GetMinDamage();
-                    int enemyMax = enemy.GetMaxDamage();
-                    _enemyDamageText.text = $"Enemy DMG: {enemyMin}-{enemyMax}";
-                }
-                else
-                {
-                    _enemyDamageText.text = "Enemy DMG: -";
-                }
+                _playerDamageText.text = $"Player DMG (crit +10%):\n" +
+                    $"Punch: {punchDmg} ({punchCrit})\n" +
+                    $"Sword: {swordDmg} ({swordCrit})\n" +
+                    $"Gun: {gunDmg} ({gunCrit})";
             }
 
         }

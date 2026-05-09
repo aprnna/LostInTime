@@ -19,6 +19,11 @@ namespace DDA
         public int IntervalDamage;
         public float Accuracy = 0.80f; // Enemy default
 
+        // Base values (original, unmodified) for difficulty reset
+        private int _baseMaxHP;
+        private int _baseDamage;
+        private int _baseIntervalDamage;
+
         /// <summary>Default constructor.</summary>
         public SimEnemy()
         {
@@ -33,6 +38,11 @@ namespace DDA
             CurrentHP = MaxHP;
             BaseDamage = enemySO.BaseDamage;
             IntervalDamage = enemySO.IntervalDamage;
+
+            // Store base values
+            _baseMaxHP = MaxHP;
+            _baseDamage = BaseDamage;
+            _baseIntervalDamage = IntervalDamage;
         }
 
         /// <summary>Create with specific values.</summary>
@@ -44,15 +54,21 @@ namespace DDA
             CurrentHP = hp;
             BaseDamage = baseDmg;
             IntervalDamage = intervalDmg;
+
+            // Store base values
+            _baseMaxHP = hp;
+            _baseDamage = baseDmg;
+            _baseIntervalDamage = intervalDmg;
         }
 
-        /// <summary>Apply difficulty multipliers.</summary>
+        /// <summary>Apply difficulty multipliers from base values.</summary>
         public void ApplyDifficulty(float hpMult, float dmgMult)
         {
-            MaxHP = Mathf.RoundToInt(MaxHP * hpMult);
+            // Always apply from base values to avoid compounding
+            MaxHP = Mathf.RoundToInt(_baseMaxHP * hpMult);
             CurrentHP = MaxHP;
-            BaseDamage = Mathf.RoundToInt(BaseDamage * dmgMult);
-            IntervalDamage = Mathf.RoundToInt(IntervalDamage * dmgMult);
+            BaseDamage = Mathf.RoundToInt(_baseDamage * dmgMult);
+            IntervalDamage = Mathf.RoundToInt(_baseIntervalDamage * dmgMult);
         }
 
         /// <summary>Get min damage (clamped to 1).</summary>

@@ -23,7 +23,12 @@ namespace Manager
 
         public void SetEnemyPanel(EnemyStats enemyStats, bool active)
         {
-            _enemyStats.InitializeStats(enemyStats);   
+            if (!active || enemyStats == null)
+            {
+                _enemyStats.transform.parent.gameObject.SetActive(false);
+                return;
+            }
+            _enemyStats.InitializeStats(enemyStats);
             SetEnemyPortrait(enemyStats.GetPortrait(), active);
         }
         public void SetEnemyPortrait(Sprite image, bool active)

@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Gun
   m_EditorClassIdentifier: 
   _name: Handgun
-  _percentageDamage: 120
-  _interval: 0
+  _percentageDamage: 100
+  _interval: 3
   _actionType: 2
   _defend: 0
   _multipleDefend: 0

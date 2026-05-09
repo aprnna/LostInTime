@@ -10,7 +10,6 @@ namespace Player.Item
     {
         [SerializeField] private string _name;
         [SerializeField] private int _percentageDamage;
-        [SerializeField] private int _interval;
         [SerializeField] private PlayerActionType _actionType;
         
         [Header("Defend")]
@@ -23,6 +22,10 @@ namespace Player.Item
         [SerializeField] private int _limit;
         [SerializeField, Range(0, 11)] float _difficultyCritical;
 
+        [Header("TapZone Settings")]
+        [SerializeField, Range(0, 11)] private float _tapZoneDifficulty = 5f;
+        [SerializeField, Range(0, 50)] private int _criticalBonusPercent = 10;
+
         private int _minDefend;
         private int _maxDefend;
         private int _baseDefend;
@@ -31,14 +34,13 @@ namespace Player.Item
         public int MaxDefend => _maxDefend;
         public int BaseDefend => _baseDefend;
         public int BaseDamage { get; private set; }
-        public int MinDamage { get; private set; }
-        public int MaxDamage { get; private set; }
         public int CriticalHitDamage { get; private set; }
+        public float TapZoneDifficulty => _tapZoneDifficulty;
+        public int CriticalDamage => Mathf.RoundToInt(BaseDamage * (1 + _criticalBonusPercent / 100f));
         public bool IsDefend => _defend;
         public GameObject VFX => _vfx;
         public int CurrentLimit => _currentLimit;
         public bool IsLimited => _isLimited;
-        public bool IsIntervalDamage => _interval > 0;
         public float DifficultyCritical => _difficultyCritical;
         public string ActionName => _name;
         public PlayerActionType ActionType => _actionType;
@@ -90,12 +92,10 @@ namespace Player.Item
         {
             _currentLimit += value;
         }
-        public void InitializeDamage(int baseDamagePlayer, int criticalPercentage )
+        public void InitializeDamage(int baseDamagePlayer, int criticalPercentage)
         {
             BaseDamage = Mathf.RoundToInt(baseDamagePlayer * (_percentageDamage / 100f));
             CriticalHitDamage = BaseDamage + Mathf.RoundToInt(BaseDamage * (criticalPercentage / 100f));
-            MinDamage = BaseDamage - _interval;
-            MaxDamage = BaseDamage + _interval;
         }
         public async UniTask PlayVfx(Transform position)
         {

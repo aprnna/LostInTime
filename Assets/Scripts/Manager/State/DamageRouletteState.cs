@@ -51,8 +51,8 @@ namespace Manager
 
         private async UniTask AttackAction()
         {
-            var min = _battleSystem.SelectedAction.MinDamage;
-            var max =_battleSystem.SelectedAction.MaxDamage;
+            var min = _battleSystem.SelectedAction.BaseDamage;
+            var max =_battleSystem.SelectedAction.BaseDamage;
             var result = await _battleSystem.RouletteSystem.SetRoulette(min,max); 
             _battleSystem.SelectedTarget.PlayAnim("isDamaged");
             _battleSystem.SelectedTarget.EnemyStats.GetHit(result);

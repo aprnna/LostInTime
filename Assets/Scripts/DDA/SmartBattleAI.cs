@@ -87,13 +87,13 @@ namespace DDA
             switch (action)
             {
                 case SimAction.Gun:
-                    estimatedMaxDamage = 15; // 120% of ~12 base + variance
+                    estimatedMaxDamage = 13; // 100% of 12 + 10% crit
                     break;
                 case SimAction.Sword:
-                    estimatedMaxDamage = 10; // 80% of ~12 base + variance
+                    estimatedMaxDamage = 11; // 80% of 12 + 10% crit
                     break;
                 default:
-                    estimatedMaxDamage = 4; // Punch
+                    estimatedMaxDamage = 4; // Punch + crit
                     break;
             }
 
@@ -139,58 +139,38 @@ namespace DDA
         }
 
         /// <summary>
-        /// Calculate damage for action with variance and critical.
-        /// Simulates tap-roll mechanic: higher skill = stop closer to max damage.
+        /// Calculate damage for action with absolute value and TapZone simulation.
         /// </summary>
         public static int CalculateDamage(SimAction action, SimPlayer player, float skill = 0.5f)
         {
-            int baseDamage;
-            int interval;
-
-            switch (action)
+            // Calculate absolute base damage from percentage
+            int baseDamage = action switch
             {
-                case SimAction.Punch:
-                    baseDamage = Mathf.RoundToInt(player.BaseDamage * (player.PunchPercentage / 100f));
-                    interval = player.PunchInterval;
-                    break;
+                SimAction.Punch => Mathf.RoundToInt(player.BaseDamage * (player.PunchPercentage / 100f)),
+                SimAction.Sword => Mathf.RoundToInt(player.BaseDamage * (player.SwordPercentage / 100f)),
+                SimAction.Gun => Mathf.RoundToInt(player.BaseDamage * (player.GunPercentage / 100f)),
+                _ => 0
+            };
 
-                case SimAction.Sword:
-                    baseDamage = Mathf.RoundToInt(player.BaseDamage * (player.SwordPercentage / 100f));
-                    interval = player.SwordInterval;
-                    break;
+            // TapZone success simulation based on action difficulty + skill
+            float tapZoneSize = action switch
+            {
+                SimAction.Punch => 0.4f,   // 40% zone = easy
+                SimAction.Sword => 0.25f,  // 25% zone = medium
+                SimAction.Gun => 0.15f,    // 15% zone = hard
+                _ => 0.25f
+            };
 
-                case SimAction.Gun:
-                    baseDamage = Mathf.RoundToInt(player.BaseDamage * (player.GunPercentage / 100f));
-                    interval = player.GunInterval;
-                    break;
+            // Success probability: skill influence + zone size
+            bool tapSuccess = UnityEngine.Random.value < (skill * 0.5f + tapZoneSize);
 
-                default:
-                    return 0; // Defend deals no damage
+            if (tapSuccess)
+            {
+                baseDamage = Mathf.RoundToInt(baseDamage * 1.1f); // +10% critical
             }
 
-            // Tap-roll simulation: skill determines position in damage range
-            // Skill 1.0 = always max, skill 0.5 = 50/50, skill 0.0 = pure random
-            int minDamage = baseDamage - interval;
-            int maxDamage = baseDamage + interval;
-
-            // Weighted roll: skill biases toward max
-            float roll = UnityEngine.Random.value;
-            float weightedRoll = skill * skill + roll * (1f - skill * skill);
-            int damage = Mathf.RoundToInt(Mathf.Lerp(minDamage, maxDamage, weightedRoll));
-
-            // Critical hit (player-specific crit chance)
-            if (UnityEngine.Random.value < player.CriticalHitChance / 100f)
-            {
-                damage = Mathf.RoundToInt(damage * (1 + player.CriticalHitBonus / 100f));
-            }
-
-            // Accuracy check (85% for player)
-            if (UnityEngine.Random.value > 0.85f)
-            {
-                return 0; // Miss
-            }
-
-            return Mathf.Max(1, damage); // Minimum 1 damage
+            // No accuracy check - matches actual game (100% hit rate)
+            return Mathf.Max(1, baseDamage);
         }
 
         /// <summary>

@@ -17,6 +17,6 @@ MonoBehaviour:
   _enemyType: 4
   _health: 35
   _maxHealth: 35
-  _baseDamage: 20
-  _intervalDamage: 5
+  _baseDamage: 15
+  _intervalDamage: 3
   _prefab: {fileID: 8524122133972161533, guid: a8a1de8f75ffb5f41b3f27a1276111e8, type: 3}

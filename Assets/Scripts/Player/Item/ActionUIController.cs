@@ -70,7 +70,7 @@ namespace Player.Item
         {
             _action.InitializeDamage(_playerStats.BaseDamage, _playerStats.CriticalHitPercentage);
             var limit  = _action.IsLimited ? _action.CurrentLimit.ToString() :"unlimited";
-            var damage = _action.IsIntervalDamage ? _action.MinDamage+"-"+_action.MaxDamage : _action.BaseDamage.ToString();
+            var damage = _action.BaseDamage.ToString();
             if(_action.IsDefend)
             {
                 SetActionDescription(_action.name 

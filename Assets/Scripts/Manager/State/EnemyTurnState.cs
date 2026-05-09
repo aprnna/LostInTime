@@ -17,6 +17,8 @@ namespace Manager
         {
         }
 
+        private EnemyController _attackingEnemy;
+
         public override void OnEnter()
         {
             Debug.Log("Enemy Turn");
@@ -28,55 +30,53 @@ namespace Manager
         {
             await UniTask.DelayFrame(2);
 
-            var tasks = new List<UniTask<(GameObject rouletteObject, int result)>>();
+            // Collect all alive enemies
             var aliveEnemies = new List<EnemyController>();
-            
-            foreach (var enemy  in _battleSystem.Enemies)
+            foreach (var enemy in _battleSystem.Enemies)
             {
-                if (!enemy.EnemyStats.IsAlive()) continue;
-                var min = enemy.EnemyStats.MinDamage();
-                var max = enemy.EnemyStats.MaxDamage();
-                tasks.Add(_battleSystem.RouletteSystem
-                    .SetRoulette(min, max, true));
-                aliveEnemies.Add(enemy);
-            }
-
-            var allResults = await UniTask.WhenAll(tasks);
-
-            for (int i = 0; i < allResults.Length; i++)
-            {
-                var (rouletteObject, damage) = allResults[i];
-                _rouletteObjects.Add(rouletteObject);
-                
-                if (i < aliveEnemies.Count)
+                if (enemy.EnemyStats.IsAlive())
                 {
-                    _attacks.Add((aliveEnemies[i], damage));
+                    aliveEnemies.Add(enemy);
                 }
             }
 
-            int totalDamage = 0;
-
-            foreach (var (enemy, damage) in _attacks)
+            if (aliveEnemies.Count == 0)
             {
-                if (enemy == null || !enemy.EnemyStats.IsAlive())
-                    continue;
-                totalDamage += damage;
-                _battleSystem.PlayerStats.GetHit(damage);
-                Debug.Log($"Enemy hit with {damage})");
-
-                if (!_battleSystem.PlayerStats.IsAlive())
-                {
-                    int playerHpAfter = _battleSystem.PlayerStats.Health;
-                    _battleSystem.LogEnemyTurn(playerHpAfter,playerHpBefore,totalDamage);
-                    _battleSystem.LogPlayerDeath();
-                    _battleSystem.ChangeBattleResult(BattleResult.EnemiesWin);
-                    _battleSystem.StateMachine.ChangeState(_battleSystem.ResultBattleState);
-                    return;
-                }
-                await UniTask.Delay(500);
+                _battleSystem.StateMachine.ChangeState(_battleSystem.PlayerTurnState);
+                return;
             }
+
+            // Select random enemy to attack
+            var randomIndex = UnityEngine.Random.Range(0, aliveEnemies.Count);
+            _attackingEnemy = aliveEnemies[randomIndex];
+
+            // Show attacking enemy UI
+            _attackingEnemy.OnChangeMarker(true);
+            _battleSystem.UIManagerBattle.SetEnemyPanel(_attackingEnemy.EnemyStats, true);
+
+            var min = _attackingEnemy.EnemyStats.MinDamage();
+            var max = _attackingEnemy.EnemyStats.MaxDamage();
+
+            var (rouletteObject, damage) = await _battleSystem.RouletteSystem.SetRoulette(min, max, true);
+            _rouletteObjects.Add(rouletteObject);
+            _attacks.Add((_attackingEnemy, damage));
+
+            Debug.Log($"Enemy {_attackingEnemy.name} attacks with {damage} damage");
+
+            _battleSystem.PlayerStats.GetHit(damage);
+
+            if (!_battleSystem.PlayerStats.IsAlive())
+            {
+                int playerHpAfter = _battleSystem.PlayerStats.Health;
+                _battleSystem.LogEnemyTurn(playerHpAfter, playerHpBefore, damage);
+                _battleSystem.LogPlayerDeath();
+                _battleSystem.ChangeBattleResult(BattleResult.EnemiesWin);
+                _battleSystem.StateMachine.ChangeState(_battleSystem.ResultBattleState);
+                return;
+            }
+
             int playerHpAfter2 = _battleSystem.PlayerStats.Health;
-            _battleSystem.LogEnemyTurn(playerHpAfter2,playerHpBefore, totalDamage);
+            _battleSystem.LogEnemyTurn(playerHpAfter2, playerHpBefore, damage);
             await UniTask.Delay(TimeSpan.FromSeconds(2));
             _battleSystem.StateMachine.ChangeState(_battleSystem.PlayerTurnState);
         }
@@ -96,6 +96,12 @@ namespace Manager
         
         public override void OnExit()
         {
+            // Hide attacking enemy UI
+            if (_attackingEnemy != null)
+            {
+                _attackingEnemy.OnChangeMarker(false);
+            }
+            _battleSystem.UIManagerBattle.SetEnemyPanel(null, false);
             _battleSystem.ResetBattle();
             ClearRoulette();
             _attacks.Clear();

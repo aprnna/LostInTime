@@ -263,6 +263,11 @@ namespace Manager
             BattleLogger.OnPlayerTurn(SelectedAction.ActionType, SelectedTarget.name, targetHpBefore, targetHpAfter, damage, isCritical);
         }
 
+        public void LogPlayerDefend(int defendAmount)
+        {
+            BattleLogger.OnPlayerTurn(SelectedAction.ActionType, "Player", 0, 0, defendAmount, false);
+        }
+
         public void LogPlayerDeath()
         {
             BattleLogger.OnPlayerDeath();

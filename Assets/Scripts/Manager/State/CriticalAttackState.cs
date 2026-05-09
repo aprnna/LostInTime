@@ -16,7 +16,10 @@ namespace Manager
         }
         public override void OnEnter()
         {
-            hpTargetBefore = _battleSystem.SelectedTarget.EnemyStats.Health;
+            if (!_battleSystem.SelectedAction.IsDefend)
+            {
+                hpTargetBefore = _battleSystem.SelectedTarget.EnemyStats.Health;
+            }
             _battleSystem.GameManager.ChangeInstruction(" ");
             OnStartRoulette();
 
@@ -44,16 +47,16 @@ namespace Manager
 
         private void  DefendAction()
         {
-            _battleSystem.LogPlayerTurn(0,0,0, false);
+            _battleSystem.LogPlayerDefend(_battleSystem.SelectedAction.BaseDefend);
             _battleSystem.SetPlayerDefend(_battleSystem.SelectedAction.BaseDefend);
         }
 
         private async UniTask AttackAction()
         {
-            _battleSystem.MinigameManager.SetDifficulty(_battleSystem.SelectedAction.DifficultyCritical);
+            _battleSystem.MinigameManager.SetDifficulty(_battleSystem.SelectedAction.TapZoneDifficulty);
             var result = await _battleSystem.MinigameManager.PlayTapZone(); 
             var isCriticalHit = result == Minigame.Result.Success;
-            var damage = isCriticalHit ? _battleSystem.SelectedAction.CriticalHitDamage : _battleSystem.SelectedAction.BaseDamage;
+            var damage = isCriticalHit ? _battleSystem.SelectedAction.CriticalDamage : _battleSystem.SelectedAction.BaseDamage;
             await _battleSystem.EnemyGetHit(damage, isCriticalHit);
             hpTargetAfter = _battleSystem.SelectedTarget.EnemyStats.Health;
             Debug.Log("Damage dealt: " + damage);

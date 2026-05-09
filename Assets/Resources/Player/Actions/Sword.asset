@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Sword
   m_EditorClassIdentifier: 
   _name: Sword
-  _percentageDamage: 80
-  _interval: 0
+  _percentageDamage: 90
+  _interval: 2
   _actionType: 1
   _defend: 0
   _multipleDefend: 0

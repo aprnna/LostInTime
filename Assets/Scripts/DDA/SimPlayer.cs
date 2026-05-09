@@ -18,9 +18,7 @@ namespace DDA
         public int MaxShield;
         public int CurrentShield;
         public int BaseDamage;
-        public int IntervalDamage;
         public int BaseDefend;
-        public int IntervalDefend;
         public int CriticalHitChance; // Percentage
         public int CriticalHitBonus;   // Percentage extra damage
 
@@ -43,12 +41,9 @@ namespace DDA
 
         // Actions config (loaded from BaseAction assets)
         public int PunchPercentage = 30;   // 30% of base damage
-        public int PunchInterval = 0;
-        public int SwordPercentage = 80;   // 80% of base damage
-        public int SwordInterval = 0;
-        public int GunPercentage = 120;    // 120% of base damage
-        public int GunInterval = 0;
-        public int DefendMultiple = 3;     // BaseDefend × 3
+        public int SwordPercentage = 90;   // 90% of base damage (matches Sword.asset)
+        public int GunPercentage = 100;    // 100% of base damage (matches Gun.asset)
+        public int DefendMultiple = 3;     // BaseDefend × 3 (matches Defend.asset)
         public int DefendInterval = 6;
 
         /// <summary>Default constructor - uses default values.</summary>
@@ -72,9 +67,7 @@ namespace DDA
             MaxShield = playerSO.MaxShield;
             CurrentShield = MaxShield;
             BaseDamage = playerSO.BaseDamage;
-            IntervalDamage = playerSO.IntervalDamage;
             BaseDefend = playerSO.BaseDefend;
-            IntervalDefend = playerSO.IntervalDefend;
             CriticalHitChance = playerSO.CriticalHitPercentage;
             CriticalHitBonus = 20; // Default 20% bonus on crit
 
@@ -95,9 +88,7 @@ namespace DDA
             MaxShield = 2;
             CurrentShield = MaxShield;
             BaseDamage = 12;
-            IntervalDamage = 3;
             BaseDefend = 2;
-            IntervalDefend = 2;
             CriticalHitChance = 20;
             CriticalHitBonus = 20;
 
@@ -108,11 +99,8 @@ namespace DDA
 
             // Default action values from BaseAction assets
             PunchPercentage = 30;
-            PunchInterval = 0;
-            SwordPercentage = 80;
-            SwordInterval = 0;
-            GunPercentage = 120;
-            GunInterval = 0;
+            SwordPercentage = 90;
+            GunPercentage = 100;
             DefendMultiple = 3;
             DefendInterval = 6;
 
@@ -124,11 +112,8 @@ namespace DDA
         {
             // Action percentages from BaseAction assets
             PunchPercentage = 30;
-            PunchInterval = 0;
-            SwordPercentage = 80;
-            SwordInterval = 0;
-            GunPercentage = 120;
-            GunInterval = 0;
+            SwordPercentage = 90;
+            GunPercentage = 100;
             DefendMultiple = 3;
             DefendInterval = 6;
 
@@ -203,27 +188,6 @@ namespace DDA
                 return true;
             }
             return false;
-        }
-
-        /// <summary>Calculate punch damage with variance.</summary>
-        public (int min, int max) GetPunchDamageRange()
-        {
-            int baseDmg = Mathf.RoundToInt(BaseDamage * (PunchPercentage / 100f));
-            return (baseDmg - PunchInterval, baseDmg + PunchInterval);
-        }
-
-        /// <summary>Calculate sword damage with variance.</summary>
-        public (int min, int max) GetSwordDamageRange()
-        {
-            int baseDmg = Mathf.RoundToInt(BaseDamage * (SwordPercentage / 100f));
-            return (baseDmg - SwordInterval, baseDmg + SwordInterval);
-        }
-
-        /// <summary>Calculate gun damage with variance.</summary>
-        public (int min, int max) GetGunDamageRange()
-        {
-            int baseDmg = Mathf.RoundToInt(BaseDamage * (GunPercentage / 100f));
-            return (baseDmg - GunInterval, baseDmg + GunInterval);
         }
 
         /// <summary>Calculate defend shield HP with variance.</summary>

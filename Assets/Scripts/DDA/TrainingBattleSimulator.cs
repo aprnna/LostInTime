@@ -69,6 +69,11 @@ namespace DDA
         public event Action<int, int> OnAreaChanged; // (areaIndex, totalAreas)
         public event Action<TrainingStats> OnStatsUpdated;
         public event Action<RunResult> OnRunComplete;
+        public event Action<bool> OnTurnChanged; // (isPlayerTurn) - true = player turn, false = enemy turn
+
+        // Turn state for UI
+        private bool _isPlayerTurn = true;
+        public bool IsPlayerTurn => _isPlayerTurn;
 
         public static TrainingBattleSimulator Instance { get; private set; }
 
@@ -86,6 +91,10 @@ namespace DDA
         public string CurrentEnemyName => _currentEnemy?.Name ?? "None";
         public SimEnemy CurrentEnemy => _currentEnemy;
         public SimPlayer Player => _player;
+
+        // Current attacking enemy for UI (updated during multi-enemy battles)
+        private SimEnemy _attackingEnemy;
+        public SimEnemy AttackingEnemy => _attackingEnemy;
 
         // Area info properties
         public MapType CurrentAreaType => _currentAreaIndex < _areas?.Count ? _areas[_currentAreaIndex].AreaType : MapType.Enemy;
@@ -395,29 +404,25 @@ namespace DDA
 
         private IEnumerator ProcessBattleArea(SimArea area)
         {
-            // Fight all enemies in sequence
-            foreach (var enemy in area.Enemies)
+            // Reset turn count for entire area (not per enemy)
+            _turnCount = 0;
+
+            // Set all enemies in area as active (like actual game)
+            // In actual game, player fights ALL enemies in ONE battle
+            // Each turn: player attacks ONE enemy, ONE random enemy attacks back
+
+            if (_instantMode)
             {
-                if (!_player.IsAlive())
-                {
-                    yield break;
-                }
+                RunBattleInstantWithMultipleEnemies(area.Enemies);
+            }
+            else
+            {
+                yield return StartCoroutine(RunBattleEpisodeWithMultipleEnemies(area.Enemies));
+            }
 
-                _currentEnemy = enemy;
-
-                if (_instantMode)
-                {
-                    RunBattleInstant();
-                }
-                else
-                {
-                    yield return StartCoroutine(RunBattleEpisode());
-                }
-
-                if (!_player.IsAlive())
-                {
-                    yield break; // Lost, don't process drops
-                }
+            if (!_player.IsAlive())
+            {
+                yield break; // Lost, don't process drops
             }
 
             // Apply drops after winning
@@ -449,7 +454,7 @@ namespace DDA
         {
             _battleInProgress = true;
             _battleCount++;
-            _turnCount = 0;
+            // _turnCount reset at area level, not here
 
             // Notify DDA agent battle starting
             _ddaAgent?.OnBattleStart(_player.CurrentHP);
@@ -523,7 +528,7 @@ namespace DDA
         {
             _battleInProgress = true;
             _battleCount++;
-            _turnCount = 0;
+            // _turnCount reset at area level, not here
 
             _ddaAgent?.OnBattleStart(_player.CurrentHP);
 
@@ -626,7 +631,298 @@ namespace DDA
             _ddaAgent?.OnTurnEnd(playerDamage);
         }
 
+        /// <summary>
+        /// Instant battle with multiple enemies - matches actual game flow.
+        /// Player fights all enemies in ONE battle, one enemy at a time.
+        /// Each turn: player attacks ONE enemy, ONE random enemy attacks back.
+        /// </summary>
+        private void RunBattleInstantWithMultipleEnemies(List<SimEnemy> enemies)
+        {
+            _battleInProgress = true;
+            _battleCount++;
+
+            _ddaAgent?.OnBattleStart(_player.CurrentHP);
+
+            if (_ddaAgent != null)
+            {
+                _ddaAgent.OnDifficultyChanged += HandleDifficultyChanged;
+            }
+
+            // Fight until all enemies dead or player dead
+            int playerDamage = 0;
+            while (_player.IsAlive() && HasAliveEnemies(enemies) && _turnCount < _maxTurnsPerBattle)
+            {
+                _turnCount++;
+
+                // --- Player Turn ---
+                _isPlayerTurn = true;
+                OnTurnChanged?.Invoke(_isPlayerTurn);
+
+                // Player selects a target (smart AI picks lowest HP enemy)
+                SimEnemy targetEnemy = GetPlayerTarget(enemies);
+                if (targetEnemy != null && targetEnemy.IsAlive())
+                {
+                    playerDamage = ExecutePlayerTurn(targetEnemy);
+                    if (playerDamage > 0)
+                    {
+                        targetEnemy.TakeDamage(playerDamage);
+                    }
+                }
+
+                // Check if all enemies dead
+                if (!HasAliveEnemies(enemies)) break;
+
+                // --- Enemy Turn ---
+                _isPlayerTurn = false;
+                OnTurnChanged?.Invoke(_isPlayerTurn);
+
+                // ONE random alive enemy attacks (matches actual game)
+                SimEnemy attackingEnemy = GetRandomAliveEnemy(enemies);
+                _attackingEnemy = attackingEnemy; // Track for UI
+                if (attackingEnemy != null)
+                {
+                    int enemyDamage = ExecuteEnemyTurnForEnemy(attackingEnemy);
+                    if (enemyDamage > 0)
+                    {
+                        _player.TakeDamage(enemyDamage);
+                    }
+                }
+
+                // Update UI with total enemy HP
+                int totalEnemyHP = GetTotalEnemyHP(enemies);
+                OnBattleStateChanged?.Invoke(_player.CurrentHP, totalEnemyHP, _turnCount);
+
+                // Update battle phase features for DDA agent
+                UpdateAgentBattlePhase(enemies);
+
+                _ddaAgent?.OnTurnEnd(playerDamage > 0 ? playerDamage : 0);
+            }
+
+            // Determine outcome
+            bool playerWon = !HasAliveEnemies(enemies) && _player.IsAlive();
+            int playerEndHP = _player.CurrentHP;
+
+            _lastReward = CalculateReward(playerWon, playerEndHP, _player.MaxHP, _turnCount);
+
+            if (playerWon)
+            {
+                _winCount++;
+                _consecutiveWins++;
+                _consecutiveLosses = 0;
+            }
+            else
+            {
+                _lossCount++;
+                _consecutiveLosses++;
+                _consecutiveWins = 0;
+            }
+
+            _totalTurns += _turnCount;
+            _totalReward += _lastReward;
+
+            _ddaAgent?.OnBattleEnd(playerWon, playerEndHP);
+
+            if (_ddaAgent != null)
+            {
+                _ddaAgent.OnDifficultyChanged -= HandleDifficultyChanged;
+            }
+
+            OnBattleEnded?.Invoke(playerWon, _lastReward, _battleCount);
+
+            _battleInProgress = false;
+        }
+
+        /// <summary>
+        /// Coroutine version for non-instant mode.
+        /// </summary>
+        private IEnumerator RunBattleEpisodeWithMultipleEnemies(List<SimEnemy> enemies)
+        {
+            _battleInProgress = true;
+            _battleCount++;
+
+            _ddaAgent?.OnBattleStart(_player.CurrentHP);
+
+            if (_ddaAgent != null)
+            {
+                _ddaAgent.OnDifficultyChanged += HandleDifficultyChanged;
+            }
+
+            Debug.Log($"[TrainingSim] Battle {_battleCount} started. " +
+                      $"Enemies: {enemies.Count}, Difficulty: {DifficultyName}");
+
+            while (_player.IsAlive() && HasAliveEnemies(enemies) && _turnCount < _maxTurnsPerBattle)
+            {
+                yield return StartCoroutine(RunTurnWithMultipleEnemies(enemies));
+                yield return new WaitForSeconds(_turnDelay);
+            }
+
+            bool playerWon = !HasAliveEnemies(enemies) && _player.IsAlive();
+            int playerEndHP = _player.CurrentHP;
+
+            _lastReward = CalculateReward(playerWon, playerEndHP, _player.MaxHP, _turnCount);
+
+            if (playerWon)
+            {
+                _winCount++;
+                _consecutiveWins++;
+                _consecutiveLosses = 0;
+            }
+            else
+            {
+                _lossCount++;
+                _consecutiveLosses++;
+                _consecutiveWins = 0;
+            }
+
+            _totalTurns += _turnCount;
+            _totalReward += _lastReward;
+
+            _ddaAgent?.OnBattleEnd(playerWon, playerEndHP);
+
+            if (_ddaAgent != null)
+            {
+                _ddaAgent.OnDifficultyChanged -= HandleDifficultyChanged;
+            }
+
+            OnBattleEnded?.Invoke(playerWon, _lastReward, _battleCount);
+            OnStatsUpdated?.Invoke(GetStats());
+
+            _battleInProgress = false;
+        }
+
+        private IEnumerator RunTurnWithMultipleEnemies(List<SimEnemy> enemies)
+        {
+            _turnCount++;
+
+            // --- Player Turn ---
+            _isPlayerTurn = true;
+            OnTurnChanged?.Invoke(_isPlayerTurn);
+
+            SimEnemy targetEnemy = GetPlayerTarget(enemies);
+            if (targetEnemy != null && targetEnemy.IsAlive())
+            {
+                int playerDamage = ExecutePlayerTurn(targetEnemy);
+                if (playerDamage > 0)
+                {
+                    targetEnemy.TakeDamage(playerDamage);
+                }
+            }
+
+            int totalEnemyHP = GetTotalEnemyHP(enemies);
+            OnBattleStateChanged?.Invoke(_player.CurrentHP, totalEnemyHP, _turnCount);
+
+            if (!HasAliveEnemies(enemies))
+            {
+                yield break;
+            }
+
+            yield return new WaitForSeconds(_turnDelay / 2f);
+
+            // --- Enemy Turn ---
+            _isPlayerTurn = false;
+            OnTurnChanged?.Invoke(_isPlayerTurn);
+
+            // ONE random alive enemy attacks
+            SimEnemy attackingEnemy = GetRandomAliveEnemy(enemies);
+            _attackingEnemy = attackingEnemy; // Track for UI
+            if (attackingEnemy != null)
+            {
+                int enemyDamage = ExecuteEnemyTurnForEnemy(attackingEnemy);
+                if (enemyDamage > 0)
+                {
+                    _player.TakeDamage(enemyDamage);
+                }
+            }
+
+            totalEnemyHP = GetTotalEnemyHP(enemies);
+            OnBattleStateChanged?.Invoke(_player.CurrentHP, totalEnemyHP, _turnCount);
+
+            // Update battle phase features for DDA agent
+            UpdateAgentBattlePhase(enemies);
+
+            _ddaAgent?.OnTurnEnd(0);
+        }
+
+        // Helper methods for multi-enemy battles
+        private bool HasAliveEnemies(List<SimEnemy> enemies)
+        {
+            foreach (var enemy in enemies)
+            {
+                if (enemy.IsAlive()) return true;
+            }
+            return false;
+        }
+
+        private SimEnemy GetRandomAliveEnemy(List<SimEnemy> enemies)
+        {
+            var aliveEnemies = new List<SimEnemy>();
+            foreach (var enemy in enemies)
+            {
+                if (enemy.IsAlive()) aliveEnemies.Add(enemy);
+            }
+
+            if (aliveEnemies.Count == 0) return null;
+
+            int randomIndex = UnityEngine.Random.Range(0, aliveEnemies.Count);
+            return aliveEnemies[randomIndex];
+        }
+
+        private SimEnemy GetPlayerTarget(List<SimEnemy> enemies)
+        {
+            // Smart AI: target lowest HP enemy to maximize kill efficiency
+            // Or random if using simple AI
+            var aliveEnemies = new List<SimEnemy>();
+            foreach (var enemy in enemies)
+            {
+                if (enemy.IsAlive()) aliveEnemies.Add(enemy);
+            }
+
+            if (aliveEnemies.Count == 0) return null;
+
+            if (_useSmartAI)
+            {
+                // Target lowest HP enemy
+                SimEnemy lowestHP = aliveEnemies[0];
+                foreach (var enemy in aliveEnemies)
+                {
+                    if (enemy.CurrentHP < lowestHP.CurrentHP)
+                    {
+                        lowestHP = enemy;
+                    }
+                }
+                return lowestHP;
+            }
+            else
+            {
+                // Random target
+                int randomIndex = UnityEngine.Random.Range(0, aliveEnemies.Count);
+                return aliveEnemies[randomIndex];
+            }
+        }
+
+        private int GetTotalEnemyHP(List<SimEnemy> enemies)
+        {
+            int total = 0;
+            foreach (var enemy in enemies)
+            {
+                total += enemy.CurrentHP;
+            }
+            return total;
+        }
+
+        private int ExecuteEnemyTurnForEnemy(SimEnemy enemy)
+        {
+            // No accuracy check - matches actual game (100% hit rate)
+            int damage = enemy.CalculateDamage();
+            return Mathf.Max(1, damage);
+        }
+
         private int ExecutePlayerTurn()
+        {
+            return ExecutePlayerTurn(_currentEnemy);
+        }
+
+        private int ExecutePlayerTurn(SimEnemy targetEnemy)
         {
             // Build battle state for AI
             var state = new BattleState
@@ -634,8 +930,8 @@ namespace DDA
                 PlayerHP = _player.CurrentHP,
                 PlayerMaxHP = _player.MaxHP,
                 PlayerShield = _player.CurrentShield,
-                EnemyHP = _currentEnemy.CurrentHP,
-                EnemyMaxHP = _currentEnemy.MaxHP,
+                EnemyHP = targetEnemy.CurrentHP,
+                EnemyMaxHP = targetEnemy.MaxHP,
                 SwordUsesRemaining = _player.SwordUses,
                 GunUsesRemaining = _player.GunUses,
                 DefendUsesRemaining = _player.DefendUses,
@@ -731,12 +1027,7 @@ namespace DDA
 
         private int ExecuteEnemyTurn()
         {
-            // Accuracy check (80% for enemy)
-            if (UnityEngine.Random.value > 0.80f)
-            {
-                return 0; // Miss
-            }
-
+            // No accuracy check - matches actual game (100% hit rate)
             // Calculate damage with variance
             int damage = _currentEnemy.CalculateDamage();
             return Mathf.Max(1, damage);
@@ -859,6 +1150,54 @@ namespace DDA
         public void SetUseSmartAI(bool useSmart)
         {
             _useSmartAI = useSmart;
+        }
+
+        /// <summary>
+        /// Updates DDA agent with real-time battle phase features.
+        /// </summary>
+        private void UpdateAgentBattlePhase(List<SimEnemy> enemies)
+        {
+            if (_ddaAgent == null) return;
+
+            // Current HP ratio
+            float hpRatio = _player.MaxHP > 0 ? (float)_player.CurrentHP / _player.MaxHP : 1f;
+
+            // Resource depletion (actions used)
+            float swordDepletion = 1f - (float)_player.SwordUses / _player.MaxSwordUses;
+            float gunDepletion = 1f - (float)_player.GunUses / _player.MaxGunUses;
+            float defendDepletion = 1f - (float)_player.DefendUses / _player.MaxDefendUses;
+            float resourceDepletion = (swordDepletion + gunDepletion + defendDepletion) / 3f;
+
+            // Enemy HP ratio (total remaining)
+            float enemyHPRatio = GetEnemyHPRatio(enemies);
+
+            _ddaAgent.UpdateBattlePhase(
+                hpRatio,
+                resourceDepletion,
+                enemyHPRatio,
+                _player.SwordUses,
+                _player.GunUses,
+                _player.DefendUses
+            );
+        }
+
+        /// <summary>
+        /// Gets total enemy HP ratio (remaining vs max).
+        /// </summary>
+        private float GetEnemyHPRatio(List<SimEnemy> enemies)
+        {
+            if (enemies == null || enemies.Count == 0) return 0f;
+
+            int totalCurrent = 0;
+            int totalMax = 0;
+
+            foreach (var enemy in enemies)
+            {
+                totalCurrent += enemy.CurrentHP;
+                totalMax += enemy.MaxHP;
+            }
+
+            return totalMax > 0 ? (float)totalCurrent / totalMax : 0f;
         }
     }
 
