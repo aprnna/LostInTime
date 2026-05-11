@@ -62,6 +62,9 @@ namespace DDA
         private int _consecutiveWins;
         private int _consecutiveLosses;
 
+        // Track HP at area start for area-level reward calculation
+        private int _areaStartHP;
+
         // Events for UI
         public event Action<int, int, int> OnBattleStateChanged; // (playerHP, enemyHP, turn)
         public event Action<bool, float, int> OnBattleEnded; // (won, reward, episode)
@@ -79,7 +82,7 @@ namespace DDA
 
         // Public properties
         public int BattleCount => _battleCount;        // Total battles fought
-        public int EpisodeCount => _episodeCount;      // Episodes = areas
+        public int EpisodeCount => _episodeCount;      // Episodes = runs (1 episode = 1 full run)
         public int WinCount => _winCount;
         public float WinRate => _battleCount > 0 ? (float)_winCount / _battleCount : 0f;
         public float AvgReward => _battleCount > 0 ? _totalReward / _battleCount : 0f;
@@ -181,21 +184,65 @@ namespace DDA
 
             if (_loadFromMapData && _mapData != null)
             {
-                // Load from MapData ScriptableObject
-                foreach (var node in _mapData.mapItems)
-                {
-                    if (node != null)
-                    {
-                        _areas.Add(new SimArea(node));
-                    }
-                }
-                Debug.Log($"[TrainingSim] Loaded {_areas.Count} areas from MapData");
+                // Trace a random path through the branching map graph
+                // (not all 22 nodes — only ~12 per run)
+                _areas = BuildRandomPath();
+                Debug.Log($"[TrainingSim] Built path with {_areas.Count} areas from MapData (22 nodes total, branching)");
             }
             else
             {
                 // Generate default 12-area sequence
                 GenerateDefaultAreas();
             }
+        }
+
+        /// <summary>
+        /// Build a random path through the branching map graph.
+        /// At each branch point, randomly pick one connection.
+        /// Returns a linear list of areas (start to finish).
+        /// </summary>
+        private List<SimArea> BuildRandomPath()
+        {
+            var path = new List<SimArea>();
+            var nodeMap = new System.Collections.Generic.Dictionary<string, MapNode>();
+
+            // Index nodes by ID for fast lookup
+            foreach (var node in _mapData.mapItems)
+            {
+                if (node != null && !string.IsNullOrEmpty(node.mapNodeId))
+                {
+                    nodeMap[node.mapNodeId] = node;
+                }
+            }
+
+            // Start from first node, follow connections to end
+            MapNode current = _mapData.mapItems[0];
+            int safetyLimit = 50; // Prevent infinite loops
+
+            while (current != null && safetyLimit-- > 0)
+            {
+                path.Add(new SimArea(current));
+
+                // No connections = end of path (Boss2)
+                if (current.connectionId == null || current.connectionId.Length == 0)
+                {
+                    break;
+                }
+
+                // Pick a random connection at branch points
+                int nextIndex = UnityEngine.Random.Range(0, current.connectionId.Length);
+                string nextId = current.connectionId[nextIndex];
+
+                if (!nodeMap.TryGetValue(nextId, out MapNode nextNode))
+                {
+                    Debug.LogWarning($"[TrainingSim] Connection '{nextId}' not found in mapItems, ending path");
+                    break;
+                }
+
+                current = nextNode;
+            }
+
+            return path;
         }
 
         private void GenerateDefaultAreas()
@@ -307,35 +354,76 @@ namespace DDA
             // Reset player for new run
             _player.Reset();
 
+            // Build a new random path through the branching map each run
+            if (_loadFromMapData && _mapData != null)
+            {
+                _areas = BuildRandomPath();
+            }
+
             // Notify agent that run is starting
             _ddaAgent?.OnRunStart();
 
-            // Reset difficulty to default at start of run
-            _difficultySettings?.ResetToNormal();
+            // Difficulty is reset to baseline inside DDAAgent.OnRunStart
 
             Debug.Log($"[TrainingSim] Starting run {_runCount} with {_areas.Count} areas");
 
             // Process each area
             while (_currentAreaIndex < _areas.Count && _player.IsAlive())
             {
-                // Apply difficulty that was set at end of PREVIOUS area
-                // (or default difficulty for first area)
-                float hpMult = _difficultySettings?.HPMultiplier ?? 1.0f;
-                float dmgMult = _difficultySettings?.DamageMultiplier ?? 1.0f;
-                _areas[_currentAreaIndex].ApplyDifficulty(hpMult, dmgMult);
-
-                // Notify agent we're entering this area with area type for observation
                 MapType areaType = _areas[_currentAreaIndex].AreaType;
-                _ddaAgent?.OnAreaEnter(_currentAreaIndex, _areas.Count, areaType);
+                bool isBattleArea = areaType == MapType.Enemy || areaType == MapType.Boss;
+
+                if (isBattleArea)
+                {
+                    // Yield to allow Academy to process the previous RequestDecision
+                    // before applying difficulty for this area.
+                    // This ensures the agent's difficulty choice is reflected in enemy stats.
+                    if (_currentAreaIndex > 0)
+                    {
+                        yield return null;
+                    }
+
+                    // Apply difficulty that was set at end of PREVIOUS enemy area
+                    // (or default difficulty for first enemy area)
+                    float hpMult = _difficultySettings?.HPMultiplier ?? 1.0f;
+                    float dmgMult = _difficultySettings?.DamageMultiplier ?? 1.0f;
+                    _areas[_currentAreaIndex].ApplyDifficulty(hpMult, dmgMult);
+
+                    // Notify agent we're entering this battle area
+                    _ddaAgent?.OnAreaEnter(_currentAreaIndex);
+
+                    // Track HP at area start for reward calculation
+                    _areaStartHP = _player.CurrentHP;
+                }
 
                 yield return StartCoroutine(ProcessArea(_areas[_currentAreaIndex]));
 
-                // Update agent with player level after area (may have leveled up)
+                // Update agent observations after any area (HP changes from rest/shop)
+                float hpRatio = _player.MaxHP > 0 ? (float)_player.CurrentHP / _player.MaxHP : 1f;
+                float swordDepletion = _player.MaxSwordUses > 0 ? 1f - (float)_player.SwordUses / _player.MaxSwordUses : 0f;
+                float gunDepletion = _player.MaxGunUses > 0 ? 1f - (float)_player.GunUses / _player.MaxGunUses : 0f;
+                float defendDepletion = _player.MaxDefendUses > 0 ? 1f - (float)_player.DefendUses / _player.MaxDefendUses : 0f;
+                float resourceDepletion = (swordDepletion + gunDepletion + defendDepletion) / 3f;
+                _ddaAgent.UpdateBattlePhase(hpRatio, resourceDepletion);
                 _ddaAgent?.SetPlayerLevel(_player.Level);
 
-                // Notify agent that area is complete (requests difficulty for next)
-                bool areaWon = _player.IsAlive();
-                _ddaAgent?.OnAreaComplete(areaWon);
+                if (isBattleArea)
+                {
+                    // Notify agent that battle area is complete (reward + decision)
+                    bool areaWon = _player.IsAlive();
+                    _ddaAgent?.OnAreaComplete(areaWon);
+
+                    // Calculate area-level reward for UI stats
+                    _lastReward = DDAAgent.CalculateReward(areaWon, _player.CurrentHP, _areaStartHP);
+                    _totalReward += _lastReward;
+                }
+                else
+                {
+                    // Rest/Shop areas: no reward, no decision
+                    // State changes (healing, items) already updated above
+                    _lastReward = 0f;
+                }
+
                 _episodeCount++;
 
                 OnStatsUpdated?.Invoke(GetStats());
@@ -368,7 +456,7 @@ namespace DDA
 
             OnRunComplete?.Invoke(runResult);
 
-            // Notify agent that run ended (for logging only, episode already ended in OnAreaComplete)
+            // Notify agent that run ended — EndEpisode called inside DDAAgent.OnRunEnd
             _ddaAgent?.OnRunEnd(runWon, _currentAreaIndex, _areas.Count);
 
             Debug.Log($"[TrainingSim] Run {_runCount} complete. Won: {runWon}, " +
@@ -406,6 +494,8 @@ namespace DDA
         {
             // Reset turn count for entire area (not per enemy)
             _turnCount = 0;
+
+            // Note: _areaStartHP is set in RunTrainingRun before this method is called
 
             // Set all enemies in area as active (like actual game)
             // In actual game, player fights ALL enemies in ONE battle
@@ -480,9 +570,6 @@ namespace DDA
             bool playerWon = _currentEnemy.CurrentHP <= 0 && _player.IsAlive();
             int playerEndHP = _player.CurrentHP;
 
-            // Calculate reward (for logging/stats only)
-            _lastReward = CalculateReward(playerWon, playerEndHP, _player.MaxHP, _turnCount);
-
             // Update stats
             if (playerWon)
             {
@@ -498,9 +585,8 @@ namespace DDA
             }
 
             _totalTurns += _turnCount;
-            _totalReward += _lastReward;
 
-            // Notify DDA agent battle ended (accumulates reward, does NOT end episode)
+            // Notify DDA agent battle ended (updates observations only, reward at OnAreaComplete)
             _ddaAgent?.OnBattleEnd(playerWon, playerEndHP);
 
             // Unsubscribe
@@ -510,13 +596,12 @@ namespace DDA
             }
 
             // Fire events for UI
-            OnBattleEnded?.Invoke(playerWon, _lastReward, _battleCount);
+            OnBattleEnded?.Invoke(playerWon, 0, _battleCount);
             OnStatsUpdated?.Invoke(GetStats());
 
             Debug.Log($"[TrainingSim] Battle {_battleCount} ended. " +
                       $"Won: {playerWon}, HP: {playerEndHP}/{_player.MaxHP}, " +
-                      $"Turns: {_turnCount}, Reward: {_lastReward:F3}, " +
-                      $"WinRate: {WinRate:P1}");
+                      $"Turns: {_turnCount}, WinRate: {WinRate:P1}");
 
             _battleInProgress = false;
         }
@@ -568,8 +653,6 @@ namespace DDA
             bool playerWon = _currentEnemy.CurrentHP <= 0 && _player.IsAlive();
             int playerEndHP = _player.CurrentHP;
 
-            _lastReward = CalculateReward(playerWon, playerEndHP, _player.MaxHP, _turnCount);
-
             if (playerWon)
             {
                 _winCount++;
@@ -584,7 +667,6 @@ namespace DDA
             }
 
             _totalTurns += _turnCount;
-            _totalReward += _lastReward;
 
             _ddaAgent?.OnBattleEnd(playerWon, playerEndHP);
 
@@ -593,7 +675,7 @@ namespace DDA
                 _ddaAgent.OnDifficultyChanged -= HandleDifficultyChanged;
             }
 
-            OnBattleEnded?.Invoke(playerWon, _lastReward, _battleCount);
+            OnBattleEnded?.Invoke(playerWon, 0, _battleCount);
 
             _battleInProgress = false;
         }
@@ -702,8 +784,6 @@ namespace DDA
             bool playerWon = !HasAliveEnemies(enemies) && _player.IsAlive();
             int playerEndHP = _player.CurrentHP;
 
-            _lastReward = CalculateReward(playerWon, playerEndHP, _player.MaxHP, _turnCount);
-
             if (playerWon)
             {
                 _winCount++;
@@ -718,7 +798,6 @@ namespace DDA
             }
 
             _totalTurns += _turnCount;
-            _totalReward += _lastReward;
 
             _ddaAgent?.OnBattleEnd(playerWon, playerEndHP);
 
@@ -727,7 +806,7 @@ namespace DDA
                 _ddaAgent.OnDifficultyChanged -= HandleDifficultyChanged;
             }
 
-            OnBattleEnded?.Invoke(playerWon, _lastReward, _battleCount);
+            OnBattleEnded?.Invoke(playerWon, 0, _battleCount);
 
             _battleInProgress = false;
         }
@@ -759,8 +838,6 @@ namespace DDA
             bool playerWon = !HasAliveEnemies(enemies) && _player.IsAlive();
             int playerEndHP = _player.CurrentHP;
 
-            _lastReward = CalculateReward(playerWon, playerEndHP, _player.MaxHP, _turnCount);
-
             if (playerWon)
             {
                 _winCount++;
@@ -775,7 +852,6 @@ namespace DDA
             }
 
             _totalTurns += _turnCount;
-            _totalReward += _lastReward;
 
             _ddaAgent?.OnBattleEnd(playerWon, playerEndHP);
 
@@ -784,7 +860,7 @@ namespace DDA
                 _ddaAgent.OnDifficultyChanged -= HandleDifficultyChanged;
             }
 
-            OnBattleEnded?.Invoke(playerWon, _lastReward, _battleCount);
+            OnBattleEnded?.Invoke(playerWon, 0, _battleCount);
             OnStatsUpdated?.Invoke(GetStats());
 
             _battleInProgress = false;
@@ -837,7 +913,7 @@ namespace DDA
             totalEnemyHP = GetTotalEnemyHP(enemies);
             OnBattleStateChanged?.Invoke(_player.CurrentHP, totalEnemyHP, _turnCount);
 
-            // Update battle phase features for DDA agent
+            // Update battle phase observations for DDA agent
             UpdateAgentBattlePhase(enemies);
 
             _ddaAgent?.OnTurnEnd(0);
@@ -1033,54 +1109,6 @@ namespace DDA
             return Mathf.Max(1, damage);
         }
 
-        private float CalculateReward(bool playerWon, int playerEndHP, int playerStartHP, int turns)
-        {
-            float reward = 0f;
-
-            if (playerWon)
-            {
-                // Base win reward
-                reward += 1.0f;
-
-                // Calculate HP ratio
-                float hpRatio = (float)playerEndHP / playerStartHP;
-
-                // HP Target bonus (flow state: 40-60% HP remaining)
-                if (hpRatio >= 0.4f && hpRatio <= 0.6f)
-                {
-                    float distanceFromOptimal = Mathf.Abs(hpRatio - 0.5f);
-                    float hpBonus = 0.5f * (1.0f - distanceFromOptimal * 2f);
-                    reward += hpBonus;
-                }
-                else if (hpRatio > 0.6f)
-                {
-                    // Too easy - penalty
-                    float excess = hpRatio - 0.6f;
-                    reward -= 0.1f * excess;
-                }
-                else if (hpRatio < 0.4f)
-                {
-                    // Too hard - penalty
-                    float deficit = 0.4f - hpRatio;
-                    reward -= 0.1f * deficit;
-                }
-            }
-            else
-            {
-                // Loss penalty
-                reward -= 1.0f;
-            }
-
-            // Efficiency penalty (turns over expected ~10)
-            int expectedTurns = 10;
-            if (turns > expectedTurns)
-            {
-                float efficiencyPenalty = 0.01f * (turns - expectedTurns);
-                reward -= efficiencyPenalty;
-            }
-
-            return Mathf.Clamp(reward, -2f, 2f);
-        }
 
         private void HandleDifficultyChanged(int newLevel)
         {
@@ -1153,32 +1181,22 @@ namespace DDA
         }
 
         /// <summary>
-        /// Updates DDA agent with real-time battle phase features.
+        /// Updates DDA agent with battle phase observations.
         /// </summary>
         private void UpdateAgentBattlePhase(List<SimEnemy> enemies)
         {
             if (_ddaAgent == null) return;
 
-            // Current HP ratio
+            // HP ratio
             float hpRatio = _player.MaxHP > 0 ? (float)_player.CurrentHP / _player.MaxHP : 1f;
 
-            // Resource depletion (actions used)
+            // Resource depletion (weighted average of used actions)
             float swordDepletion = 1f - (float)_player.SwordUses / _player.MaxSwordUses;
             float gunDepletion = 1f - (float)_player.GunUses / _player.MaxGunUses;
             float defendDepletion = 1f - (float)_player.DefendUses / _player.MaxDefendUses;
             float resourceDepletion = (swordDepletion + gunDepletion + defendDepletion) / 3f;
 
-            // Enemy HP ratio (total remaining)
-            float enemyHPRatio = GetEnemyHPRatio(enemies);
-
-            _ddaAgent.UpdateBattlePhase(
-                hpRatio,
-                resourceDepletion,
-                enemyHPRatio,
-                _player.SwordUses,
-                _player.GunUses,
-                _player.DefendUses
-            );
+            _ddaAgent.UpdateBattlePhase(hpRatio, resourceDepletion);
         }
 
         /// <summary>
