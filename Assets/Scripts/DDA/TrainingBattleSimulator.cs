@@ -390,7 +390,7 @@ namespace DDA
                     _areas[_currentAreaIndex].ApplyDifficulty(hpMult, dmgMult);
 
                     // Notify agent we're entering this battle area
-                    _ddaAgent?.OnAreaEnter(_currentAreaIndex);
+                    _ddaAgent?.OnAreaEnter(_currentAreaIndex, areaType, _areas.Count);
 
                     // Track HP at area start for reward calculation
                     _areaStartHP = _player.CurrentHP;

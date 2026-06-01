@@ -8,7 +8,8 @@ from mlagents.trainers.optimizer.torch_optimizer import TorchOptimizer
 from mlagents.trainers.policy.torch_policy import TorchPolicy
 from mlagents.trainers.buffer import AgentBuffer, BufferKey, RewardSignalUtil
 from mlagents_envs.timers import timed
-from mlagents.trainers.torch_entities.networks import ValueNetwork, Actor
+from mlagents.trainers.torch_entities.networks import Actor
+from .networks import ReLUValueNetwork
 from mlagents_envs.base_env import ActionSpec, ObservationSpec
 from mlagents.trainers.torch_entities.agent_action import AgentAction
 from mlagents.trainers.torch_entities.utils import ModelUtils
@@ -206,7 +207,7 @@ class QNetworkDDQN(nn.Module, Actor, Critic):
         nn.Module.__init__(self)
 
         output_act_size = max(sum(action_spec.discrete_branches), 1)
-        self.network_body = ValueNetwork(
+        self.network_body = ReLUValueNetwork(
             stream_names,
             observation_specs,
             network_settings,

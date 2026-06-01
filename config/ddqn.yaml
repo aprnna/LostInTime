@@ -26,7 +26,7 @@ behaviors:
 
       # Exploration (Epsilon-greedy)
       exploration_initial_eps: 1.0
-      exploration_final_eps: 0.05
+      exploration_final_eps: 0.03
       exploration_decay_steps: 350000
 
       # Discount factor
@@ -46,7 +46,7 @@ behaviors:
     # Training settings
 
     keep_checkpoints: 5
-    max_steps: 750000
+    max_steps: 500000
     time_horizon: 128
     summary_freq: 5000
     checkpoint_interval: 50000

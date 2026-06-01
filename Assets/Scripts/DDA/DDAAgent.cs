@@ -28,6 +28,7 @@ namespace DDA
 
         // --- Area / Run state ---
         private int _playerLevel = 1;
+        private int _totalAreas = 12;
 
         // --- Episode control ---
         private bool _decisionPending = false;
@@ -68,6 +69,7 @@ namespace DDA
             _hpRatio = 1f;
             _resourceDepletion = 0f;
             _playerLevel = 1;
+            _totalAreas = 12;
             _areaStartHP = 0;
             _areaEndHP = 0;
             _areaWon = false;
@@ -78,12 +80,14 @@ namespace DDA
         }
 
         /// <summary>
-        /// 5 observations — all normalized to [0,1]:
+        /// 7 observations — all normalized to [0,1]:
         /// 1. HP Ratio
         /// 2. Turn Count
         /// 3. Player Level
         /// 4. Damage Ratio
         /// 5. Resource Depletion
+        /// 6. Area Type (encoded MapType)
+        /// 7. Area Depth (progression through run)
         /// </summary>
         public override void CollectObservations(VectorSensor sensor)
         {
@@ -185,7 +189,7 @@ namespace DDA
         /// Called when entering a new area.
         /// No EndEpisode — episode spans the entire run.
         /// </summary>
-        public void OnAreaEnter(int areaIndex)
+        public void OnAreaEnter(int areaIndex, MapType areaType, int totalAreas)
         {
             // Reset area-level tracking only
             _areaStartHP = 0;
@@ -278,6 +282,22 @@ namespace DDA
         public void SetTrainingMode(bool v) => _isTrainingMode = v;
 
         /// <summary>
+        /// Encode MapType enum to float [0,1]:
+        /// Enemy=0, Boss=0.33, Rest=0.67, Shop=1.0
+        /// </summary>
+        public static float EncodeMapType(MapType type)
+        {
+            return type switch
+            {
+                MapType.Enemy => 0.0f,
+                MapType.Boss => 0.33f,
+                MapType.Rest => 0.67f,
+                MapType.Shop => 1.0f,
+                _ => 0.0f
+            };
+        }
+
+        /// <summary>
         /// Update battle phase observations from simulator.
         /// Call each turn to provide real-time battle state.
         /// </summary>
@@ -288,15 +308,15 @@ namespace DDA
         }
 
         // ----------------------------------------------------------------
-        // Reward — based on area outcome, HP 40-60% sweet spot
+        // Reward — parabolic sweet spot at HP 50%, linear decay outside
         // ----------------------------------------------------------------
 
         /// <summary>
         /// Area-level reward function:
         /// - Area lost: -1.0
-        /// - Area won with HP 40-60%: 0.9 to 1.0 (peak at 50%)
-        /// - Area won with HP > 60%: 0.1 to 0.5 (too easy, decay)
-        /// - Area won with HP < 40%: 0.1 to 0.5 (too hard, decay)
+        /// - HP 40-60%: 1 - 25 * (hpRatio - 0.5)^2  (parabolic peak at 50%)
+        /// - HP &lt; 40%:  hpRatio * 0.1               (too hard, low reward)
+        /// - HP &gt; 60%:  (1 - hpRatio) * 0.1          (too easy, low reward)
         /// </summary>
         public static float CalculateReward(bool won, int endHP, int startHP)
         {
@@ -307,22 +327,17 @@ namespace DDA
             // Sweet spot: HP between 40-60%
             if (hpRatio >= 0.4f && hpRatio <= 0.6f)
             {
-                // Peak at 50%, smooth within zone
-                float distFromCenter = Mathf.Abs(hpRatio - 0.5f);
-                return 1.0f - distFromCenter; // 0.9 to 1.0
+                return 1.0f - 25.0f * (hpRatio - 0.5f) * (hpRatio - 0.5f);
             }
 
-            // Outside sweet spot — scale down
+            // Too easy: HP > 60%
             if (hpRatio > 0.6f)
             {
-                // Too easy: linear decay from 0.5 at 60% to 0.1 at 100%
-                return 0.5f - 0.4f * ((hpRatio - 0.6f) / 0.4f);
+                return (1.0f - hpRatio) * 0.1f;
             }
-            else
-            {
-                // Too hard (HP < 40%): linear decay from 0.5 at 40% to 0.1 at 0%
-                return 0.5f - 0.4f * ((0.4f - hpRatio) / 0.4f);
-            }
+
+            // Too hard: HP < 40%
+            return hpRatio * 0.1f;
         }
 
 #if UNITY_EDITOR

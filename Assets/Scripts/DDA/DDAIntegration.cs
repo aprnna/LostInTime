@@ -176,5 +176,18 @@ namespace DDA
             }
             return (_difficultySettings.HPMultiplier, _difficultySettings.DamageMultiplier);
         }
+
+        /// <summary>
+        /// Called when entering a new area in the real game.
+        /// Passes area context (type, depth) to the DDA agent.
+        /// </summary>
+        public void OnAreaEnter(MapType areaType, int areaIndex, int totalAreas)
+        {
+            if (!_enableDDA || _ddaAgent == null) return;
+
+            Debug.Log($"[DDAIntegration] Area enter. Type={areaType}, " +
+                      $"Depth={areaIndex}/{totalAreas}, " +
+                      $"Difficulty: {_difficultySettings.GetLevelName()}");
+        }
     }
 }
