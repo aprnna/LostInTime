@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Player;
+using DDA;
 
 namespace DDA
 {
@@ -35,6 +36,7 @@ namespace DDA
         [SerializeField] private bool _useSmartAI = true;
         [SerializeField] [Range(0f, 1f)] private float _playerSkill = 0.5f;
         [SerializeField] private bool _resetOnRunComplete = true;
+        [SerializeField] private int _randomSeed;
 
         [Header("Fast Training Mode")]
         [Tooltip("Simulate battles instantly without yields - much faster training")]
@@ -140,6 +142,8 @@ namespace DDA
             if (Instance == null)
             {
                 Instance = this;
+                UnityEngine.Random.InitState(_randomSeed);
+
             }
             else
             {
@@ -149,6 +153,13 @@ namespace DDA
 
         private void Start()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD || UNITY_STANDALONE
+            // Optimize engine speed for ML-Agents training
+            Application.targetFrameRate = 9999;
+            QualitySettings.vSyncCount = 0;
+            Application.runInBackground = true;
+#endif
+
             // Load references
             if (_difficultySettings == null)
             {
@@ -171,11 +182,19 @@ namespace DDA
             // Initialize player
             _player = new SimPlayer();
 
+            // Initialize training logger
+            TrainingLogger.Initialize();
+
             // Start training
             if (_autoTrain)
             {
                 StartCoroutine(TrainingLoop());
             }
+        }
+
+        private void OnDestroy()
+        {
+            TrainingLogger.Close();
         }
 
         private void InitializeAreas()
@@ -341,7 +360,15 @@ namespace DDA
                 {
                     yield return StartCoroutine(RunTrainingRun());
                 }
-                yield return new WaitForSeconds(_battleDelay);
+                // Minimal delay between runs in instant mode
+                if (_instantMode)
+                {
+                    yield return null;
+                }
+                else
+                {
+                    yield return new WaitForSeconds(_battleDelay);
+                }
             }
         }
 
@@ -365,6 +392,7 @@ namespace DDA
 
             // Difficulty is reset to baseline inside DDAAgent.OnRunStart
 
+            TrainingLogger.LogRunStart(_runCount, _areas.Count, _difficultySettings?.GetLevelName() ?? "Normal");
             Debug.Log($"[TrainingSim] Starting run {_runCount} with {_areas.Count} areas");
 
             // Process each area
@@ -375,9 +403,9 @@ namespace DDA
 
                 if (isBattleArea)
                 {
-                    // Yield to allow Academy to process the previous RequestDecision
-                    // before applying difficulty for this area.
-                    // This ensures the agent's difficulty choice is reflected in enemy stats.
+                    // Yield 1 frame so Academy can process the previous RequestDecision
+                    // before we read _difficultySettings for this area.
+                    // First battle has no prior RequestDecision, so skip the yield.
                     if (_currentAreaIndex > 0)
                     {
                         yield return null;
@@ -389,6 +417,9 @@ namespace DDA
                     float dmgMult = _difficultySettings?.DamageMultiplier ?? 1.0f;
                     _areas[_currentAreaIndex].ApplyDifficulty(hpMult, dmgMult);
 
+                    TrainingLogger.LogAreaEnter(_currentAreaIndex, areaType, hpMult, dmgMult,
+                        _difficultySettings?.GetLevelName() ?? "Normal");
+
                     // Notify agent we're entering this battle area
                     _ddaAgent?.OnAreaEnter(_currentAreaIndex, areaType, _areas.Count);
 
@@ -396,7 +427,14 @@ namespace DDA
                     _areaStartHP = _player.CurrentHP;
                 }
 
-                yield return StartCoroutine(ProcessArea(_areas[_currentAreaIndex]));
+                if (_instantMode)
+                {
+                    ProcessAreaInstant(_areas[_currentAreaIndex]);
+                }
+                else
+                {
+                    yield return StartCoroutine(ProcessArea(_areas[_currentAreaIndex]));
+                }
 
                 // Update agent observations after any area (HP changes from rest/shop)
                 float hpRatio = _player.MaxHP > 0 ? (float)_player.CurrentHP / _player.MaxHP : 1f;
@@ -411,17 +449,33 @@ namespace DDA
                 {
                     // Notify agent that battle area is complete (reward + decision)
                     bool areaWon = _player.IsAlive();
+                    bool isFirstArea = _ddaAgent != null && _ddaAgent.IsFirstArea;
+
                     _ddaAgent?.OnAreaComplete(areaWon);
+
+                    // OnAreaComplete calls RequestDecision() internally.
+                    // The next battle area will yield 1 frame for Academy to process it.
+                    // No yield needed here — the yield at the top of the next battle area
+                    // ensures Academy processes the decision before we read difficulty settings.
 
                     // Calculate area-level reward for UI stats
                     _lastReward = DDAAgent.CalculateReward(areaWon, _player.CurrentHP, _areaStartHP);
                     _totalReward += _lastReward;
+
+                    TrainingLogger.LogAreaComplete(_currentAreaIndex, areaWon,
+                        _player.CurrentHP, _areaStartHP, _lastReward,
+                        _ddaAgent != null ? _ddaAgent.GetCumulativeRewardValue : 0f,
+                        isFirstArea);
+                    TrainingLogger.LogPlayerState(_player.CurrentHP, _player.MaxHP,
+                        _player.Level, _player.Coin,
+                        _player.SwordUses, _player.GunUses, _player.DefendUses);
                 }
                 else
                 {
                     // Rest/Shop areas: no reward, no decision
                     // State changes (healing, items) already updated above
                     _lastReward = 0f;
+                    TrainingLogger.LogMessage($"Area {_currentAreaIndex} ({areaType}) - No reward, no decision");
                 }
 
                 _episodeCount++;
@@ -436,12 +490,21 @@ namespace DDA
                 _currentAreaIndex++;
                 OnAreaChanged?.Invoke(_currentAreaIndex, _areas.Count);
 
-                // Yield to allow Academy to process decision before next area
-                yield return null;
+                // No yield here in instant mode — the yield before the next battle area
+                // is the only frame needed for Academy to process RequestDecision.
+                // Non-instant mode yields for visual pacing.
+                if (!_instantMode)
+                {
+                    yield return null;
+                }
             }
 
             // Run complete
             bool runWon = _player.IsAlive() && _currentAreaIndex >= _areas.Count;
+
+            TrainingLogger.LogRunEnd(_runCount, runWon, _currentAreaIndex, _areas.Count,
+                _ddaAgent != null ? _ddaAgent.GetCumulativeRewardValue : 0f,
+                runWon ? 0.5f : -0.1f);
 
             var runResult = new RunResult
             {
@@ -468,6 +531,34 @@ namespace DDA
             }
 
             _runInProgress = false;
+        }
+
+        /// <summary>
+        /// Instant area processing — no yields, runs synchronously.
+        /// Battles use RunBattleInstantWithMultipleEnemies, rest/shop run inline.
+        /// </summary>
+        private void ProcessAreaInstant(SimArea area)
+        {
+            switch (area.AreaType)
+            {
+                case MapType.Enemy:
+                case MapType.Boss:
+                    RunBattleInstantWithMultipleEnemies(area.Enemies);
+                    if (_player.IsAlive())
+                    {
+                        area.ApplyDrops(_player);
+                        _player.ResetActionUses();
+                    }
+                    break;
+
+                case MapType.Rest:
+                    ProcessRestArea(area);
+                    break;
+
+                case MapType.Shop:
+                    ProcessShopArea(area);
+                    break;
+            }
         }
 
         private IEnumerator ProcessArea(SimArea area)
@@ -527,6 +618,7 @@ namespace DDA
             int healAmount = UnityEngine.Random.Range(10, 25);
             _player.Heal(healAmount);
 
+            TrainingLogger.LogRestArea(healAmount, _player.CurrentHP, _player.MaxHP);
             Debug.Log($"[TrainingSim] Rest area: Healed {healAmount} HP. " +
                       $"HP: {_player.CurrentHP}/{_player.MaxHP}");
         }
@@ -536,6 +628,7 @@ namespace DDA
             // Smart AI shopping
             area.ApplyShop(_player, _useSmartAI);
 
+            TrainingLogger.LogShopArea(_player.Coin, _player.CurrentShield, _player.MaxShield);
             Debug.Log($"[TrainingSim] Shop area: Coin={_player.Coin}, " +
                       $"Shield={_player.CurrentShield}/{_player.MaxShield}");
         }

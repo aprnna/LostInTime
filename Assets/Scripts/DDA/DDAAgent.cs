@@ -80,14 +80,12 @@ namespace DDA
         }
 
         /// <summary>
-        /// 7 observations — all normalized to [0,1]:
+        /// 5 observations (baseline) — all normalized to [0,1]:
         /// 1. HP Ratio
         /// 2. Turn Count
         /// 3. Player Level
         /// 4. Damage Ratio
         /// 5. Resource Depletion
-        /// 6. Area Type (encoded MapType)
-        /// 7. Area Depth (progression through run)
         /// </summary>
         public override void CollectObservations(VectorSensor sensor)
         {
@@ -118,6 +116,7 @@ namespace DDA
             if (_difficultySettings == null) return;
 
             int prevLevel = _difficultySettings.CurrentLevelIndex;
+            string prevDiffName = _difficultySettings.GetLevelName();
             int action = actions.DiscreteActions[0];
 
             switch (action)
@@ -130,6 +129,18 @@ namespace DDA
                     _difficultySettings.DecreaseDifficulty();
                     break;
             }
+
+            string actionName = action switch
+            {
+                0 => "Maintain",
+                1 => "Increase",
+                2 => "Decrease",
+                _ => "Unknown"
+            };
+
+            TrainingLogger.LogAgentAction(action, actionName, prevLevel,
+                _difficultySettings.CurrentLevelIndex, prevDiffName,
+                _difficultySettings.GetLevelName());
 
             if (_difficultySettings.CurrentLevelIndex != prevLevel)
             {
@@ -161,6 +172,8 @@ namespace DDA
             // Reset difficulty to baseline at start of run
             _difficultySettings?.ResetToNormal();
 
+            TrainingLogger.LogMessage($"DDAAgent: Run started. Difficulty reset to baseline. " +
+                $"Epsilon={(_isTrainingMode ? "training" : "inference")}");
             Debug.Log($"[DDAAgent] Run started. Difficulty reset to baseline.");
         }
 
@@ -172,6 +185,8 @@ namespace DDA
                 float runBonus = runWon ? 0.5f : -0.1f;
                 AddReward(runBonus);
 
+                TrainingLogger.LogMessage($"DDAAgent: Run end. Won={runWon}, Areas={areasCompleted}/{totalAreas}, " +
+                    $"Cumulative={GetCumulativeReward():F3}, RunBonus={runBonus:F2}");
                 Debug.Log($"[DDAAgent] Run end. Won={runWon}, Areas={areasCompleted}/{totalAreas}, " +
                           $"Cumulative={GetCumulativeReward():F3}, " +
                           $"RunBonus={runBonus:F2}");
@@ -231,6 +246,8 @@ namespace DDA
 
             // No reward here — reward is given at OnAreaComplete
 
+            TrainingLogger.LogBattleEnd(_areasCompleted - 1, playerWon, playerEndHP, _battleStartHP,
+                _turnCount, $"Area{_areasCompleted}");
             Debug.Log($"[DDAAgent] Battle end. Won={playerWon}, HP={playerEndHP}/{_battleStartHP}, " +
                       $"HPRatio={_hpRatio:F2}, Difficulty={_difficultySettings?.GetLevelName()}, " +
                       $"BattlesWon={_battlesWon}/{_battlesTotal}");
@@ -280,6 +297,8 @@ namespace DDA
 
         public void SetPlayerLevel(int level) => _playerLevel = level;
         public void SetTrainingMode(bool v) => _isTrainingMode = v;
+        public float GetCumulativeRewardValue => GetCumulativeReward();
+        public bool IsFirstArea => _isFirstArea;
 
         /// <summary>
         /// Encode MapType enum to float [0,1]:
