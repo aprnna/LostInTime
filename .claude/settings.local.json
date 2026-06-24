@@ -10,7 +10,9 @@
       "mcp__UnityMCP__manage_gameobject",
       "mcp__UnityMCP__refresh_unity",
       "mcp__UnityMCP__find_gameobjects",
-      "Bash(conda run:*)"
+      "Bash(conda run:*)",
+      "Bash(Get-ChildItem -Path \"E:\\\\COLLEGE\\\\CodeLabs\\\\Game\\\\SpaceJam\" -Filter \"*Test*.cs\" -Recurse -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -First 10 FullName)"
     ]
   }
 }

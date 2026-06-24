@@ -30,6 +30,7 @@ namespace Playfab
         [SerializeField] private int defendUsedCount;
         [SerializeField] private int damageDealtTotal;
         [SerializeField] private int damageTakenTotal;
+        [SerializeField] private int criticalSuccessCount;
         
         [Header("Battle Events")]
         private List<BattleEvent> battleEvents = new List<BattleEvent>();
@@ -121,6 +122,7 @@ namespace Playfab
             turnCount++;
             string criticalText = isCritical ? " (CRITICAL!)" : "";
             damageDealtTotal += damage;
+            if (isCritical) criticalSuccessCount++;
             CalculatePlayerAction(playerActionType);
             
             BattleEvent battleEvent = new BattleEvent
@@ -229,7 +231,8 @@ namespace Playfab
                     fist_used = fistUsedCount,
                     sword_used = swordUsedCount,
                     gun_used = gunUsedCount,
-                    defend_used = defendUsedCount
+                    defend_used = defendUsedCount,
+                    critical_success = criticalSuccessCount
                 },
                 turn_logs = ConvertEventsToTurnLog(),
                 applied_difficulty_params = new AppliedDifficultyParams()
@@ -263,6 +266,7 @@ namespace Playfab
             defendUsedCount = 0;
             damageDealtTotal = 0;
             damageTakenTotal = 0;
+            criticalSuccessCount = 0;
         }
 
         public void LogBattleEvent(BattleEvent battleEvent)
@@ -335,6 +339,7 @@ namespace Playfab
             Debug.Log($"  Sword Used: {swordUsedCount}");
             Debug.Log($"  Gun Used: {gunUsedCount}");
             Debug.Log($"  Defend Used: {defendUsedCount}");
+            Debug.Log($"  Critical Success: {criticalSuccessCount}");
             Debug.Log($"\nTotal Events: {battleEvents.Count}");
         }
 
@@ -465,6 +470,7 @@ namespace Playfab
         public int gun_used;
         public int sword_used;
         public int defend_used;
+        public int critical_success;
     }
 
     [Serializable]

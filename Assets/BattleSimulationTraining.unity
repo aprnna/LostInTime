@@ -1277,7 +1277,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 5
+    VectorObservationSize: 10
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
@@ -1320,8 +1320,9 @@ MonoBehaviour:
   _turnDelay: 0
   _maxTurnsPerBattle: 15
   _useSmartAI: 1
-  _playerSkill: 0.5
+  _playerSkill: 0.7
   _resetOnRunComplete: 1
+  _randomSeed: 0
   _instantMode: 1
 --- !u!4 &403596227
 Transform:

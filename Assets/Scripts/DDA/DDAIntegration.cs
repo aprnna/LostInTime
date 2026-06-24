@@ -85,10 +85,24 @@ namespace DDA
             }
 
             _playerStartHP = playerStartHP;
-            _ddaAgent.OnBattleStart(playerStartHP);
+
+            // Calculate total enemy HP from BattleSystem
+            int totalEnemyHP = 0;
+            if (_battleSystem != null && _battleSystem.Enemies != null)
+            {
+                foreach (var enemy in _battleSystem.Enemies)
+                {
+                    if (enemy != null && enemy.EnemyStats != null)
+                    {
+                        totalEnemyHP += enemy.EnemyStats.MaxHealth;
+                    }
+                }
+            }
+
+            _ddaAgent.OnBattleStart(playerStartHP, totalEnemyHP);
 
             Debug.Log($"[DDAIntegration] Battle pre-start. Player HP: {playerStartHP}, " +
-                      $"Difficulty: {_difficultySettings.GetLevelName()}");
+                      $"Total Enemy HP: {totalEnemyHP}, Difficulty: {_difficultySettings.GetLevelName()}");
         }
 
         /// <summary>

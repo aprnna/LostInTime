@@ -2,22 +2,58 @@
     "ddqn_dda": {
         "checkpoints": [
             {
-                "steps": 1367,
-                "file_path": "results\\test1\\ddqn_dda\\ddqn_dda-1367.onnx",
+                "steps": 349993,
+                "file_path": "results\\test1\\ddqn_dda\\ddqn_dda-349993.onnx",
                 "reward": null,
-                "creation_time": 1778514806.5317965,
+                "creation_time": 1780784021.4846709,
                 "auxillary_file_paths": [
-                    "results\\test1\\ddqn_dda\\ddqn_dda-1367.pt"
+                    "results\\test1\\ddqn_dda\\ddqn_dda-349993.pt"
+                ]
+            },
+            {
+                "steps": 399997,
+                "file_path": "results\\test1\\ddqn_dda\\ddqn_dda-399997.onnx",
+                "reward": null,
+                "creation_time": 1780784535.9793859,
+                "auxillary_file_paths": [
+                    "results\\test1\\ddqn_dda\\ddqn_dda-399997.pt"
+                ]
+            },
+            {
+                "steps": 449997,
+                "file_path": "results\\test1\\ddqn_dda\\ddqn_dda-449997.onnx",
+                "reward": null,
+                "creation_time": 1780785050.657935,
+                "auxillary_file_paths": [
+                    "results\\test1\\ddqn_dda\\ddqn_dda-449997.pt"
+                ]
+            },
+            {
+                "steps": 499994,
+                "file_path": "results\\test1\\ddqn_dda\\ddqn_dda-499994.onnx",
+                "reward": null,
+                "creation_time": 1780785566.144872,
+                "auxillary_file_paths": [
+                    "results\\test1\\ddqn_dda\\ddqn_dda-499994.pt"
+                ]
+            },
+            {
+                "steps": 500026,
+                "file_path": "results\\test1\\ddqn_dda\\ddqn_dda-500026.onnx",
+                "reward": null,
+                "creation_time": 1780785566.2262363,
+                "auxillary_file_paths": [
+                    "results\\test1\\ddqn_dda\\ddqn_dda-500026.pt"
                 ]
             }
         ],
         "final_checkpoint": {
-            "steps": 1367,
+            "steps": 500026,
             "file_path": "results\\test1\\ddqn_dda.onnx",
             "reward": null,
-            "creation_time": 1778514806.5317965,
+            "creation_time": 1780785566.2262363,
             "auxillary_file_paths": [
-                "results\\test1\\ddqn_dda\\ddqn_dda-1367.pt"
+                "results\\test1\\ddqn_dda\\ddqn_dda-500026.pt"
             ]
         }
     },

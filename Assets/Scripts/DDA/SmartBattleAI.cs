@@ -166,7 +166,9 @@ namespace DDA
 
             if (tapSuccess)
             {
-                baseDamage = Mathf.RoundToInt(baseDamage * 1.1f); // +10% critical
+                // Narrowed from +10% to +5% to reduce per-battle HP outcome variance
+                // (same difficulty -> more consistent reward), keeping the random map path.
+                baseDamage = Mathf.RoundToInt(baseDamage * 1.05f); // +5% critical
             }
 
             // No accuracy check - matches actual game (100% hit rate)

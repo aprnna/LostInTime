@@ -5,16 +5,20 @@ namespace DDA
     /// <summary>
     /// ScriptableObject storing difficulty multipliers for DDA system.
     /// Supports 5 discrete levels: Very Easy (0.75x) to Very Hard (1.25x).
+    ///
+    /// IMPORTANT: CurrentLevelIndex is INSTANCE state for multi-env training.
+    /// Each TrainingBattleSimulator should have its own DifficultySettings instance
+    /// or use ResetToNormal() at run start to synchronize.
     /// </summary>
     [CreateAssetMenu(fileName = "DifficultySettings", menuName = "DDA/DifficultySettings")]
     public class DifficultySettings : ScriptableObject
     {
         [Header("Difficulty Levels")]
         [Tooltip("Multiplier values for each difficulty level")]
-        [SerializeField] private float[] _difficultyLevels = { 0.75f, 0.875f, 1.0f, 1.125f, 1.25f };
+        [SerializeField] private float[] _difficultyLevels = { 0.6f, 0.8f, 1.0f, 1.2f, 1.4f };
 
-        [Header("Current State")]
-        [Tooltip("Current difficulty level index (0-4)")]
+        [Header("Current State (Per-Instance)")]
+        [Tooltip("Current difficulty level index (0-4). NOTE: For multi-env training, ensure each env has its own instance.")]
         [SerializeField] private int _currentLevelIndex = 2; // Start at Normal
 
         /// <summary>Current HP multiplier based on difficulty level.</summary>
@@ -47,10 +51,36 @@ namespace DDA
             _currentLevelIndex = Mathf.Clamp(levelIndex, 0, _difficultyLevels.Length - 1);
         }
 
+        /// <summary>
+        /// Replaces the difficulty multiplier array at runtime.
+        /// Used by the training simulator to force a widened range on its runtime copy,
+        /// so a baked asset's serialized (possibly old) values do not constrain training.
+        /// Clamps the current level index into the new array bounds.
+        /// </summary>
+        public void SetDifficultyLevels(float[] levels)
+        {
+            if (levels == null || levels.Length == 0) return;
+            _difficultyLevels = levels;
+            _currentLevelIndex = Mathf.Clamp(_currentLevelIndex, 0, levels.Length - 1);
+        }
+
         /// <summary>Resets difficulty to Normal (level 2).</summary>
         public void ResetToNormal()
         {
             _currentLevelIndex = 2;
+        }
+
+        /// <summary>
+        /// Creates a runtime copy of this DifficultySettings.
+        /// IMPORTANT for multi-env training: Each environment should use its own copy
+        /// to avoid shared state when agent changes difficulty.
+        /// </summary>
+        public DifficultySettings CreateRuntimeCopy()
+        {
+            var copy = CreateInstance<DifficultySettings>();
+            copy._difficultyLevels = (float[])_difficultyLevels.Clone();
+            copy._currentLevelIndex = _currentLevelIndex;
+            return copy;
         }
 
         /// <summary>Returns difficulty level normalized to 0-1 range.</summary>
