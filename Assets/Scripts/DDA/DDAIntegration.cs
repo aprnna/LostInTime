@@ -39,6 +39,7 @@ namespace DDA
             if (Instance == null)
             {
                 Instance = this;
+                DontDestroyOnLoad(gameObject); // keep agent + difficulty state alive across battle scenes
             }
             else
             {
@@ -46,6 +47,8 @@ namespace DDA
                 return;
             }
         }
+
+        private bool _runStarted = false;
 
         private void Start()
         {
@@ -72,6 +75,15 @@ namespace DDA
             {
                 _ddaAgent.SetTrainingMode(_isTrainingMode);
             }
+
+            // Real-game (inference) run bootstrap: start a run + enter area 0 baseline.
+            // Training simulator drives these itself, so skip in training mode.
+            if (!_isTrainingMode && !_runStarted)
+            {
+                _runStarted = true;
+                OnRunStart();
+                OnAreaEnter(MapType.Enemy, 0, 12);
+            }
         }
 
         /// <summary>
@@ -85,10 +97,24 @@ namespace DDA
             }
 
             _playerStartHP = playerStartHP;
-            _ddaAgent.OnBattleStart(playerStartHP);
+
+            // Calculate total enemy HP from BattleSystem
+            int totalEnemyHP = 0;
+            if (_battleSystem != null && _battleSystem.Enemies != null)
+            {
+                foreach (var enemy in _battleSystem.Enemies)
+                {
+                    if (enemy != null && enemy.EnemyStats != null)
+                    {
+                        totalEnemyHP += enemy.EnemyStats.MaxHealth;
+                    }
+                }
+            }
+
+            _ddaAgent.OnBattleStart(playerStartHP, totalEnemyHP);
 
             Debug.Log($"[DDAIntegration] Battle pre-start. Player HP: {playerStartHP}, " +
-                      $"Difficulty: {_difficultySettings.GetLevelName()}");
+                      $"Total Enemy HP: {totalEnemyHP}, Difficulty: {_difficultySettings.GetLevelName()}");
         }
 
         /// <summary>
@@ -175,6 +201,45 @@ namespace DDA
                 return (1.0f, 1.0f);
             }
             return (_difficultySettings.HPMultiplier, _difficultySettings.DamageMultiplier);
+        }
+
+        /// <summary>
+        /// Called when entering a new area in the real game.
+        /// Passes area context (type, depth) to the DDA agent.
+        /// </summary>
+        public void OnAreaEnter(MapType areaType, int areaIndex, int totalAreas)
+        {
+            if (!_enableDDA || _ddaAgent == null) return;
+
+            _ddaAgent.OnAreaEnter(areaIndex, areaType, totalAreas);
+
+            Debug.Log($"[DDAIntegration] Area enter. Type={areaType}, " +
+                      $"Depth={areaIndex}/{totalAreas}, " +
+                      $"Difficulty: {_difficultySettings.GetLevelName()}");
+        }
+
+        /// <summary>Begins a run (resets difficulty to baseline, resets run state).</summary>
+        public void OnRunStart()
+        {
+            if (!_enableDDA || _ddaAgent == null) return;
+            _ddaAgent.OnRunStart();
+            Debug.Log($"[DDAIntegration] Run started. Difficulty reset to {_difficultySettings.GetLevelName()}.");
+        }
+
+        /// <summary>Called after an area's battle resolves. Triggers agent decision for next area.</summary>
+        public void OnAreaComplete(bool areaWon)
+        {
+            if (!_enableDDA || _ddaAgent == null) return;
+            _ddaAgent.OnAreaComplete(areaWon);
+            Debug.Log($"[DDAIntegration] Area complete. Won={areaWon}, Difficulty now {_difficultySettings.GetLevelName()}.");
+        }
+
+        /// <summary>Called when a run ends (boss cleared / player death).</summary>
+        public void OnRunEnd(bool runWon, int areasCompleted, int totalAreas)
+        {
+            if (!_enableDDA || _ddaAgent == null) return;
+            _ddaAgent.OnRunEnd(runWon, areasCompleted, totalAreas);
+            Debug.Log($"[DDAIntegration] Run end. Won={runWon}, Areas={areasCompleted}/{totalAreas}.");
         }
     }
 }

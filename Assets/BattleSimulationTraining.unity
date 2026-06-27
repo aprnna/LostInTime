@@ -1263,7 +1263,6 @@ MonoBehaviour:
   MaxStep: 100
   _difficultySettings: {fileID: 11400000, guid: b608018e3e3b4ac409681bc8e02072ec, type: 2}
   _difficultyApplier: {fileID: 403596222}
-  _expectedTurnsPerBattle: 10
   _isTrainingMode: 1
 --- !u!114 &403596225
 MonoBehaviour:
@@ -1278,7 +1277,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 8
+    VectorObservationSize: 10
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
@@ -1317,12 +1316,13 @@ MonoBehaviour:
   _playerData: {fileID: 11400000, guid: 3e005f34bf87444418635beb595c2080, type: 2}
   _playerAccuracy: 0.85
   _autoTrain: 1
-  _battleDelay: 1
-  _turnDelay: 1
-  _maxTurnsPerBattle: 20
+  _battleDelay: 0
+  _turnDelay: 0
+  _maxTurnsPerBattle: 15
   _useSmartAI: 1
-  _playerSkill: 0.5
+  _playerSkill: 0.7
   _resetOnRunComplete: 1
+  _randomSeed: 0
   _instantMode: 1
 --- !u!4 &403596227
 Transform:

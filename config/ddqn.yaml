@@ -7,6 +7,29 @@
 #
 # Usage:
 #   mlagents-learn config/ddqn.yaml --run-id=ddqn_dda_v1 --train
+#
+# Observations (10 total):
+#   1. HP Ratio (current/max)
+#   2. Turn Count (normalized, cap 20)
+#   3. Player Level (normalized, cap 10)
+#   4. Damage Ratio (dealt / startHP * enemyCount)
+#   5. Resource Depletion (avg depletion of actions)
+#   6. Area Progress Ratio (completed/total)
+#   7. Current Difficulty (index/4, normalized)
+#   8. Sword Remaining (uses/max)
+#   9. Gun Remaining (uses/max)
+#   10. Defend Remaining (uses/max)
+#
+# Actions (3 discrete):
+#   0 = Maintain difficulty
+#   1 = Increase difficulty
+#   2 = Decrease difficulty
+#
+# Reward:
+#   - Progressive weighting: 0.5 + 0.5 * progress
+#   - Parabolic sweet spot at HP 50%, broadened band 35-65% HP
+#   - Loss softened to -0.5 (was -1.0)
+#   - Applied to both wins and losses
 
 behaviors:
   ddqn_dda:
@@ -14,7 +37,7 @@ behaviors:
 
     hyperparameters:
       # Learning
-      learning_rate: 0.0001
+      learning_rate: 0.0003
       learning_rate_schedule: constant
 
       # Experience Replay
@@ -23,14 +46,15 @@ behaviors:
 
       # DDQN - Target Network Update
       tau: 0.005 # Soft update rate
+      steps_per_update: 4 # Update network every 4 steps (vs 1) — 4x faster throughput
 
       # Exploration (Epsilon-greedy)
       exploration_initial_eps: 1.0
-      exploration_final_eps: 0.05
-      exploration_decay_steps: 350000
+      exploration_final_eps: 0.03
+      exploration_decay_steps: 1000000
 
       # Discount factor
-      gamma: 0.90
+      gamma: 0.99
 
     network_settings:
       normalize: true
@@ -40,7 +64,7 @@ behaviors:
 
     reward_signals:
       extrinsic:
-        gamma: 0.90
+        gamma: 0.99
         strength: 1.0
 
     # Training settings
@@ -55,7 +79,7 @@ behaviors:
 env_settings:
   env_path: null
   base_port: 5005
-  num_envs: 1
+  num_envs: 4
   num_areas: 1
   timeout_wait: 60
   seed: -1

@@ -5,6 +5,7 @@ dqn/dqn_trainer.py
 mlagents_plugin_ddqn/__init__.py
 mlagents_plugin_ddqn/ddqn_optimizer.py
 mlagents_plugin_ddqn/ddqn_trainer.py
+mlagents_plugin_ddqn/networks.py
 mlagents_plugin_ddqn.egg-info/PKG-INFO
 mlagents_plugin_ddqn.egg-info/SOURCES.txt
 mlagents_plugin_ddqn.egg-info/dependency_links.txt

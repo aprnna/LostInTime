@@ -28,6 +28,14 @@ public class DropItem
     public ConsumableType Type=> _type;
     public Sprite Icon => _icon;
     public int Amount => _amount;
+
+    // Runtime ctor for enemy-derived rewards (BattleSystem builds these from EnemySO rewards).
+    public DropItem(ConsumableType type, Sprite icon, int amount)
+    {
+        _type = type;
+        _icon = icon;
+        _amount = amount;
+    }
     public void AppliedToPlayerStats(PlayerStats playerStats)
     {
         switch (_type)

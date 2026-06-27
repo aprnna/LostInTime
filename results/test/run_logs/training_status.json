@@ -1,0 +1,65 @@
+{
+    "ddqn_dda": {
+        "checkpoints": [
+            {
+                "steps": 349997,
+                "file_path": "results\\test\\ddqn_dda\\ddqn_dda-349997.onnx",
+                "reward": null,
+                "creation_time": 1780729256.5710964,
+                "auxillary_file_paths": [
+                    "results\\test\\ddqn_dda\\ddqn_dda-349997.pt"
+                ]
+            },
+            {
+                "steps": 399976,
+                "file_path": "results\\test\\ddqn_dda\\ddqn_dda-399976.onnx",
+                "reward": null,
+                "creation_time": 1780729793.3102915,
+                "auxillary_file_paths": [
+                    "results\\test\\ddqn_dda\\ddqn_dda-399976.pt"
+                ]
+            },
+            {
+                "steps": 449997,
+                "file_path": "results\\test\\ddqn_dda\\ddqn_dda-449997.onnx",
+                "reward": null,
+                "creation_time": 1780730330.8265314,
+                "auxillary_file_paths": [
+                    "results\\test\\ddqn_dda\\ddqn_dda-449997.pt"
+                ]
+            },
+            {
+                "steps": 499998,
+                "file_path": "results\\test\\ddqn_dda\\ddqn_dda-499998.onnx",
+                "reward": null,
+                "creation_time": 1780730867.8077366,
+                "auxillary_file_paths": [
+                    "results\\test\\ddqn_dda\\ddqn_dda-499998.pt"
+                ]
+            },
+            {
+                "steps": 500030,
+                "file_path": "results\\test\\ddqn_dda\\ddqn_dda-500030.onnx",
+                "reward": null,
+                "creation_time": 1780730867.8968883,
+                "auxillary_file_paths": [
+                    "results\\test\\ddqn_dda\\ddqn_dda-500030.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 500030,
+            "file_path": "results\\test\\ddqn_dda.onnx",
+            "reward": null,
+            "creation_time": 1780730867.8968883,
+            "auxillary_file_paths": [
+                "results\\test\\ddqn_dda\\ddqn_dda-500030.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.2.2+cu121"
+    }
+}
