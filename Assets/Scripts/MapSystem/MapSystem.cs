@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using DDA;
 using Manager;
 using Player;
 using UnityEngine;
@@ -8,6 +9,11 @@ using UnityEngine.SceneManagement;
 public class MapSystem : MonoBehaviour
 {
     public static MapSystem Instance { get; private set; }
+
+    // DDA area tracking (incremented per node move; baseline area 0 = first battle node)
+    private int _areaIndex = 0;
+    public int AreaIndex => _areaIndex;
+    public int AreaTotal => mapData != null && mapData.mapItems != null ? mapData.mapItems.Length : 12;
 
     void Awake()
     {
@@ -107,6 +113,11 @@ public class MapSystem : MonoBehaviour
             SceneManager.LoadSceneAsync(mapNode.mapType.ToString(), LoadSceneMode.Additive);
             _gameManager.ChangeDungeon(false);
             if(mapNode.isNextBiome) _gameManager.NextBiome();
+
+            // Entering a new node = new area for DDA. Notify agent (resets area tracking).
+            _areaIndex++;
+            DDAIntegration.Instance?.OnAreaEnter(mapNode.mapType, _areaIndex, AreaTotal);
+
             Debug.Log("Moved to " + mapNode.mapNodeId + " map");
         }
         else

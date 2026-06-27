@@ -34,6 +34,8 @@ namespace Manager
         public PlayerStats PlayerStats { get; private set; }
         public BattleResult BattleResult { get; private set; }
         public List<EnemyController> Enemies { get; private set; } = new List<EnemyController>();
+        // Cached post-battle reward drops (node consumables + enemy-derived Exp/Coin) built in DropItems().
+        private List<DropItem> _rewardCache;
         public MapSystem MapSystem{ get; private set; }
         public GameManager GameManager { get; private set; }
         public RouletteSystem RouletteSystem { get; private set; }
@@ -127,9 +129,9 @@ namespace Manager
 
         public void DropItems()
         {
+            _rewardCache = BuildRewardDropItems();
             UIManagerBattle.SetDropItemPanel(true);
-            var dropItems = MapSystem.GetDropItems();
-            foreach (var item in dropItems)
+            foreach (var item in _rewardCache)
             {
                 UIManagerBattle.InstantiateDropItem(item.Icon, item.Amount);
                 Debug.Log($"Get {item.Type} {item.Amount}");
@@ -138,7 +140,43 @@ namespace Manager
                     GameManager.IncreaseProgress(item.Amount);
                 }
             }
-            
+
+        }
+
+        /// <summary>
+        /// Build post-battle reward drops: node consumables (Health/Shield/SparePart) +
+        /// enemy-derived Exp + Coin (summed from each defeated enemy's EnemySO reward).
+        /// Exp/Coin from node DropItems are ignored — those come from the enemies now.
+        /// </summary>
+        private List<DropItem> BuildRewardDropItems()
+        {
+            var list = new List<DropItem>();
+
+            // node drops minus Exp/Coin (those are enemy-sourced now)
+            var nodeDrops = MapSystem.GetDropItems();
+            if (nodeDrops != null)
+            {
+                foreach (var d in nodeDrops)
+                {
+                    if (d.Type != ConsumableType.Exp && d.Type != ConsumableType.Coin)
+                        list.Add(d);
+                }
+            }
+
+            // sum exp + coin from every enemy in this battle
+            int totalExp = 0, totalCoin = 0;
+            Sprite rewardIcon = null;
+            foreach (var enemy in Enemies)
+            {
+                if (enemy == null || enemy.EnemyStats == null) continue;
+                totalExp += enemy.EnemyStats.ExpReward;
+                totalCoin += enemy.EnemyStats.CoinReward;
+                if (rewardIcon == null) rewardIcon = enemy.EnemyStats.RewardIcon;
+            }
+            if (totalExp > 0)  list.Add(new DropItem(ConsumableType.Exp,  rewardIcon, totalExp));
+            if (totalCoin > 0) list.Add(new DropItem(ConsumableType.Coin, rewardIcon, totalCoin));
+
+            return list;
         }
 
         public void ShowDamagePopup(Vector3 position,  float damage, bool isCritical)
@@ -153,10 +191,10 @@ namespace Manager
         }
         public void AppliedDropItem()
         {
-            var dropItems = MapSystem.GetDropItems();
+            var dropItems = _rewardCache ?? new List<DropItem>();
             foreach (var item in dropItems)
             {
-                if (item.Type != ConsumableType.SparePart) 
+                if (item.Type != ConsumableType.SparePart)
                     item.AppliedToPlayerStats(PlayerStats);
             }
         }

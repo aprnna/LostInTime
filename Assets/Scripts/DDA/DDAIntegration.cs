@@ -39,6 +39,7 @@ namespace DDA
             if (Instance == null)
             {
                 Instance = this;
+                DontDestroyOnLoad(gameObject); // keep agent + difficulty state alive across battle scenes
             }
             else
             {
@@ -46,6 +47,8 @@ namespace DDA
                 return;
             }
         }
+
+        private bool _runStarted = false;
 
         private void Start()
         {
@@ -71,6 +74,15 @@ namespace DDA
             if (_ddaAgent != null)
             {
                 _ddaAgent.SetTrainingMode(_isTrainingMode);
+            }
+
+            // Real-game (inference) run bootstrap: start a run + enter area 0 baseline.
+            // Training simulator drives these itself, so skip in training mode.
+            if (!_isTrainingMode && !_runStarted)
+            {
+                _runStarted = true;
+                OnRunStart();
+                OnAreaEnter(MapType.Enemy, 0, 12);
             }
         }
 
@@ -199,9 +211,35 @@ namespace DDA
         {
             if (!_enableDDA || _ddaAgent == null) return;
 
+            _ddaAgent.OnAreaEnter(areaIndex, areaType, totalAreas);
+
             Debug.Log($"[DDAIntegration] Area enter. Type={areaType}, " +
                       $"Depth={areaIndex}/{totalAreas}, " +
                       $"Difficulty: {_difficultySettings.GetLevelName()}");
+        }
+
+        /// <summary>Begins a run (resets difficulty to baseline, resets run state).</summary>
+        public void OnRunStart()
+        {
+            if (!_enableDDA || _ddaAgent == null) return;
+            _ddaAgent.OnRunStart();
+            Debug.Log($"[DDAIntegration] Run started. Difficulty reset to {_difficultySettings.GetLevelName()}.");
+        }
+
+        /// <summary>Called after an area's battle resolves. Triggers agent decision for next area.</summary>
+        public void OnAreaComplete(bool areaWon)
+        {
+            if (!_enableDDA || _ddaAgent == null) return;
+            _ddaAgent.OnAreaComplete(areaWon);
+            Debug.Log($"[DDAIntegration] Area complete. Won={areaWon}, Difficulty now {_difficultySettings.GetLevelName()}.");
+        }
+
+        /// <summary>Called when a run ends (boss cleared / player death).</summary>
+        public void OnRunEnd(bool runWon, int areasCompleted, int totalAreas)
+        {
+            if (!_enableDDA || _ddaAgent == null) return;
+            _ddaAgent.OnRunEnd(runWon, areasCompleted, totalAreas);
+            Debug.Log($"[DDAIntegration] Run end. Won={runWon}, Areas={areasCompleted}/{totalAreas}.");
         }
     }
 }

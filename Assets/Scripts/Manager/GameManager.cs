@@ -1,6 +1,7 @@
 using System;
 using Audio;
 using Cysharp.Threading.Tasks;
+using DDA;
 using Input;
 using Player;
 using Player.Item;
@@ -119,6 +120,7 @@ namespace Manager
         }
         public void StartGame()
         {
+            DDAIntegration.Instance?.OnRunStart();
             _sceneController.ChangeScene("BaseScene");
         }
         public void StartPrologue()
@@ -135,6 +137,7 @@ namespace Manager
             PrepareGame().Forget();
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
             await _sceneController.ClearAllScene();
+            DDAIntegration.Instance?.OnRunStart();
             StartGame();
             MapSystem.Instance.InitializeMap();
         }

@@ -44,6 +44,7 @@ namespace Playfab
             if (Instance == null)
             {
                 Instance = this;
+                DontDestroyOnLoad(gameObject); // keep currentLog alive across scene loads until uploaded
             }
             else
             {
