@@ -11,7 +11,7 @@ namespace Player.Item
 
         public void SetDropItem(Sprite newIcon, int value)
         {
-            icon.sprite = newIcon;
+            if (newIcon != null) icon.sprite = newIcon;
             text.text = value.ToString();
         }
     }

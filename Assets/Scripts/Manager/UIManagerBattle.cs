@@ -52,9 +52,9 @@ namespace Manager
 
         public void InstantiateDropItem(Sprite icon, int value)
         {
-            var controller = _prefabDropItem.GetComponent<DropItemController>();
+            var instance = Instantiate(_prefabDropItem, _dropItemContainer);
+            var controller = instance.GetComponent<DropItemController>();
             controller.SetDropItem(icon, value);
-            Instantiate(_prefabDropItem, _dropItemContainer);
         }
 
         public void ClearDropItem()

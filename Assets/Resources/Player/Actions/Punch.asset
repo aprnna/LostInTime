@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 19c00aa9b6e745ba95cc3be8112f3a4e, type: 3}
-  m_Name: FIst
+  m_Name: Punch
   m_EditorClassIdentifier: 
   _name: Punch
   _percentageDamage: 30
-  _interval: 0
+  _actionType: 0
   _defend: 0
   _multipleDefend: 0
   _intervalDefend: 0
@@ -22,3 +22,7 @@ MonoBehaviour:
   _isLimited: 0
   _limit: 0
   _difficultyCritical: 1
+  _speedPercent: 1.15
+  _zoneWidthPercent: 0.3
+  _criticalBonusPercent: 10
+  _currentLimit: 0

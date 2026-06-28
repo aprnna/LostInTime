@@ -45,6 +45,12 @@ namespace Manager
 
         [Header("DDA")]
         [SerializeField] private DDAIntegration _ddaIntegration;
+
+        [Header("Reward Icons")]
+        [Tooltip("Sprite shown for Exp reward in the post-battle drop panel.")]
+        [SerializeField] private Sprite _expRewardIcon;
+        [Tooltip("Sprite shown for Coin reward in the post-battle drop panel.")]
+        [SerializeField] private Sprite _coinRewardIcon;
         
         public void Awake()
         {
@@ -66,13 +72,17 @@ namespace Manager
             await Initialize();
             await InitializeFSM();
 
-            // Notify DDA before spawning enemies so difficulty is set
+            // Resolve DDA integration (fallback to singleton if SerializeField not assigned)
+            if (_ddaIntegration == null) _ddaIntegration = DDAIntegration.Instance;
+
+            await SpawnEnemies();
+
+            // Notify DDA after spawning so Total Enemy HP reflects scaled values
             if (_ddaIntegration != null && _ddaIntegration.IsEnabled)
             {
                 _ddaIntegration.OnBattlePreStart(PlayerStats.Health);
             }
 
-            await SpawnEnemies();
             await StartBattleLogging();
         }
         void Update()
@@ -119,6 +129,7 @@ namespace Manager
                 Enemies.Add(enemyController);
 
                 // Apply DDA difficulty to enemy stats
+                if (_ddaIntegration == null) _ddaIntegration = DDAIntegration.Instance;
                 if (_ddaIntegration != null && _ddaIntegration.IsEnabled)
                 {
                     _ddaIntegration.ApplyDifficultyToEnemy(enemyController.EnemyStats);
@@ -165,16 +176,14 @@ namespace Manager
 
             // sum exp + coin from every enemy in this battle
             int totalExp = 0, totalCoin = 0;
-            Sprite rewardIcon = null;
             foreach (var enemy in Enemies)
             {
                 if (enemy == null || enemy.EnemyStats == null) continue;
                 totalExp += enemy.EnemyStats.ExpReward;
                 totalCoin += enemy.EnemyStats.CoinReward;
-                if (rewardIcon == null) rewardIcon = enemy.EnemyStats.RewardIcon;
             }
-            if (totalExp > 0)  list.Add(new DropItem(ConsumableType.Exp,  rewardIcon, totalExp));
-            if (totalCoin > 0) list.Add(new DropItem(ConsumableType.Coin, rewardIcon, totalCoin));
+            if (totalExp > 0)  list.Add(new DropItem(ConsumableType.Exp,  _expRewardIcon,  totalExp));
+            if (totalCoin > 0) list.Add(new DropItem(ConsumableType.Coin, _coinRewardIcon, totalCoin));
 
             return list;
         }

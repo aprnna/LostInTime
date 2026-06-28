@@ -20,3 +20,5 @@ MonoBehaviour:
   _baseDamage: 8
   _intervalDamage: 3
   _prefab: {fileID: 1220821942254667986, guid: 71e4fdb3440fc704a83a55d18860f367, type: 3}
+  _expReward: 25
+  _coinReward: 10

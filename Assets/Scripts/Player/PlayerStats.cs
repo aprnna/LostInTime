@@ -214,7 +214,11 @@ namespace Player
                 case ConsumableType.Shield:
                 {
                     var successShield = AddShield(value);
-                    if(!successShield) return;
+                    if(!successShield)
+                    {
+                        Debug.Log("Shield penuh, tidak bisa beli");
+                        return;
+                    }
                 }; break;
                 case ConsumableType.Damage: 
                     BaseDamage += value; 
@@ -246,15 +250,20 @@ namespace Player
         }
         public bool AddShield(int value)
         {
+            if (Shield >= MaxShield)
+            {
+                Debug.Log("Shield already at max");
+                return false;
+            }
             if (Shield + value <= MaxShield)
             {
                 Shield += value;
-                return true;
             }
-            Shield = MaxShield;
-            Debug.Log("Max Shield");
-            return false;
-
+            else
+            {
+                Shield = MaxShield;
+            }
+            return true;
         }
         public void AddExp(int value)
         {

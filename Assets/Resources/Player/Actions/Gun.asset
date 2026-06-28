@@ -14,7 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _name: Handgun
   _percentageDamage: 100
-  _interval: 3
   _actionType: 2
   _defend: 0
   _multipleDefend: 0
@@ -23,4 +22,7 @@ MonoBehaviour:
   _isLimited: 1
   _limit: 10
   _difficultyCritical: 8
-  _currentLimit: 10
+  _speedPercent: 1.4
+  _zoneWidthPercent: 0.1
+  _criticalBonusPercent: 10
+  _currentLimit: 0

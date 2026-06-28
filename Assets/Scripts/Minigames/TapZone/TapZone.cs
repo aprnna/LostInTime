@@ -34,6 +34,20 @@ namespace Minigames
         private float currentSpeed;
         private float currentZoneSizeFraction;
 
+        [Header("Zone Width Override")]
+        [Tooltip("If >= 0, success zone width is fixed to this fraction of track (0.05-1.0). Set via BaseAction.ZoneWidthPercent at runtime.")]
+        [SerializeField, Range(0f, 1f)] private float _zoneWidthPercent = -1f;
+
+        [Header("Speed Override")]
+        [Tooltip("If >= 0, marker speed multiplier (1.0 = base speed). Set via BaseAction.SpeedPercent at runtime.")]
+        [SerializeField, Range(0f, 3f)] private float _speedPercent = -1f;
+
+        /// <summary>Set success-zone width as fraction of track (0.05-1.0). Called by MinigameManager before Play.</summary>
+        public void SetZoneWidth(float percent) => _zoneWidthPercent = Mathf.Clamp(percent, 0f, 1f);
+
+        /// <summary>Set marker speed multiplier (1.0 = base speed). Called by MinigameManager before Play.</summary>
+        public void SetSpeedPercent(float percent) => _speedPercent = Mathf.Max(percent, 0f);
+
         protected override MinigameComponent[] MinigameComponents()
         {
             return null;
@@ -62,8 +76,9 @@ namespace Minigames
             
             if (_tapZoneData == null) return;
             
-            // Calculate speed using DifficultValue
-            float speedMultiplier = _tapZoneData.GetSpeedMultiplier(difficulty);
+            // Calculate speed: prefer explicit percent override (from BaseAction.SpeedPercent),
+            // fall back to TapZoneData.speedMultiplier curve for backwards compatibility.
+            float speedMultiplier = _speedPercent >= 0f ? _speedPercent : _tapZoneData.GetSpeedMultiplier(difficulty);
             currentSpeed = _tapZoneData.BaseSpeed * speedMultiplier;
             
             // Setup zone with difficulty scaling
@@ -209,9 +224,16 @@ namespace Minigames
 
             float trackW = trackArea.rect.width;
             
-            // Get zone size from DifficultValue (0-1 range)
-            // As difficulty increases, zone size DECREASES
-            currentZoneSizeFraction = _tapZoneData.GetZoneSize(difficulty);
+            // Get zone size: prefer explicit percent override (from BaseAction.ZoneWidthPercent),
+            // fall back to TapZoneData.curve for backwards compatibility.
+            if (_zoneWidthPercent >= 0f)
+            {
+                currentZoneSizeFraction = _zoneWidthPercent;
+            }
+            else
+            {
+                currentZoneSizeFraction = _tapZoneData.GetZoneSize(difficulty);
+            }
             
             // Calculate actual zone width in pixels
             float zoneW = Mathf.Clamp(currentZoneSizeFraction, 0.05f, 0.95f) * trackW;
@@ -238,8 +260,8 @@ namespace Minigames
         {
             if (!showDebugInfo || debugText == null || _tapZoneData == null) return;
             
-            float speedMult = _tapZoneData.GetSpeedMultiplier(difficulty);
-            float zoneSize = _tapZoneData.GetZoneSize(difficulty);
+            float speedMult = _speedPercent >= 0f ? _speedPercent : _tapZoneData.GetSpeedMultiplier(difficulty);
+            float zoneSize = _zoneWidthPercent >= 0f ? _zoneWidthPercent : _tapZoneData.GetZoneSize(difficulty);
             
             string difficultyLevel = difficulty > DifficultValue.ImpossibleThreshold ? "<color=red>IMPOSSIBLE</color>" : $"{difficulty:F1}";
             

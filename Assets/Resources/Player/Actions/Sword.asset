@@ -14,7 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _name: Sword
   _percentageDamage: 90
-  _interval: 2
   _actionType: 1
   _defend: 0
   _multipleDefend: 0
@@ -23,4 +22,7 @@ MonoBehaviour:
   _isLimited: 1
   _limit: 15
   _difficultyCritical: 5
-  _currentLimit: 15
+  _speedPercent: 1.25
+  _zoneWidthPercent: 0.2
+  _criticalBonusPercent: 10
+  _currentLimit: 0
