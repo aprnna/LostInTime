@@ -50,25 +50,36 @@ namespace DDA
 
         private bool _runStarted = false;
 
+        /// <summary>
+        /// Lazily resolves DDAAgent and DifficultySettings if references are stale/null
+        /// (e.g. after scene reload where scene-level agents are destroyed/recreated).
+        /// </summary>
+        private void ResolveReferences()
+        {
+            // BattleSystem is scene-level (recreated per battle scene) — must re-resolve each call
+            if (_battleSystem == null)
+                _battleSystem = BattleSystem.Instance;
+
+            if (_ddaAgent == null)
+                _ddaAgent = FindObjectOfType<DDAAgent>();
+
+            if (_difficultySettings == null)
+                _difficultySettings = Resources.Load<DifficultySettings>("DDA/DefaultDifficultySettings");
+
+            if (_difficultyApplier == null)
+                _difficultyApplier = DifficultyApplier.Instance;
+
+            // Keep applier in sync with the shared settings instance
+            if (_difficultyApplier != null && _difficultySettings != null)
+                _difficultyApplier.SetDifficultySettings(_difficultySettings);
+        }
+
         private void Start()
         {
             _battleSystem = BattleSystem.Instance;
             _battleLogger = BattleLogger.Instance;
 
-            if (_ddaAgent == null)
-            {
-                _ddaAgent = FindObjectOfType<DDAAgent>();
-            }
-
-            if (_difficultyApplier == null)
-            {
-                _difficultyApplier = DifficultyApplier.Instance;
-            }
-
-            if (_difficultySettings == null)
-            {
-                _difficultySettings = Resources.Load<DifficultySettings>("DDA/DefaultDifficultySettings");
-            }
+            ResolveReferences();
 
             // Set training mode
             if (_ddaAgent != null)
@@ -91,10 +102,9 @@ namespace DDA
         /// </summary>
         public void OnBattlePreStart(int playerStartHP)
         {
-            if (!_enableDDA || _ddaAgent == null)
-            {
-                return;
-            }
+            if (!_enableDDA) return;
+            ResolveReferences();
+            if (_ddaAgent == null) return;
 
             _playerStartHP = playerStartHP;
 
@@ -122,10 +132,9 @@ namespace DDA
         /// </summary>
         public void OnTurnEnd(int damageDealtThisTurn)
         {
-            if (!_enableDDA || _ddaAgent == null)
-            {
-                return;
-            }
+            if (!_enableDDA) return;
+            ResolveReferences();
+            if (_ddaAgent == null) return;
 
             _ddaAgent.OnTurnEnd(damageDealtThisTurn);
         }
@@ -135,10 +144,9 @@ namespace DDA
         /// </summary>
         public void OnBattleEnd(bool playerWon, int playerEndHP)
         {
-            if (!_enableDDA || _ddaAgent == null)
-            {
-                return;
-            }
+            if (!_enableDDA) return;
+            ResolveReferences();
+            if (_ddaAgent == null) return;
 
             _ddaAgent.OnBattleEnd(playerWon, playerEndHP);
 
@@ -151,12 +159,30 @@ namespace DDA
         /// </summary>
         public void ApplyDifficultyToEnemy(EnemyStats enemyStats)
         {
-            if (!_enableDDA || _difficultyApplier == null)
+            if (!_enableDDA || enemyStats == null) return;
+            ResolveReferences();
+
+            if (_difficultySettings == null)
             {
+                Debug.LogWarning("[DDAIntegration] DifficultySettings null — cannot apply difficulty.");
                 return;
             }
 
-            _difficultyApplier.ApplyDifficulty(enemyStats);
+            float hpMult = _difficultySettings.HPMultiplier;
+            float dmgMult = _difficultySettings.DamageMultiplier;
+
+            // Prefer going through DifficultyApplier (keeps it as the canonical applier),
+            // but fall back to applying directly if no applier exists in the scene.
+            if (_difficultyApplier != null)
+            {
+                _difficultyApplier.ApplyDifficulty(enemyStats);
+            }
+            else
+            {
+                enemyStats.ApplyDifficultyMultiplier(hpMult, dmgMult);
+                Debug.Log($"[DDAIntegration] Directly applied {_difficultySettings.GetLevelName()} " +
+                          $"(HP x{hpMult:F2}, DMG x{dmgMult:F2}) to {enemyStats.EnemyName}");
+            }
         }
 
         /// <summary>
@@ -209,35 +235,46 @@ namespace DDA
         /// </summary>
         public void OnAreaEnter(MapType areaType, int areaIndex, int totalAreas)
         {
-            if (!_enableDDA || _ddaAgent == null) return;
+            if (!_enableDDA) return;
+            ResolveReferences();
+            if (_ddaAgent == null) return;
 
             _ddaAgent.OnAreaEnter(areaIndex, areaType, totalAreas);
 
             Debug.Log($"[DDAIntegration] Area enter. Type={areaType}, " +
                       $"Depth={areaIndex}/{totalAreas}, " +
-                      $"Difficulty: {_difficultySettings.GetLevelName()}");
+                      $"Difficulty: {_difficultySettings?.GetLevelName() ?? "N/A"}");
         }
 
         /// <summary>Begins a run (resets difficulty to baseline, resets run state).</summary>
         public void OnRunStart()
         {
-            if (!_enableDDA || _ddaAgent == null) return;
+            if (!_enableDDA) return;
+            ResolveReferences();
+            if (_ddaAgent == null) return;
             _ddaAgent.OnRunStart();
-            Debug.Log($"[DDAIntegration] Run started. Difficulty reset to {_difficultySettings.GetLevelName()}.");
+            Debug.Log($"[DDAIntegration] Run started. Difficulty reset to {_difficultySettings?.GetLevelName() ?? "N/A"}.");
         }
 
         /// <summary>Called after an area's battle resolves. Triggers agent decision for next area.</summary>
         public void OnAreaComplete(bool areaWon)
         {
-            if (!_enableDDA || _ddaAgent == null) return;
+            if (!_enableDDA) return;
+            ResolveReferences();
+            if (_ddaAgent == null) return;
+
+            string diffBefore = _difficultySettings?.GetLevelName() ?? "N/A";
             _ddaAgent.OnAreaComplete(areaWon);
-            Debug.Log($"[DDAIntegration] Area complete. Won={areaWon}, Difficulty now {_difficultySettings.GetLevelName()}.");
+            // Note: agent action is async (RequestDecision). Difficulty may change next frame.
+            Debug.Log($"[DDAIntegration] Area complete. Won={areaWon}, Difficulty was {diffBefore} (agent decision pending).");
         }
 
         /// <summary>Called when a run ends (boss cleared / player death).</summary>
         public void OnRunEnd(bool runWon, int areasCompleted, int totalAreas)
         {
-            if (!_enableDDA || _ddaAgent == null) return;
+            if (!_enableDDA) return;
+            ResolveReferences();
+            if (_ddaAgent == null) return;
             _ddaAgent.OnRunEnd(runWon, areasCompleted, totalAreas);
             Debug.Log($"[DDAIntegration] Run end. Won={runWon}, Areas={areasCompleted}/{totalAreas}.");
         }

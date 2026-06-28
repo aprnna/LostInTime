@@ -53,7 +53,8 @@ namespace Manager
 
         private async UniTask AttackAction()
         {
-            _battleSystem.MinigameManager.SetDifficulty(_battleSystem.SelectedAction.TapZoneDifficulty);
+            _battleSystem.MinigameManager.SetSpeedPercent(_battleSystem.SelectedAction.SpeedPercent);
+            _battleSystem.MinigameManager.SetZoneWidth(_battleSystem.SelectedAction.ZoneWidthPercent);
             var result = await _battleSystem.MinigameManager.PlayTapZone(); 
             var isCriticalHit = result == Minigame.Result.Success;
             var damage = isCriticalHit ? _battleSystem.SelectedAction.CriticalDamage : _battleSystem.SelectedAction.BaseDamage;

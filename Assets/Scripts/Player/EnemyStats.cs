@@ -64,7 +64,6 @@ namespace Player
         // Gameplay reward (exp + coin) from underlying EnemySO.
         public int ExpReward => _enemyData.ExpReward;
         public int CoinReward => _enemyData.CoinReward;
-        public Sprite RewardIcon => _enemyData.RewardIcon;
 
         public int MinDamage()
         {

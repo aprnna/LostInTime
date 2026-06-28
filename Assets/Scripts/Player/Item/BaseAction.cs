@@ -23,7 +23,10 @@ namespace Player.Item
         [SerializeField, Range(0, 11)] float _difficultyCritical;
 
         [Header("TapZone Settings")]
-        [SerializeField, Range(0, 11)] private float _tapZoneDifficulty = 5f;
+        [Tooltip("Speed multiplier for marker (1.0 = base speed / 100%, 2.0 = 2x speed, 0.5 = half speed). Overrides TapZoneData.speedMultiplier curve.")]
+        [SerializeField, Range(0.1f, 3f)] private float _speedPercent = 1f;
+        [Tooltip("Success zone width as fraction of track (0.05=5% ... 1.0=100%). Overrides TapZoneData.zoneSize curve.")]
+        [SerializeField, Range(0.05f, 1f)] private float _zoneWidthPercent = 0.2f;
         [SerializeField, Range(0, 50)] private int _criticalBonusPercent = 10;
 
         private int _minDefend;
@@ -35,7 +38,8 @@ namespace Player.Item
         public int BaseDefend => _baseDefend;
         public int BaseDamage { get; private set; }
         public int CriticalHitDamage { get; private set; }
-        public float TapZoneDifficulty => _tapZoneDifficulty;
+        public float SpeedPercent => _speedPercent;
+        public float ZoneWidthPercent => _zoneWidthPercent;
         public int CriticalDamage => Mathf.RoundToInt(BaseDamage * (1 + _criticalBonusPercent / 100f));
         public bool IsDefend => _defend;
         public GameObject VFX => _vfx;

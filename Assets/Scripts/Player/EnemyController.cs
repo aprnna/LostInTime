@@ -11,12 +11,16 @@ namespace Player
         public EnemyStats EnemyStats { get; private set; }
         public Animator AnimEnemy { get; private set; }
 
+        private void Awake()
+        {
+            EnemyStats = GetComponent<EnemyStats>();
+            AnimEnemy = GetComponent<Animator>();
+        }
+
         private void Start()
         {
             _battleSystem = BattleSystem.Instance;
-            EnemyStats = GetComponent<EnemyStats>();
-            AnimEnemy = GetComponent<Animator>();
-            _marker.SetActive(false);
+            if (_marker != null) _marker.SetActive(false);
         }
 
         public void PlayAnim(string stateName)

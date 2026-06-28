@@ -39,6 +39,18 @@ namespace Minigames
             _difficultyText.SetText(f.ToString());
         }
 
+        /// <summary>Set success-zone width as fraction of track (0.05-1.0) for the next TapZone play.</summary>
+        public void SetZoneWidth(float percent)
+        {
+            _tapZone.SetZoneWidth(percent);
+        }
+
+        /// <summary>Set marker speed multiplier (1.0 = base speed) for the next TapZone play.</summary>
+        public void SetSpeedPercent(float percent)
+        {
+            _tapZone.SetSpeedPercent(percent);
+        }
+
         private async UniTask InitMinigames()
         {
             await UniTask.WhenAll(_tapZone.Init()
