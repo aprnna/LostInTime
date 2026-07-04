@@ -26,7 +26,7 @@
 - **Behavior Parameters** (ML-Agents component)
   - Behavior Name: `ddqn_dda`
   - Space Type: Discrete
-  - Discrete Actions: 3 (Maintain, Increase, Decrease)
+  - Discrete Actions: 5 (Very Easy, Easy, Normal, Hard, Very Hard)
 - **Decision Requester** (ML-Agents component)
   - Decision Period: 1
   - Take Actions Between Decisions: false

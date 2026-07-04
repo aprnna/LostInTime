@@ -151,27 +151,14 @@ namespace DDA
             string prevDiffName = _difficultySettings.GetLevelName();
             int action = actions.DiscreteActions[0];
 
-            switch (action)
-            {
-                case 0: /* Maintain */ break;
-                case 1:
-                    _difficultySettings.IncreaseDifficulty();
-                    break;
-                case 2:
-                    _difficultySettings.DecreaseDifficulty();
-                    break;
-            }
+            // Action space = absolute difficulty level (5 discrete):
+            //   0 = Very Easy, 1 = Easy, 2 = Normal, 3 = Hard, 4 = Very Hard
+            _difficultySettings.SetLevel(action);
 
             // Update difficulty observation after action
             _currentDifficultyNorm = _difficultySettings.CurrentLevelIndex / 4f;
 
-            string actionName = action switch
-            {
-                0 => "Maintain",
-                1 => "Increase",
-                2 => "Decrease",
-                _ => "Unknown"
-            };
+            string actionName = _difficultySettings.GetLevelName();
 
             TrainingLogger.LogAgentAction(action, actionName, prevLevel,
                 _difficultySettings.CurrentLevelIndex, prevDiffName,
@@ -182,14 +169,18 @@ namespace DDA
                 _lastDifficultyLevel = _difficultySettings.CurrentLevelIndex;
                 OnDifficultyChanged?.Invoke(_difficultySettings.CurrentLevelIndex);
             }
-        }
+
+            }
 
         public override void Heuristic(in ActionBuffers actionsOut)
         {
             var disc = actionsOut.DiscreteActions;
-            disc[0] = 0;
-            if (UnityEngine.Input.GetKey(KeyCode.I)) disc[0] = 1;
-            else if (UnityEngine.Input.GetKey(KeyCode.D)) disc[0] = 2;
+            disc[0] = 2; // Normal (default)
+            if (UnityEngine.Input.GetKey(KeyCode.Alpha1)) disc[0] = 0; // Very Easy
+            else if (UnityEngine.Input.GetKey(KeyCode.Alpha2)) disc[0] = 1; // Easy
+            else if (UnityEngine.Input.GetKey(KeyCode.Alpha3)) disc[0] = 2; // Normal
+            else if (UnityEngine.Input.GetKey(KeyCode.Alpha4)) disc[0] = 3; // Hard
+            else if (UnityEngine.Input.GetKey(KeyCode.Alpha5)) disc[0] = 4; // Very Hard
         }
 
         // ----------------------------------------------------------------
@@ -342,7 +333,7 @@ namespace DDA
         /// Sets the shared DifficultySettings instance (called by the training simulator).
         /// CRITICAL for convergence: the agent and the TrainingBattleSimulator MUST share one
         /// DifficultySettings instance, otherwise the agent mutates a separate object and its
-        /// Increase/Decrease actions never reach the battles the simulator runs. That disconnect
+        /// absolute-difficulty-level actions never reach the battles the simulator runs. That disconnect
         /// was the root cause of Q-values collapsing to ~0 (no action had any effect on reward).
         /// </summary>
         public void SetDifficultySettings(DifficultySettings settings)

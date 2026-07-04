@@ -218,7 +218,7 @@ namespace DDA
 
                 // CRITICAL for convergence: share the runtime difficulty instance with the agent.
                 // Without this the agent mutates a separate DifficultySettings instance and its
-                // Increase/Decrease actions never reach the battles this simulator runs
+                // difficulty-level actions never reach the battles this simulator runs
                 // (root cause of non-convergence: Q-values collapsed to ~0 because no action
                 // affected reward). Done after the runtime copy is created above.
                 _ddaAgent.SetDifficultySettings(_difficultySettings);

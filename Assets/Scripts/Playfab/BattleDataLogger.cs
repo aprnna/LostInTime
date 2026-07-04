@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Player;
 using Sirenix.OdinInspector;
 using UnityEngine;
+using Newtonsoft.Json;
 namespace Playfab
 {
     public class BattleLogger : MonoBehaviour
@@ -54,7 +55,10 @@ namespace Playfab
         
         public void CreateNewLog(string sessionId)
         {
+            this.sessionId = sessionId;
             currentLog = GenerateBattleLog(sessionId);
+            BattleFileLogger.Initialize(sessionId);
+            BattleFileLogger.WriteEvent("session_start", new { session_id = sessionId, started_at = DateTime.UtcNow.ToString("o") });
         }
         public BattleLog GetCurrentLog()
         {
@@ -95,7 +99,15 @@ namespace Playfab
             
             ResetCounters();
             battleEvents.Clear();
-            
+
+            BattleFileLogger.WriteEvent("battle_start", new
+            {
+                level_id = levelId,
+                player_start_hp = playerStartHP,
+                total_enemy_start_hp = totalEnemyStartHP,
+                enemy_count = Enemies.Count
+            });
+
             Debug.Log($"[BattleLogger] Battle started - Session: {sessionId}, Level: {levelId}");
         }
 
@@ -108,7 +120,9 @@ namespace Playfab
             var record = GenerateBattleRecord(playerWon);
 
             AddLevelRecord(record);
-            
+
+            BattleFileLogger.WriteEvent("battle_end", record);
+
             string result = playerWon ? "Victory" : "Defeat";
             
             Debug.Log($"[BattleLogger] Battle ended - Duration: {GetBattleDuration():F2}s, Turns: {turnCount}, Result: {result}");
@@ -136,15 +150,28 @@ namespace Playfab
                 target = targetName,
                 targetHPBefore = targetHpBefore,
                 targetHPAfter =  targetHpAfter,
+                is_critical = isCritical,
                 description =  $"Turn {turnCount} - Player attacked {targetName} for {damage} damage {criticalText}"
             };
 
             LogBattleEvent(battleEvent);
+
+            BattleFileLogger.WriteEvent("player_turn", new
+            {
+                turn = turnCount,
+                action = playerActionType.ToString(),
+                target = targetName,
+                target_hp_before = targetHpBefore,
+                target_hp_after = targetHpAfter,
+                damage = damage,
+                is_critical = isCritical
+            });
         }
 
         public void OnPlayerDeath()
         {
             playerDeathCount++;
+            BattleFileLogger.WriteEvent("player_death", new { turn = turnCount });
         }
       
         public void OnEnemyTurn(int playerHpAfter, int playerHpBefore, int totalDamage)
@@ -164,6 +191,14 @@ namespace Playfab
                 description =  $"Turn {turnCount} - Enemies attack player for total {totalDamage} damage"
             };
             LogBattleEvent(battleEvent);
+
+            BattleFileLogger.WriteEvent("enemy_turn", new
+            {
+                turn = turnCount,
+                player_hp_before = playerHpBefore,
+                player_hp_after = playerHpAfter,
+                damage = totalDamage
+            });
         }
 
         #endregion
@@ -293,7 +328,8 @@ namespace Playfab
                     actor = evt.eventType.ToString(),
                     target = evt.target,
                     action = evt.playerActionType.ToString(),
-                    damage = evt.damage,  
+                    damage = evt.damage,
+                    is_critical = evt.is_critical,
                     targetHPAfter = evt.targetHPAfter,
                     targetHPBefore = evt.targetHPBefore,
                     description = evt.description,
@@ -387,6 +423,16 @@ namespace Playfab
             {
                 Debug.Log($"[BattleLogger] DDA Event: Action={payload.dda_action_taken}, Reward={payload.dda_reward:F3}");
             }
+
+            BattleFileLogger.WriteEvent("dda_event", new
+            {
+                dda_action_taken = payload.dda_action_taken,
+                dda_reward = payload.dda_reward,
+                dda_obs_snapshot = payload.dda_obs_snapshot,
+                dda_episode_count = payload.dda_episode_count,
+                player_hp_ratio = payload.player_hp_ratio,
+                total_turns = payload.total_turns
+            });
         }
 
         #endregion
@@ -438,6 +484,7 @@ namespace Playfab
         public string target;
         public string action;
         public int damage;
+        public bool is_critical;
         public string description;
         public int targetHPBefore;
         public int targetHPAfter;
@@ -496,6 +543,7 @@ namespace Playfab
         public PlayerActionType playerActionType;
         public int turn;
         public int damage;
+        public bool is_critical;
         public int targetHPAfter;
         public int targetHPBefore;
         public string description;

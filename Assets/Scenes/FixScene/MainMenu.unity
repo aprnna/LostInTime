@@ -1832,7 +1832,7 @@ MonoBehaviour:
   _ddaAgent: {fileID: 1026514261}
   _difficultyApplier: {fileID: 1026514260}
   _difficultySettings: {fileID: 11400000, guid: b608018e3e3b4ac409681bc8e02072ec, type: 2}
-  _enableDDA: 1
+  _enableDDA: 0
   _isTrainingMode: 0
 --- !u!114 &1026514263
 MonoBehaviour:

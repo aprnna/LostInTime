@@ -892,7 +892,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5685539080581837628, guid: aa3de2b7b23135d42b9b0c9690af7b60, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 188
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5685539080581837628, guid: aa3de2b7b23135d42b9b0c9690af7b60, type: 3}
       propertyPath: m_SizeDelta.y
@@ -1418,6 +1418,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   <UIManagerBattle>k__BackingField: {fileID: 1241009904}
   _popupPrefab: {fileID: 2520267749109972424, guid: 23be9eada1380f845aaad799ef598452, type: 3}
+  _ddaIntegration: {fileID: 0}
+  _expRewardIcon: {fileID: -1382870731, guid: 0a7a42e161ac9b543b76a7965893456e, type: 3}
+  _coinRewardIcon: {fileID: 274648205, guid: 0a7a42e161ac9b543b76a7965893456e, type: 3}
 --- !u!1 &1817853965
 GameObject:
   m_ObjectHideFlags: 0

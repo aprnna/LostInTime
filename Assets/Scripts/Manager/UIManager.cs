@@ -18,6 +18,8 @@ namespace Manager
         [SerializeField] private GameObject _battleResult;
         [SerializeField] private GameObject _pauseMenuUI;
         [SerializeField] private BiomeController _biomeController;
+        [Header("Session")]
+        [SerializeField] private TMP_Text _textSessionId;
         private InputManager _inputManager;
         private PlayerStats _playerStats;
         private GameManager _gameManager;
@@ -27,7 +29,9 @@ namespace Manager
             _inputManager = InputManager.Instance;
             _playerStats = PlayerStats.Instance;
             _gameManager = GameManager.Instance;
-            
+
+            if (_textSessionId != null)
+                _textSessionId.text = "Session: " + GameManager.SessionID;
 
             _playerStats.OnPlayerLevelUp += OnPlayerLevelUp;
             _gameManager.OnChangeInstruction += OnChangeInstruction;
