@@ -17,6 +17,14 @@ namespace Player
         public event Action OnPlayerLevelUp;
         public event Action<int,bool> OnPlayerGetDamage; 
         public bool IsLevelUp { get; private set; }
+        public int Level
+        {
+            get => _playerData.Level;
+            private set
+            {
+                _playerData.SetLevel(value);
+            }
+        }
         public string Name
         {
             get => _playerData.PlayerName;
@@ -282,6 +290,7 @@ namespace Player
         public void LevelUp(int exp,int maxExp)
         {
             Debug.Log("You Level Up");
+            Level++;
             Exp = exp;
             MaxExp += maxExp;
             IsLevelUp = true;

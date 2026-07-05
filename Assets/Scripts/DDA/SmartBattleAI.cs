@@ -176,14 +176,11 @@ namespace DDA
         }
 
         /// <summary>
-        /// Calculate defend shield HP with variance.
+        /// Calculate defend value. Defend is flat (no range).
         /// </summary>
         public static int CalculateDefend(SimPlayer player)
         {
-            int baseDefendHP = player.BaseDefend * player.DefendMultiple;
-            int min = baseDefendHP - player.DefendInterval;
-            int max = baseDefendHP + player.DefendInterval;
-            return UnityEngine.Random.Range(min, max + 1);
+            return player.GetDefendValue();
         }
 
         /// <summary>
@@ -215,15 +212,16 @@ namespace DDA
 
         /// <summary>
         /// Get bonus amount for level-up choice.
+        /// Must match actual game values from LevelUpUIController (ButtonAction._amount in BaseScene).
         /// </summary>
         public static int GetLevelUpBonus(SimPlayer.LevelUpChoice choice)
         {
             return choice switch
             {
-                SimPlayer.LevelUpChoice.Damage => 3,   // +3 base damage
-                SimPlayer.LevelUpChoice.Health => 15,   // +15 max HP
-                SimPlayer.LevelUpChoice.Shield => 1,    // +1 base defend
-                _ => 3
+                SimPlayer.LevelUpChoice.Damage => 10,  // +10 base damage
+                SimPlayer.LevelUpChoice.Health => 20,  // +20 max HP
+                SimPlayer.LevelUpChoice.Shield => 5,   // +5 base defend
+                _ => 10
             };
         }
     }

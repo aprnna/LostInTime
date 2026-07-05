@@ -72,16 +72,16 @@ namespace Manager
             _playerStats.InitializeStats(
                 "Kamikaze",
                 100,
-                100, 
-                2, 
-                2, 
+                100,
+                2,
+                2,
                 12,
                 0,
                 100,
                 0,
                 3,
-                2,
-                2);
+                5,
+                0);
             await UniTask.Yield();
         }
         private void OnEnable()

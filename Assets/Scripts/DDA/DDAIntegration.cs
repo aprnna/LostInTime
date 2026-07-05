@@ -60,6 +60,9 @@ namespace DDA
             if (_battleSystem == null)
                 _battleSystem = BattleSystem.Instance;
 
+            if (_battleLogger == null)
+                _battleLogger = BattleLogger.Instance;
+
             if (_ddaAgent == null)
                 _ddaAgent = FindObjectOfType<DDAAgent>();
 
@@ -149,6 +152,30 @@ namespace DDA
             if (_ddaAgent == null) return;
 
             _ddaAgent.OnBattleEnd(playerWon, playerEndHP);
+
+            // Log DDA event to BattleLogger (JSONL + PlayFab)
+            if (_battleLogger != null)
+            {
+                var payload = new DDALogPayload
+                {
+                    dda_action_taken = _difficultySettings?.GetLevelName() ?? "N/A",
+                    dda_reward = 0f, // reward is per-area, not per-battle in live game
+                    dda_obs_snapshot = new float[]
+                    {
+                        _ddaAgent.GetHpRatio(),
+                        _ddaAgent.GetTurnCountNormalized(),
+                        _ddaAgent.GetPlayerLevelNormalized(),
+                        _ddaAgent.GetDamageRatio(),
+                        _ddaAgent.GetResourceDepletion()
+                    },
+                    dda_episode_count = 0, // not tracked in live game
+                    player_hp_ratio = _playerStartHP > 0 ? (float)playerEndHP / _playerStartHP : 0f,
+                    total_turns = _ddaAgent.GetTurnCount(),
+                    damage_taken = 0, // TODO: track from BattleSystem
+                    heals_used = 0 // TODO: track from BattleSystem
+                };
+                _battleLogger.LogDDAEvent(payload);
+            }
 
             Debug.Log($"[DDAIntegration] Battle end. Won: {playerWon}, " +
                       $"End HP: {playerEndHP}/{_playerStartHP}");

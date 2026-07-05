@@ -2706,11 +2706,11 @@ MonoBehaviour:
   playerEndHP: 0
   totalEnemyStartHP: 0
   totalEnemyEndHP: 0
-  turnCount: 0
+  playerTurnCount: 0
+  enemyTurnCount: 0
   Enemies: []
   playerWonCount: 0
   playerDeathCount: 0
-  actionCount: 0
   fistUsedCount: 0
   swordUsedCount: 0
   gunUsedCount: 0
@@ -2720,6 +2720,10 @@ MonoBehaviour:
   criticalSuccessCount: 0
   sessionId: 
   levelId: 
+  currentAreaType: 
+  currentDifficultyName: 
+  currentHpMultiplier: 0
+  currentDamageMultiplier: 0
 --- !u!4 &581923239
 Transform:
   m_ObjectHideFlags: 0
@@ -5366,7 +5370,7 @@ MonoBehaviour:
   _description: {fileID: 1066894848}
   _itemLevelUp:
     _type: 1
-    _amount: 30
+    _amount: 5
 --- !u!1 &1066537321
 GameObject:
   m_ObjectHideFlags: 0

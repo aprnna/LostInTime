@@ -14,9 +14,7 @@ namespace Player.Item
         
         [Header("Defend")]
         [SerializeField] private bool _defend;
-        [SerializeField] private int _multipleDefend;
-        [SerializeField] private int _intervalDefend;
-            
+
         [SerializeField] private GameObject _vfx;
         [SerializeField] private bool _isLimited;
         [SerializeField] private int _limit;
@@ -29,18 +27,15 @@ namespace Player.Item
         [SerializeField, Range(0.05f, 1f)] private float _zoneWidthPercent = 0.2f;
         [SerializeField, Range(0, 50)] private int _criticalBonusPercent = 10;
 
-        private int _minDefend;
-        private int _maxDefend;
         private int _baseDefend;
         [SerializeField] private int _currentLimit;
-        public int MinDefend => _minDefend;
-        public int MaxDefend => _maxDefend;
         public int BaseDefend => _baseDefend;
         public int BaseDamage { get; private set; }
         public int CriticalHitDamage { get; private set; }
         public float SpeedPercent => _speedPercent;
         public float ZoneWidthPercent => _zoneWidthPercent;
         public int CriticalDamage => Mathf.RoundToInt(BaseDamage * (1 + _criticalBonusPercent / 100f));
+        public int CriticalBonusPercent => _criticalBonusPercent;
         public bool IsDefend => _defend;
         public GameObject VFX => _vfx;
         public int CurrentLimit => _currentLimit;
@@ -65,19 +60,7 @@ namespace Player.Item
             {
                 _limit = playerStats.Shield;
                 _currentLimit = _limit;
-                if (_limit > 0)
-                {
-                    var baseDefendShield = playerStats.BaseDefend * _multipleDefend;
-                    _baseDefend = baseDefendShield;
-                    _minDefend = baseDefendShield - _intervalDefend;
-                    _maxDefend = baseDefendShield + _intervalDefend;
-                }
-                else
-                {
-                    _currentLimit = 0;
-                    _minDefend = playerStats.MinBaseDefend();
-                    _maxDefend = playerStats.MaxBaseDefend();                
-                }
+                _baseDefend = playerStats.BaseDefend;
             }
         }
 

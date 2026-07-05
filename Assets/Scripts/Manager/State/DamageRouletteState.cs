@@ -42,11 +42,9 @@ namespace Manager
 
         private async UniTask DefendAction()
         {
-            var min = _battleSystem.SelectedAction.MinDefend;
-            var max =_battleSystem.SelectedAction.MaxDefend;
-            var result = await _battleSystem.RouletteSystem.SetRoulette(min,max); 
-            Debug.Log("Defend: " + result);
-            _battleSystem.SetPlayerDefend(result);
+            var defendValue = _battleSystem.SelectedAction.BaseDefend;
+            Debug.Log("Defend: " + defendValue);
+            _battleSystem.SetPlayerDefend(defendValue);
         }
 
         private async UniTask AttackAction()

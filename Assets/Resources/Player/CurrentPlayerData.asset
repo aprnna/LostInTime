@@ -19,7 +19,7 @@ MonoBehaviour:
   _shield: 2
   _maxShield: 2
   _baseDamage: 12
-  _baseDefend: 2
+  _baseDefend: 5
   _defend: 0
   _exp: 0
   _maxExp: 100

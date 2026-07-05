@@ -37,14 +37,12 @@ namespace DDA
         public int MaxPunchUses = int.MaxValue;
         public int MaxSwordUses = 15;
         public int MaxGunUses = 10;
-        public int MaxDefendUses = 3;
+        public int MaxDefendUses = 2; // Matches playerStats.Shield (2)
 
         // Actions config (loaded from BaseAction assets)
         public int PunchPercentage = 30;   // 30% of base damage
         public int SwordPercentage = 90;   // 90% of base damage (matches Sword.asset)
         public int GunPercentage = 100;    // 100% of base damage (matches Gun.asset)
-        public int DefendMultiple = 3;     // BaseDefend × 3 (matches Defend.asset)
-        public int DefendInterval = 6;
 
         /// <summary>Default constructor - uses default values.</summary>
         public SimPlayer()
@@ -88,7 +86,7 @@ namespace DDA
             MaxShield = 2;
             CurrentShield = MaxShield;
             BaseDamage = 12;
-            BaseDefend = 2;
+            BaseDefend = 5;
             CriticalHitChance = 20;
             CriticalHitBonus = 20;
 
@@ -101,8 +99,6 @@ namespace DDA
             PunchPercentage = 30;
             SwordPercentage = 90;
             GunPercentage = 100;
-            DefendMultiple = 3;
-            DefendInterval = 6;
 
             ResetActionUses();
         }
@@ -114,8 +110,6 @@ namespace DDA
             PunchPercentage = 30;
             SwordPercentage = 90;
             GunPercentage = 100;
-            DefendMultiple = 3;
-            DefendInterval = 6;
 
             ResetActionUses();
         }
@@ -191,10 +185,9 @@ namespace DDA
         }
 
         /// <summary>Calculate defend shield HP with variance.</summary>
-        public (int min, int max) GetDefendRange()
+        public int GetDefendValue()
         {
-            int baseDefendHP = BaseDefend * DefendMultiple;
-            return (baseDefendHP - DefendInterval, baseDefendHP + DefendInterval);
+            return BaseDefend;
         }
 
         /// <summary>Get HP ratio (0-1).</summary>

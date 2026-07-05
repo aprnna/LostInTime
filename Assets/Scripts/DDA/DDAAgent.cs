@@ -329,6 +329,14 @@ namespace DDA
         public void SetTrainingMode(bool v) => _isTrainingMode = v;
         public void SetEnvId(int envId) => _envId = envId;
 
+        // Public getters for DDA logging
+        public float GetHpRatio() => _hpRatio;
+        public int GetTurnCount() => _turnCount;
+        public float GetTurnCountNormalized() => Mathf.Clamp01(_turnCount / 20f);
+        public float GetPlayerLevelNormalized() => Mathf.Clamp01(_playerLevel / 10f);
+        public float GetDamageRatio() => _totalEnemyHP > 0 ? Mathf.Clamp01(_damageDealt / (float)_totalEnemyHP) : 0f;
+        public float GetResourceDepletion() => _resourceDepletion;
+
         /// <summary>
         /// Sets the shared DifficultySettings instance (called by the training simulator).
         /// CRITICAL for convergence: the agent and the TrainingBattleSimulator MUST share one

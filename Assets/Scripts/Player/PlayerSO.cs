@@ -7,6 +7,7 @@ namespace Player
     {
         [SerializeField] private string _name;
         [SerializeField] private Sprite _playerPotrait;
+        [SerializeField] private int _level = 1;
         [SerializeField] private int _health;
         [SerializeField] private int _maxHealth;
         [SerializeField] private int _shield;
@@ -21,6 +22,7 @@ namespace Player
         [SerializeField] private int _intervalDefend;
         [SerializeField] private int _criticalHitPercentage;
         public string PlayerName => _name;
+        public int Level => _level;
         public int Health => _health;
         public int MaxHealth => _maxHealth;
         public int BaseDamage => _baseDamage;
@@ -37,6 +39,7 @@ namespace Player
         public void InitializePlayerData(string playerName, int health,int maxHealth, int shield, int maxShield,int baseDamage, int exp, int maxExp, int coin, int interval, int baseDefend, int intervalDefend)
         {
             _name = playerName;
+            _level = 1;
             _health = health;
             _maxHealth = maxHealth;
             _shield = shield;
@@ -53,6 +56,7 @@ namespace Player
         public void ResetData()
         {
             _name = "";
+            _level = 1;
             _health = 0;
             _maxExp = 0;
             _maxHealth = 0;
@@ -70,6 +74,11 @@ namespace Player
         public void SetName(string playerName)
         {
             _name = PlayerName;
+        }
+
+        public void SetLevel(int value)
+        {
+            _level = value;
         }
 
         public void SetHealth(int value)

@@ -264,12 +264,27 @@ namespace Manager
         private async UniTask StartBattleLogging()
         {
             if (BattleLogger == null) return ;
-            
+
             if (!BattleLogger.HasActiveSession)
             {
                 Debug.Log("[BattleSystem] No battle log found, creating new session log...");
                 BattleLogger.CreateNewLog(SessionManager.Instance.SessionId);
             }
+
+            // Set battle context (area type + difficulty) before starting
+            string areaType = MapSystem.GetMapType().ToString();
+            string diffName = null;
+            float hpMult = 1f;
+            float dmgMult = 1f;
+            if (_ddaIntegration != null && _ddaIntegration.IsEnabled)
+            {
+                diffName = _ddaIntegration.GetCurrentDifficultyName();
+                var (hp, dmg) = _ddaIntegration.GetCurrentMultipliers();
+                hpMult = hp;
+                dmgMult = dmg;
+            }
+            BattleLogger.SetBattleContext(areaType, diffName, hpMult, dmgMult);
+
             // Start logging
             BattleLogger.StartBattle(
                 MapSystem.CurrentPlayerMapNode.mapNodeId,
