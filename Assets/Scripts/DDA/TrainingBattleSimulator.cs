@@ -503,13 +503,7 @@ namespace DDA
                 float defendDepletion = _player.MaxDefendUses > 0 ? 1f - (float)_player.DefendUses / _player.MaxDefendUses : 0f;
                 float resourceDepletion = (swordDepletion + gunDepletion + defendDepletion) / 3f;
 
-                // Remaining resources
-                float swordRemaining = _player.MaxSwordUses > 0 ? (float)_player.SwordUses / _player.MaxSwordUses : 1f;
-                float gunRemaining = _player.MaxGunUses > 0 ? (float)_player.GunUses / _player.MaxGunUses : 1f;
-                float defendRemaining = _player.MaxDefendUses > 0 ? (float)_player.DefendUses / _player.MaxDefendUses : 1f;
-
-                _ddaAgent.UpdateBattlePhase(hpRatio, resourceDepletion,
-                    swordRemaining, gunRemaining, defendRemaining);
+                _ddaAgent.UpdateBattlePhase(hpRatio, resourceDepletion);
                 _ddaAgent?.SetPlayerLevel(_player.Level);
 
                 if (isBattleArea)
@@ -1368,13 +1362,7 @@ namespace DDA
             float defendDepletion = 1f - (float)_player.DefendUses / _player.MaxDefendUses;
             float resourceDepletion = (swordDepletion + gunDepletion + defendDepletion) / 3f;
 
-            // Remaining resources
-            float swordRemaining = _player.MaxSwordUses > 0 ? (float)_player.SwordUses / _player.MaxSwordUses : 1f;
-            float gunRemaining = _player.MaxGunUses > 0 ? (float)_player.GunUses / _player.MaxGunUses : 1f;
-            float defendRemaining = _player.MaxDefendUses > 0 ? (float)_player.DefendUses / _player.MaxDefendUses : 1f;
-
-            _ddaAgent.UpdateBattlePhase(hpRatio, resourceDepletion,
-                swordRemaining, gunRemaining, defendRemaining);
+            _ddaAgent.UpdateBattlePhase(hpRatio, resourceDepletion);
         }
 
         /// <summary>

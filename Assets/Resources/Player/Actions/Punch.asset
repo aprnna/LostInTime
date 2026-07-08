@@ -16,13 +16,11 @@ MonoBehaviour:
   _percentageDamage: 30
   _actionType: 0
   _defend: 0
-  _multipleDefend: 0
-  _intervalDefend: 0
   _vfx: {fileID: 5165246179081346853, guid: effeb7ac5081a4a41b2f475c51e5084d, type: 3}
   _isLimited: 0
   _limit: 0
   _difficultyCritical: 1
   _speedPercent: 1.15
   _zoneWidthPercent: 0.3
-  _criticalBonusPercent: 10
+  _criticalBonusPercent: 20
   _currentLimit: 0

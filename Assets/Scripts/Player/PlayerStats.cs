@@ -1,5 +1,6 @@
 using System;
 using Audio;
+using Playfab;
 using UnityEngine;
 
 namespace Player
@@ -290,12 +291,14 @@ namespace Player
         public void LevelUp(int exp,int maxExp)
         {
             Debug.Log("You Level Up");
+            int oldLevel = Level;
             Level++;
             Exp = exp;
             MaxExp += maxExp;
             IsLevelUp = true;
             AudioManager.Instance.PlaySound(SoundType.SFX_LevelUp);
             OnPlayerLevelUp?.Invoke();
+            BattleLogger.Instance?.OnPlayerLevelUp(Level, exp, MaxExp, oldLevel);
         }
 
         public void LevelUpShield(int value)

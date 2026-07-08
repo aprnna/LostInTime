@@ -1,5 +1,6 @@
 using System;
 using Manager;
+using Playfab;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -23,9 +24,18 @@ namespace Player.Item
         {
             switch (_itemLevelUp.Type)
             {
-                case ConsumableType.Health: _playerStats.LevelUpHealth(_itemLevelUp.Amount); break;
-                case ConsumableType.Shield: _playerStats.LevelUpShield(_itemLevelUp.Amount); break;
-                case ConsumableType.Damage: _playerStats.LevelUpDamage(_itemLevelUp.Amount); break;
+                case ConsumableType.Health:
+                    _playerStats.LevelUpHealth(_itemLevelUp.Amount);
+                    BattleLogger.Instance?.OnLevelUpItemChosen("Health", _itemLevelUp.Amount, _playerStats.MaxHealth);
+                    break;
+                case ConsumableType.Shield:
+                    _playerStats.LevelUpShield(_itemLevelUp.Amount);
+                    BattleLogger.Instance?.OnLevelUpItemChosen("Shield", _itemLevelUp.Amount, _playerStats.BaseDefend);
+                    break;
+                case ConsumableType.Damage:
+                    _playerStats.LevelUpDamage(_itemLevelUp.Amount);
+                    BattleLogger.Instance?.OnLevelUpItemChosen("Damage", _itemLevelUp.Amount, _playerStats.BaseDamage);
+                    break;
             }
         }
         

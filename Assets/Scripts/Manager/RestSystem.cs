@@ -3,6 +3,7 @@ using System.Collections;
 using Cysharp.Threading.Tasks;
 using Player;
 using Player.Item;
+using Playfab;
 using Roulette;
 using TMPro;
 using UnityEngine;
@@ -34,8 +35,9 @@ namespace Manager
             _playerStats = PlayerStats.Instance;
             _rouletteSystem = RouletteSystem.Instance;
             _gameManager = GameManager.Instance;
-            
+
             _buttonPanel.SetActive(true);
+            LogRestEnter();
         }
 
         public void SetDescription(string value)
@@ -58,10 +60,15 @@ namespace Manager
 
         private async UniTask StartRoulette(RestActionController restController)
         {
-            var (rouletteObject, result) = await _rouletteSystem.SetRoulette(restController.RestItem.Min, restController.RestItem.Max,
+            var restType = restController.RestItem.Type;
+            int rouletteMin = restController.RestItem.Min;
+            int rouletteMax = restController.RestItem.Max;
+            int hpBefore = _playerStats.Health;
+
+            var (rouletteObject, result) = await _rouletteSystem.SetRoulette(rouletteMin, rouletteMax,
                 true);
             Destroy(rouletteObject);
-            switch (restController.RestItem.Type)
+            switch (restType)
             {
                 case RestType.Heal: _playerStats.Heal(result);
                     break;
@@ -72,6 +79,8 @@ namespace Manager
                     Debug.Log("Type Not Match");
                     break;
             }
+
+            LogRestAction(restType, result, rouletteMin, rouletteMax, hpBefore);
             Leave();
         }
 
@@ -83,6 +92,53 @@ namespace Manager
                 if(action.IsLimited) action.AddLimit(value);
             }
         }
+
+        private void LogRestEnter()
+        {
+            var ps = PlayerStats.Instance;
+            BattleFileLogger.WriteEvent("rest_enter", new
+            {
+                player_hp = ps?.Health ?? 0,
+                player_max_hp = ps?.MaxHealth ?? 0,
+                player_level = ps?.Level ?? 0,
+                player_coin = ps?.Coin ?? 0
+            });
+
+            Debug.Log($"[RestSystem] Player entered rest area with {ps?.Health ?? 0}/{ps?.MaxHealth ?? 0} HP");
+        }
+
+        private void LogRestAction(RestType restType, int rouletteResult, int rouletteMin, int rouletteMax, int hpBefore)
+        {
+            var ps = PlayerStats.Instance;
+            BattleFileLogger.WriteEvent("rest_action", new
+            {
+                rest_type = restType.ToString(),
+                roulette_result = rouletteResult,
+                roulette_range_min = rouletteMin,
+                roulette_range_max = rouletteMax,
+                player_hp_before = hpBefore,
+                player_hp_after = ps?.Health ?? 0,
+                player_max_hp = ps?.MaxHealth ?? 0,
+                player_level = ps?.Level ?? 0,
+                player_coin = ps?.Coin ?? 0
+            });
+
+            PlayfabManager.Instance?.EnqueueEvent("rest_action", new
+            {
+                rest_type = restType.ToString(),
+                roulette_result = rouletteResult,
+                roulette_range_min = rouletteMin,
+                roulette_range_max = rouletteMax,
+                player_hp_before = hpBefore,
+                player_hp_after = ps?.Health ?? 0,
+                player_max_hp = ps?.MaxHealth ?? 0,
+                player_level = ps?.Level ?? 0,
+                player_coin = ps?.Coin ?? 0
+            });
+
+            Debug.Log($"[RestSystem] Logged rest action: {restType}, result: {rouletteResult} (range {rouletteMin}-{rouletteMax}), HP: {hpBefore} -> {ps?.Health ?? 0}");
+        }
+
         private void Leave()
         {
             _buttonPanel.SetActive(false);

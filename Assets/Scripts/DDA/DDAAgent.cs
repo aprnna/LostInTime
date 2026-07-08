@@ -29,11 +29,6 @@ namespace DDA
         private float _areaProgressRatio = 0f; // Area progress ratio (areasCompleted / totalAreas)
         private float _currentDifficultyNorm = 0.5f; // Current difficulty normalized (index/4, starts at Normal=0.5)
 
-        // --- Remaining Resources (NEW) ---
-        private float _swordRemaining = 1f;   // Sword uses remaining (uses/max)
-        private float _gunRemaining = 1f;     // Gun uses remaining (uses/max)
-        private float _defendRemaining = 1f;  // Defend uses remaining (uses/max)
-
         // --- Area / Run state ---
         private int _playerLevel = 1;
         private int _totalAreas = 12;
@@ -81,9 +76,6 @@ namespace DDA
             _resourceDepletion = 0f;
             _areaProgressRatio = 0f;
             _currentDifficultyNorm = 0.5f; // Normal difficulty
-            _swordRemaining = 1f;
-            _gunRemaining = 1f;
-            _defendRemaining = 1f;
             _playerLevel = 1;
             _totalAreas = 12;
             _areaStartHP = 0;
@@ -95,7 +87,7 @@ namespace DDA
         }
 
         /// <summary>
-        /// 10 observations — all normalized to [0,1]:
+        /// 7 observations — all normalized to [0,1]:
         /// 1. HP Ratio
         /// 2. Turn Count
         /// 3. Player Level
@@ -103,9 +95,6 @@ namespace DDA
         /// 5. Resource Depletion
         /// 6. Area Progress Ratio
         /// 7. Current Difficulty
-        /// 8. Sword Remaining
-        /// 9. Gun Remaining
-        /// 10. Defend Remaining
         /// </summary>
         public override void CollectObservations(VectorSensor sensor)
         {
@@ -133,11 +122,6 @@ namespace DDA
 
             // 7. Current Difficulty (normalized: index/4 for 5 levels)
             sensor.AddObservation(_currentDifficultyNorm);
-
-            // 8-10. Remaining Resources (uses remaining / max uses)
-            sensor.AddObservation(_swordRemaining);
-            sensor.AddObservation(_gunRemaining);
-            sensor.AddObservation(_defendRemaining);
         }
 
         public override void OnActionReceived(ActionBuffers actions)
@@ -200,11 +184,6 @@ namespace DDA
             // Reset progress and difficulty observations
             _areaProgressRatio = 0f;
             _currentDifficultyNorm = 0.5f; // Normal difficulty (index 2 / 4)
-
-            // Reset remaining resources to full
-            _swordRemaining = 1f;
-            _gunRemaining = 1f;
-            _defendRemaining = 1f;
 
             TrainingLogger.LogMessage($"DDAAgent: Run started. Difficulty reset to baseline. " +
                 $"Epsilon={(_isTrainingMode ? "training" : "inference")}", _envId);
@@ -371,14 +350,10 @@ namespace DDA
         /// Update battle phase observations from simulator.
         /// Call each turn to provide real-time battle state.
         /// </summary>
-        public void UpdateBattlePhase(float hpRatio, float resourceDepletion,
-            float swordRemaining, float gunRemaining, float defendRemaining)
+        public void UpdateBattlePhase(float hpRatio, float resourceDepletion)
         {
             _hpRatio = hpRatio;
             _resourceDepletion = resourceDepletion;
-            _swordRemaining = swordRemaining;
-            _gunRemaining = gunRemaining;
-            _defendRemaining = defendRemaining;
         }
 
         // ----------------------------------------------------------------
@@ -419,9 +394,6 @@ namespace DDA
                    $"Diff={_difficultySettings?.GetLevelName() ?? "N/A"} | " +
                    $"Prog={_areaProgressRatio:F2} | " +
                    $"DiffNorm={_currentDifficultyNorm:F2} | " +
-                   $"Sword={_swordRemaining:F2} | " +
-                   $"Gun={_gunRemaining:F2} | " +
-                   $"Defend={_defendRemaining:F2} | " +
                    $"ProgWeight={progressWeight:F2} | " +
                    $"AreasCompleted={_areasCompleted} | " +
                    $"WinRate={(_battlesTotal > 0 ? ((float)_battlesWon / _battlesTotal).ToString("F2") : "N/A")}";

@@ -555,6 +555,50 @@ namespace Playfab
 
         #endregion
 
+        #region Level Up Logging
+
+        /// <summary>
+        /// Log when player levels up. Called by PlayerStats.LevelUp().
+        /// </summary>
+        public void OnPlayerLevelUp(int newLevel, int remainingExp, int newMaxExp, int oldLevel)
+        {
+            BattleFileLogger.WriteEvent("player_level_up", new
+            {
+                old_level = oldLevel,
+                new_level = newLevel,
+                remaining_exp = remainingExp,
+                new_max_exp = newMaxExp,
+                player_hp = PlayerStats.Instance?.Health ?? 0,
+                player_max_hp = PlayerStats.Instance?.MaxHealth ?? 0,
+                player_base_damage = PlayerStats.Instance?.BaseDamage ?? 0,
+                player_base_defend = PlayerStats.Instance?.BaseDefend ?? 0
+            });
+
+            Debug.Log($"[BattleLogger] Player leveled up: {oldLevel} → {newLevel}");
+        }
+
+        /// <summary>
+        /// Log when player selects a level-up reward item.
+        /// </summary>
+        public void OnLevelUpItemChosen(string itemType, int amount, int newStatValue)
+        {
+            BattleFileLogger.WriteEvent("level_up_item_chosen", new
+            {
+                item_type = itemType,
+                amount = amount,
+                new_stat_value = newStatValue,
+                player_level = PlayerStats.Instance?.Level ?? 0,
+                player_hp = PlayerStats.Instance?.Health ?? 0,
+                player_max_hp = PlayerStats.Instance?.MaxHealth ?? 0,
+                player_base_damage = PlayerStats.Instance?.BaseDamage ?? 0,
+                player_base_defend = PlayerStats.Instance?.BaseDefend ?? 0
+            });
+
+            Debug.Log($"[BattleLogger] Level-up item chosen: {itemType} +{amount}");
+        }
+
+        #endregion
+
         #region DDA Logging
 
         /// <summary>
