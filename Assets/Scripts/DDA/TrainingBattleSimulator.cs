@@ -146,21 +146,12 @@ namespace DDA
 
         private void Awake()
         {
-            // NOTE: For multi-env training, we do NOT destroy duplicates.
-            // Each environment instance has its own TrainingBattleSimulator.
-            // The Instance property is kept for backward compatibility but
-            // should not be relied upon in multi-env scenarios.
             if (Instance == null)
             {
                 Instance = this;
             }
 
             UnityEngine.Random.InitState(_randomSeed);
-
-            // Get unique env ID for multi-environment logging
-            // GetInstanceID() is NOT unique across build instances (each clone has same IDs)
-            // Use a combination of process hash and random for uniqueness
-            // For multi-env training, each build instance needs a unique ID
             _envId = System.Diagnostics.Process.GetCurrentProcess().Id * 1000 + UnityEngine.Random.Range(0, 999);
         }
 
@@ -547,7 +538,10 @@ namespace DDA
 
                 if (!_player.IsAlive())
                 {
-                    break; // Player died, end run
+                    // Player died — terminal step
+                    TrainingLogger.LogMessage($"Player died at area {_currentAreaIndex}! Ending episode.", _envId);
+                    _ddaAgent?.OnPlayerDeath(_currentAreaIndex, _areas.Count);
+                    break; // End run
                 }
 
                 _currentAreaIndex++;
@@ -582,8 +576,12 @@ namespace DDA
 
             OnRunComplete?.Invoke(runResult);
 
-            // Notify agent that run ended — EndEpisode called inside DDAAgent.OnRunEnd
-            _ddaAgent?.OnRunEnd(runWon, _currentAreaIndex, _areas.Count);
+            // Only call OnRunEnd if player survived (completed all areas)
+            // If player died, OnPlayerDeath was already called with EndEpisode
+            if (runWon)
+            {
+                _ddaAgent?.OnRunEnd(true, _currentAreaIndex, _areas.Count);
+            }
 
             Debug.Log($"[TrainingSim] Run {_runCount} complete. Won: {runWon}, " +
                       $"Areas: {_currentAreaIndex}/{_areas.Count}, HP: {_player.CurrentHP}");
@@ -691,9 +689,9 @@ namespace DDA
             // Smart AI shopping
             area.ApplyShop(_player, _useSmartAI);
 
-            TrainingLogger.LogShopArea(_player.Coin, _player.CurrentShield, _player.MaxShield, _envId);
+            TrainingLogger.LogShopArea(_player.Coin, _player.DefendUses, _player.MaxDefendUses, _envId);
             Debug.Log($"[TrainingSim] Shop area: Coin={_player.Coin}, " +
-                      $"Shield={_player.CurrentShield}/{_player.MaxShield}");
+                      $"Shield={_player.DefendUses}/{_player.MaxDefendUses}");
         }
 
         private IEnumerator RunBattleEpisode()
@@ -802,7 +800,7 @@ namespace DDA
                 // Update UI sliders each turn
                 OnBattleStateChanged?.Invoke(_player.CurrentHP, _currentEnemy.CurrentHP, _turnCount);
 
-                _ddaAgent?.OnTurnEnd(playerDamage);
+                _ddaAgent?.OnTurnEnd(playerDamage, enemyDamage);
             }
 
             // Determine outcome
@@ -866,7 +864,7 @@ namespace DDA
             OnBattleStateChanged?.Invoke(_player.CurrentHP, _currentEnemy.CurrentHP, _turnCount);
 
             // Notify DDA agent turn ended
-            _ddaAgent?.OnTurnEnd(playerDamage);
+            _ddaAgent?.OnTurnEnd(playerDamage, enemyDamage);
         }
 
         /// <summary>
@@ -921,14 +919,15 @@ namespace DDA
                 OnTurnChanged?.Invoke(_isPlayerTurn);
 
                 // ONE random alive enemy attacks (matches actual game)
+                int enemyDamageMulti = 0;
                 SimEnemy attackingEnemy = GetRandomAliveEnemy(enemies);
                 _attackingEnemy = attackingEnemy; // Track for UI
                 if (attackingEnemy != null)
                 {
-                    int enemyDamage = ExecuteEnemyTurnForEnemy(attackingEnemy);
-                    if (enemyDamage > 0)
+                    enemyDamageMulti = ExecuteEnemyTurnForEnemy(attackingEnemy);
+                    if (enemyDamageMulti > 0)
                     {
-                        _player.TakeDamage(enemyDamage);
+                        _player.TakeDamage(enemyDamageMulti);
                     }
                 }
 
@@ -939,7 +938,7 @@ namespace DDA
                 // Update battle phase features for DDA agent
                 UpdateAgentBattlePhase(enemies);
 
-                _ddaAgent?.OnTurnEnd(playerDamage > 0 ? playerDamage : 0);
+                _ddaAgent?.OnTurnEnd(playerDamage > 0 ? playerDamage : 0, enemyDamageMulti);
             }
 
             // Determine outcome
@@ -1082,7 +1081,7 @@ namespace DDA
             // Update battle phase observations for DDA agent
             UpdateAgentBattlePhase(enemies);
 
-            _ddaAgent?.OnTurnEnd(0);
+            _ddaAgent?.OnTurnEnd(0, 0);
         }
 
         // Helper methods for multi-enemy battles
@@ -1171,7 +1170,7 @@ namespace DDA
             {
                 PlayerHP = _player.CurrentHP,
                 PlayerMaxHP = _player.MaxHP,
-                PlayerShield = _player.CurrentShield,
+                PlayerShield = _player.DefendUses,
                 EnemyHP = targetEnemy.CurrentHP,
                 EnemyMaxHP = targetEnemy.MaxHP,
                 SwordUsesRemaining = _player.SwordUses,
@@ -1197,13 +1196,18 @@ namespace DDA
             switch (action)
             {
                 case SimAction.Punch:
-                    damage = SmartBattleAI.CalculateDamage(SimAction.Punch, _player, _playerSkill);
+                {
+                    var result = SmartBattleAI.CalculateDamageResult(SimAction.Punch, _player, _playerSkill);
+                    damage = result.Damage;
+                    _ddaAgent?.OnQTECompleted(result.QTESuccess);
                     break;
-
+                }
                 case SimAction.Sword:
                     if (_player.SwordUses > 0)
                     {
-                        damage = SmartBattleAI.CalculateDamage(SimAction.Sword, _player, _playerSkill);
+                        var result = SmartBattleAI.CalculateDamageResult(SimAction.Sword, _player, _playerSkill);
+                        damage = result.Damage;
+                        _ddaAgent?.OnQTECompleted(result.QTESuccess);
                         _player.SwordUses--;
                     }
                     break;
@@ -1211,7 +1215,9 @@ namespace DDA
                 case SimAction.Gun:
                     if (_player.GunUses > 0)
                     {
-                        damage = SmartBattleAI.CalculateDamage(SimAction.Gun, _player, _playerSkill);
+                        var result = SmartBattleAI.CalculateDamageResult(SimAction.Gun, _player, _playerSkill);
+                        damage = result.Damage;
+                        _ddaAgent?.OnQTECompleted(result.QTESuccess);
                         _player.GunUses--;
                     }
                     break;
@@ -1219,9 +1225,11 @@ namespace DDA
                 case SimAction.Defend:
                     if (_player.DefendUses > 0)
                     {
-                        int shieldHP = SmartBattleAI.CalculateDefend(_player);
-                        _player.CurrentShield = Mathf.Min(_player.MaxShield, _player.CurrentShield + shieldHP);
+                        // Set Defend absorb value and consume a shield charge
+                        // Matches real game: UseShield() decrements charge, SetPlayerDefend() sets absorb
+                        _player.Defend = _player.BaseDefend;
                         _player.DefendUses--;
+                        // Defend has no QTE (TapZone) — matches real game
                     }
                     break;
             }
@@ -1363,25 +1371,6 @@ namespace DDA
             float resourceDepletion = (swordDepletion + gunDepletion + defendDepletion) / 3f;
 
             _ddaAgent.UpdateBattlePhase(hpRatio, resourceDepletion);
-        }
-
-        /// <summary>
-        /// Gets total enemy HP ratio (remaining vs max).
-        /// </summary>
-        private float GetEnemyHPRatio(List<SimEnemy> enemies)
-        {
-            if (enemies == null || enemies.Count == 0) return 0f;
-
-            int totalCurrent = 0;
-            int totalMax = 0;
-
-            foreach (var enemy in enemies)
-            {
-                totalCurrent += enemy.CurrentHP;
-                totalMax += enemy.MaxHP;
-            }
-
-            return totalMax > 0 ? (float)totalCurrent / totalMax : 0f;
         }
 
         /// <summary>

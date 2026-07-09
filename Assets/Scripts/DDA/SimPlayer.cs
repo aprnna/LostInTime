@@ -15,10 +15,9 @@ namespace DDA
         // Base stats (loaded from PlayerSO)
         public int MaxHP;
         public int CurrentHP;
-        public int MaxShield;
-        public int CurrentShield;
         public int BaseDamage;
         public int BaseDefend;
+        public int Defend;          // Damage-absorbing buffer per defend action (resets after absorbing)
         public int CriticalHitChance; // Percentage
         public int CriticalHitBonus;   // Percentage extra damage
 
@@ -41,7 +40,7 @@ namespace DDA
 
         // Actions config (loaded from BaseAction assets)
         public int PunchPercentage = 30;   // 30% of base damage
-        public int SwordPercentage = 90;   // 90% of base damage (matches Sword.asset)
+        public int SwordPercentage = 75;   // 75% of base damage (matches Sword.asset)
         public int GunPercentage = 100;    // 100% of base damage (matches Gun.asset)
 
         /// <summary>Default constructor - uses default values.</summary>
@@ -62,10 +61,9 @@ namespace DDA
         {
             MaxHP = playerSO.MaxHealth;
             CurrentHP = MaxHP;
-            MaxShield = playerSO.MaxShield;
-            CurrentShield = MaxShield;
             BaseDamage = playerSO.BaseDamage;
             BaseDefend = playerSO.BaseDefend;
+            Defend = 0;
             CriticalHitChance = playerSO.CriticalHitPercentage;
             CriticalHitBonus = 20; // Default 20% bonus on crit
 
@@ -83,10 +81,9 @@ namespace DDA
             // Default values from CurrentPlayerData.asset
             MaxHP = 100;
             CurrentHP = MaxHP;
-            MaxShield = 2;
-            CurrentShield = MaxShield;
             BaseDamage = 12;
             BaseDefend = 5;
+            Defend = 0;
             CriticalHitChance = 20;
             CriticalHitBonus = 20;
 
@@ -97,7 +94,7 @@ namespace DDA
 
             // Default action values from BaseAction assets
             PunchPercentage = 30;
-            SwordPercentage = 90;
+            SwordPercentage = 75;
             GunPercentage = 100;
 
             ResetActionUses();
@@ -108,7 +105,7 @@ namespace DDA
         {
             // Action percentages from BaseAction assets
             PunchPercentage = 30;
-            SwordPercentage = 90;
+            SwordPercentage = 75;
             GunPercentage = 100;
 
             ResetActionUses();
@@ -129,21 +126,27 @@ namespace DDA
             DefendUses = MaxDefendUses;
         }
 
-        /// <summary>Take damage, shield absorbs first.</summary>
+        /// <summary>Take damage, Defend absorbs first then resets to 0.
+        /// Matches PlayerStats.GetHit(): Defend absorbs damage, remaining spills to HP, Defend = 0.</summary>
         public void TakeDamage(int damage)
         {
-            if (CurrentShield > 0)
+            if (damage <= 0) return;
+
+            // Defend absorbs damage first (matches real game)
+            if (Defend > 0)
             {
-                if (CurrentShield >= damage)
+                Defend -= damage;
+                if (Defend < 0)
                 {
-                    CurrentShield -= damage;
-                    return;
+                    int remainingDamage = Mathf.Abs(Defend);
+                    Defend = 0;
+                    CurrentHP = Mathf.Max(0, CurrentHP - remainingDamage);
                 }
                 else
                 {
-                    damage -= CurrentShield;
-                    CurrentShield = 0;
+                    Defend = 0; // Reset after absorbing (matches real game)
                 }
+                return;
             }
 
             CurrentHP = Mathf.Max(0, CurrentHP - damage);
@@ -155,10 +158,15 @@ namespace DDA
             CurrentHP = Mathf.Min(MaxHP, CurrentHP + amount);
         }
 
-        /// <summary>Add shield.</summary>
-        public void AddShield(int amount)
+        /// <summary>Use a shield charge. Returns true if successful.</summary>
+        public bool UseShield()
         {
-            CurrentShield = Mathf.Min(MaxShield, CurrentShield + amount);
+            if (DefendUses > 0)
+            {
+                DefendUses--;
+                return true;
+            }
+            return false;
         }
 
         /// <summary>Add coins.</summary>

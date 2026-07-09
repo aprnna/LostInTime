@@ -1,5 +1,6 @@
 using System;
 using Cysharp.Threading.Tasks;
+using DDA;
 using Minigames;
 using UnityEngine;
 
@@ -55,8 +56,12 @@ namespace Manager
         {
             _battleSystem.MinigameManager.SetSpeedPercent(_battleSystem.SelectedAction.SpeedPercent);
             _battleSystem.MinigameManager.SetZoneWidth(_battleSystem.SelectedAction.ZoneWidthPercent);
-            var result = await _battleSystem.MinigameManager.PlayTapZone(); 
+            var result = await _battleSystem.MinigameManager.PlayTapZone();
             var isCriticalHit = result == Minigame.Result.Success;
+
+            // Track QTE accuracy for DDA
+            DDAIntegration.Instance?.OnQTECompleted(isCriticalHit);
+
             var damage = isCriticalHit ? _battleSystem.SelectedAction.CriticalDamage : _battleSystem.SelectedAction.BaseDamage;
             await _battleSystem.EnemyGetHit(damage, isCriticalHit);
             hpTargetAfter = _battleSystem.SelectedTarget.EnemyStats.Health;

@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: DefaultDifficultySettings
   m_EditorClassIdentifier: 
   _difficultyLevels:
-  - 0.6
-  - 0.8
+  - 0.7
+  - 0.85
   - 1
-  - 1.2
-  - 1.4
+  - 1.15
+  - 1.3
   _currentLevelIndex: 2

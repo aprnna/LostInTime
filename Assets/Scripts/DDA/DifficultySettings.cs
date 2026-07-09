@@ -5,10 +5,6 @@ namespace DDA
     /// <summary>
     /// ScriptableObject storing difficulty multipliers for DDA system.
     /// Supports 5 discrete levels: Very Easy (0.75x) to Very Hard (1.25x).
-    ///
-    /// IMPORTANT: CurrentLevelIndex is INSTANCE state for multi-env training.
-    /// Each TrainingBattleSimulator should have its own DifficultySettings instance
-    /// or use ResetToNormal() at run start to synchronize.
     /// </summary>
     [CreateAssetMenu(fileName = "DifficultySettings", menuName = "DDA/DifficultySettings")]
     public class DifficultySettings : ScriptableObject

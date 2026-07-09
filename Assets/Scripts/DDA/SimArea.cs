@@ -35,7 +35,8 @@ namespace DDA
                     player.AddExp(Amount);
                     break;
                 case ConsumableType.Shield:
-                    player.AddShield(Amount);
+                    if (player.DefendUses < player.MaxDefendUses)
+                        player.DefendUses = Mathf.Min(player.MaxDefendUses, player.DefendUses + Amount);
                     break;
             }
         }
@@ -144,11 +145,11 @@ namespace DDA
                 player.Heal(20);
             }
 
-            // Buy Shield if have extra coins and shield not maxed
-            if (player.Coin >= 20 && player.CurrentShield < player.MaxShield)
+            // Buy Shield if have extra coins and shield charges not maxed
+            if (player.Coin >= 20 && player.DefendUses < player.MaxDefendUses)
             {
                 player.Coin -= 20;
-                player.CurrentShield = Mathf.Min(player.MaxShield, player.CurrentShield + 2);
+                player.DefendUses = Mathf.Min(player.MaxDefendUses, player.DefendUses + 1);
             }
         }
     }

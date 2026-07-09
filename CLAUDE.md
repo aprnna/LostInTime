@@ -78,9 +78,10 @@ Area 2 (Battle): ApplyDifficulty(agent's action from Area 0) → Battle → OnAr
 - `RequestDecision()` only after battle areas (not Rest/Shop)
 
 **Agent** (`DDAAgent.cs`):
-- 5 observations (baseline): HP Ratio, Turn Count, Player Level, Damage Ratio, Resource Depletion
-- 3 discrete actions: Maintain (0), Increase (1), Decrease (2) difficulty
-- Reward: parabolic sweet spot at HP 50% (1.0 max), linear decay outside 40-60%, loss = -1.0, run bonus = +0.5/-0.1
+- 8 observations: HP Ratio, Turn Count, Player Level, Damage Dealt Ratio, QTE Accuracy, Resource Depletion, Area Progress, Current Difficulty
+- 5 discrete actions: Very Easy (0), Easy (1), Normal (2), Hard (3), Very Hard (4)
+- Reward: parabolic sweet spot at HP 50% (1.0 max), linear decay outside 40-60%, loss = -1.0, run bonus = +0.5/-0.1, death penalty = -0.5
+- Terminal steps: area 12 completed (run won) or player dies (HP = 0)
 
 **Difficulty** (`DifficultySettings.cs`):
 - 5 levels: Very Easy (0.75x), Easy (0.875x), Normal (1.0x), Hard (1.125f), Very Hard (1.25x)

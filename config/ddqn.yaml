@@ -8,17 +8,15 @@
 # Usage:
 #   mlagents-learn config/ddqn.yaml --run-id=ddqn_dda_v1 --train
 #
-# Observations (10 total):
+# Observations (8 total):
 #   1. HP Ratio (current/max)
-#   2. Turn Count (normalized, cap 20)
-#   3. Player Level (normalized, cap 10)
-#   4. Damage Ratio (dealt / startHP * enemyCount)
-#   5. Resource Depletion (avg depletion of actions)
-#   6. Area Progress Ratio (completed/total)
-#   7. Current Difficulty (index/4, normalized)
-#   8. Sword Remaining (uses/max)
-#   9. Gun Remaining (uses/max)
-#   10. Defend Remaining (uses/max)
+#   2. Turn Count (normalized, cap 15)
+#   3. Player Level (normalized, cap 5)
+#   4. Damage Dealt Ratio (dealt / totalEnemyHP in area)
+#   5. QTE Accuracy (successful QTE / total QTE opportunities)
+#   6. Resource Depletion (avg depletion of actions)
+#   7. Area Progress Ratio (completed/total)
+#   8. Current Difficulty (index/4, normalized)
 #
 # Actions (5 discrete — absolute difficulty level):
 #   0 = Very Easy
@@ -29,11 +27,15 @@
 # NOTE: Set BehaviorParameters on the DDAAgent GameObject
 #       (Space Size / Discrete Branch Size) to 5 to match.
 #
-# Reward:
+# Reward (based on battleSurvivalRatio = player_hp_end / player_hp_start):
+#   - Loss: -1.0
+#   - Win, survivalRatio in [0.4, 0.6]: 1 - 25*(ratio - 0.5)^2 (parabolic peak at 50%)
+#   - Win, survivalRatio < 0.4: 0.1 * ratio
+#   - Win, survivalRatio > 0.6: 0.1 * (1 - ratio)
 #   - Progressive weighting: 0.5 + 0.5 * progress
-#   - Parabolic sweet spot at HP 50%, broadened band 35-65% HP
-#   - Loss softened to -0.5 (was -1.0)
-#   - Applied to both wins and losses
+#   - Run win bonus: +0.5
+#   - Death penalty: -0.5 (when player dies mid-run)
+#   - Run loss penalty: -0.1 (when run ends without death)
 
 behaviors:
   ddqn_dda:
@@ -46,16 +48,15 @@ behaviors:
 
       # Experience Replay
       batch_size: 128
-      buffer_size: 50000
+      buffer_size: 10000
 
       # DDQN - Target Network Update
       tau: 0.005 # Soft update rate
-      steps_per_update: 4 # Update network every 4 steps (vs 1) — 4x faster throughput
 
       # Exploration (Epsilon-greedy)
       exploration_initial_eps: 1.0
       exploration_final_eps: 0.03
-      exploration_decay_steps: 300000
+      exploration_decay_steps: 250000
 
       # Discount factor
       gamma: 0.99
@@ -74,8 +75,8 @@ behaviors:
     # Training settings
 
     keep_checkpoints: 5
-    max_steps: 500000
-    time_horizon: 64
+    max_steps: 1000000
+    # time_horizon: 64
     summary_freq: 5000
     checkpoint_interval: 50000
 
@@ -83,7 +84,7 @@ behaviors:
 env_settings:
   env_path: null
   base_port: 5005
-  num_envs: 4
+  num_envs: 8
   num_areas: 1
   timeout_wait: 60
   seed: -1

@@ -31,6 +31,15 @@ namespace DDA
     }
 
     /// <summary>
+    /// Result of a simulated player attack, including QTE outcome.
+    /// </summary>
+    public struct DamageResult
+    {
+        public int Damage;
+        public bool QTESuccess; // true if simulated TapZone was successful (critical hit)
+    }
+
+    /// <summary>
     /// Smart AI for battle action selection.
     /// Prioritizes: survival, finishing enemies, resource management.
     /// </summary>
@@ -141,7 +150,7 @@ namespace DDA
         /// <summary>
         /// Calculate damage for action with absolute value and TapZone simulation.
         /// </summary>
-        public static int CalculateDamage(SimAction action, SimPlayer player, float skill = 0.5f)
+        public static DamageResult CalculateDamageResult(SimAction action, SimPlayer player, float skill = 0.5f)
         {
             // Calculate absolute base damage from percentage
             int baseDamage = action switch
@@ -153,12 +162,13 @@ namespace DDA
             };
 
             // TapZone success simulation based on action difficulty + skill
+            // Zone widths match actual game BaseAction assets (ZoneWidthPercent)
             float tapZoneSize = action switch
             {
-                SimAction.Punch => 0.4f,   // 40% zone = easy
-                SimAction.Sword => 0.25f,  // 25% zone = medium
-                SimAction.Gun => 0.15f,    // 15% zone = hard
-                _ => 0.25f
+                SimAction.Punch => 0.3f,   // 30% zone = easy (matches Punch.asset)
+                SimAction.Sword => 0.2f,   // 20% zone = medium (matches Sword.asset)
+                SimAction.Gun => 0.1f,     // 10% zone = hard (matches Gun.asset)
+                _ => 0.2f
             };
 
             // Success probability: skill influence + zone size
@@ -166,13 +176,24 @@ namespace DDA
 
             if (tapSuccess)
             {
-                // Narrowed from +10% to +5% to reduce per-battle HP outcome variance
-                // (same difficulty -> more consistent reward), keeping the random map path.
-                baseDamage = Mathf.RoundToInt(baseDamage * 1.05f); // +5% critical
+                // +20% critical bonus — matches actual game CriticalBonusPercent (BaseAction)
+                baseDamage = Mathf.RoundToInt(baseDamage * 1.2f);
             }
 
             // No accuracy check - matches actual game (100% hit rate)
-            return Mathf.Max(1, baseDamage);
+            return new DamageResult
+            {
+                Damage = Mathf.Max(1, baseDamage),
+                QTESuccess = tapSuccess
+            };
+        }
+
+        /// <summary>
+        /// Backward-compatible overload returning damage only.
+        /// </summary>
+        public static int CalculateDamage(SimAction action, SimPlayer player, float skill = 0.5f)
+        {
+            return CalculateDamageResult(action, player, skill).Damage;
         }
 
         /// <summary>

@@ -133,13 +133,25 @@ namespace DDA
         /// <summary>
         /// Called after each turn. Updates DDA state.
         /// </summary>
-        public void OnTurnEnd(int damageDealtThisTurn)
+        public void OnTurnEnd(int damageDealtThisTurn, int damageTakenThisTurn = 0)
         {
             if (!_enableDDA) return;
             ResolveReferences();
             if (_ddaAgent == null) return;
 
-            _ddaAgent.OnTurnEnd(damageDealtThisTurn);
+            _ddaAgent.OnTurnEnd(damageDealtThisTurn, damageTakenThisTurn);
+        }
+
+        /// <summary>
+        /// Called when a QTE (TapZone) minigame completes.
+        /// </summary>
+        public void OnQTECompleted(bool success)
+        {
+            if (!_enableDDA) return;
+            ResolveReferences();
+            if (_ddaAgent == null) return;
+
+            _ddaAgent.OnQTECompleted(success);
         }
 
         /// <summary>
@@ -165,7 +177,8 @@ namespace DDA
                         _ddaAgent.GetHpRatio(),
                         _ddaAgent.GetTurnCountNormalized(),
                         _ddaAgent.GetPlayerLevelNormalized(),
-                        _ddaAgent.GetDamageRatio(),
+                        _ddaAgent.GetDamageDealtRatio(),
+                        _ddaAgent.GetQTEAccuracy(),
                         _ddaAgent.GetResourceDepletion()
                     },
                     dda_episode_count = 0, // not tracked in live game
@@ -304,6 +317,16 @@ namespace DDA
             if (_ddaAgent == null) return;
             _ddaAgent.OnRunEnd(runWon, areasCompleted, totalAreas);
             Debug.Log($"[DDAIntegration] Run end. Won={runWon}, Areas={areasCompleted}/{totalAreas}.");
+        }
+
+        /// <summary>Called when player dies mid-run (HP = 0).</summary>
+        public void OnPlayerDeath(int areasCompleted, int totalAreas)
+        {
+            if (!_enableDDA) return;
+            ResolveReferences();
+            if (_ddaAgent == null) return;
+            _ddaAgent.OnPlayerDeath(areasCompleted, totalAreas);
+            Debug.Log($"[DDAIntegration] Player died! Areas={areasCompleted}/{totalAreas}.");
         }
     }
 }
