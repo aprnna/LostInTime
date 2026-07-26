@@ -8,6 +8,7 @@ namespace Playfab
         public static SessionManager Instance;
         public string SessionId { get; private set; }
         public long SessionStartTime { get; private set; }
+        public event Action<string> OnSessionStarted;
 
         private int _lastSentIndex; // tracks how many BattleRecords already enqueued for upload
 
@@ -28,6 +29,7 @@ namespace Playfab
             BattleLogger.Instance?.CreateNewLog(SessionId);
             PlayfabManager.Instance?.EnqueueEvent("session_started", new { session_id = SessionId, started_at = DateTime.UtcNow.ToString("o") });
 
+            OnSessionStarted?.Invoke(SessionId);
             Debug.Log($"[SessionManager] New session: {SessionId}");
         }
 

@@ -46,6 +46,11 @@ namespace Manager
         [Header("DDA")]
         [SerializeField] private DDAIntegration _ddaIntegration;
 
+        // Per-cycle buffer: player damage dealt during DamageRouletteState, consumed by EnemyTurnState
+        // when calling DDAIntegration.OnTurnEnd(playerDmg, enemyDmg) once per full cycle (matches
+        // training-sim granularity where OnTurnEnd fires once per player+enemy turn pair).
+        public int LastPlayerDamageDealt { get; set; } = 0;
+
         [Header("Reward Icons")]
         [Tooltip("Sprite shown for Exp reward in the post-battle drop panel.")]
         [SerializeField] private Sprite _expRewardIcon;
@@ -297,11 +302,11 @@ namespace Manager
         {
             bool playerWon = BattleResult == BattleResult.PlayerWin;
 
-            // Calculate total enemy HP
+            // Calculate total enemy HP (use MaxHealth, not remaining Health)
             int totalEnemyHP = 0;
             foreach (var enemy in Enemies)
             {
-                totalEnemyHP += enemy.EnemyStats.Health;
+                totalEnemyHP += enemy.EnemyStats.MaxHealth;
             }
 
             // Notify DDA of battle end

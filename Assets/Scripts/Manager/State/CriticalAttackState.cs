@@ -35,12 +35,18 @@ namespace Manager
                  DefendAction();
             else
                 await AttackAction();
+                
+            // Player action completed, increment turn count
+            DDAIntegration.Instance?.OnTurnEnd(0, 0);
+            
             if (EnemiesAvailable())
             {
                 _battleSystem.StateMachine.ChangeState(_battleSystem.EnemyTurnState);
             }
             else
             {
+                _battleSystem.LastPlayerDamageDealt = 0;
+
                 _battleSystem.ChangeBattleResult(BattleResult.PlayerWin);
                 _battleSystem.StateMachine.ChangeState(_battleSystem.ResultBattleState);
             }
@@ -66,6 +72,11 @@ namespace Manager
             await _battleSystem.EnemyGetHit(damage, isCriticalHit);
             hpTargetAfter = _battleSystem.SelectedTarget.EnemyStats.Health;
             Debug.Log("Damage dealt: " + damage);
+
+            // Notify DDA of player damage (mirrors DamageRouletteState)
+            DDAIntegration.Instance?.OnPlayerAttack(damage);
+            _battleSystem.LastPlayerDamageDealt = damage;
+
             await UniTask.Delay(TimeSpan.FromSeconds(1), ignoreTimeScale: false);
             _battleSystem.LogPlayerTurn(hpTargetBefore, hpTargetAfter, damage, isCriticalHit);
         }

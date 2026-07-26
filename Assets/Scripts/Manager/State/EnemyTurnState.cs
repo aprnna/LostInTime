@@ -3,6 +3,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
+using DDA;
 using Player;
 
 namespace Manager
@@ -64,6 +65,12 @@ namespace Manager
             Debug.Log($"Enemy {_attackingEnemy.name} attacks with {damage} damage");
 
             _battleSystem.PlayerStats.GetHit(damage);
+
+            // Feed DDA: player damage already tracked by DamageRouletteState via OnPlayerAttack().
+            // Here we only track enemy damage and increment turn count.
+            Debug.Log($"[EnemyTurnState] Calling DDA OnTurnEnd: enemyDmg={damage}");
+            DDAIntegration.Instance?.OnTurnEnd(0, damage);
+            _battleSystem.LastPlayerDamageDealt = 0;
 
             if (!_battleSystem.PlayerStats.IsAlive())
             {

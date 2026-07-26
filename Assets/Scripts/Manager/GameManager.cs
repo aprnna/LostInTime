@@ -5,6 +5,7 @@ using DDA;
 using Input;
 using Player;
 using Player.Item;
+using Playfab;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -120,6 +121,26 @@ namespace Manager
         }
         public void StartGame()
         {
+            OnStartGame().Forget();
+        }
+
+        private async UniTask OnStartGame()
+        {
+            // Reset biome & progress state for a clean new run
+            _activeIndexBiome = 0;
+            ProgressTeleport = 0;
+
+            // Ensure references are resolved (safe to call more than once)
+            if (_playerStats == null) _playerStats = PlayerStats.Instance;
+
+            // Reset player stats and actions — await so everything is ready before scene load
+            await InitializeActions();
+            await InitializePlayerStats();
+
+            // Close the previous battle log file and open a brand new one for this run
+            BattleFileLogger.Close();
+            SessionManager.Instance?.StartNewSession();
+
             DDAIntegration.Instance?.OnRunStart();
             _sceneController.ChangeScene("BaseScene");
         }

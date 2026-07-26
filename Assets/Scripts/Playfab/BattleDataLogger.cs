@@ -648,7 +648,9 @@ namespace Playfab
                 dda_episode_count = payload.dda_episode_count,
                 player_level = PlayerStats.Instance?.Level ?? 0,
                 player_hp_ratio = payload.player_hp_ratio,
-                total_turns = payload.total_turns
+                total_turns = payload.total_turns,
+                damage_taken = payload.damage_taken,
+                heals_used = payload.heals_used
             });
         }
 

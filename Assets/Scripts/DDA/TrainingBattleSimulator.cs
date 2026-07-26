@@ -33,7 +33,7 @@ namespace DDA
         [SerializeField] private bool _autoTrain = true;
         [SerializeField] private float _battleDelay = 0.1f;
         [SerializeField] private float _turnDelay = 0.05f;
-        [SerializeField] private int _maxTurnsPerBattle = 20;
+        [SerializeField] private int _maxTurnsPerBattle = 40;
         [SerializeField] private bool _useSmartAI = true;
         [SerializeField] [Range(0f, 1f)] private float _playerSkill = 0.7f;
         [SerializeField] private bool _resetOnRunComplete = true;
@@ -788,9 +788,12 @@ namespace DDA
                     _currentEnemy.TakeDamage(playerDamage);
                 }
 
+                _ddaAgent?.OnTurnEnd(0, 0);
+
                 if (!_currentEnemy.IsAlive()) break;
 
                 // Enemy turn
+                _turnCount++;
                 int enemyDamage = ExecuteEnemyTurn();
                 if (enemyDamage > 0)
                 {
@@ -800,7 +803,7 @@ namespace DDA
                 // Update UI sliders each turn
                 OnBattleStateChanged?.Invoke(_player.CurrentHP, _currentEnemy.CurrentHP, _turnCount);
 
-                _ddaAgent?.OnTurnEnd(playerDamage, enemyDamage);
+                _ddaAgent?.OnTurnEnd(0, enemyDamage);
             }
 
             // Determine outcome
@@ -846,6 +849,7 @@ namespace DDA
             }
 
             OnBattleStateChanged?.Invoke(_player.CurrentHP, _currentEnemy.CurrentHP, _turnCount);
+            _ddaAgent?.OnTurnEnd(0, 0);
 
             if (!_currentEnemy.IsAlive())
             {
@@ -855,6 +859,7 @@ namespace DDA
             yield return new WaitForSeconds(_turnDelay / 2f);
 
             // --- Enemy Turn ---
+            _turnCount++;
             int enemyDamage = ExecuteEnemyTurn();
             if (enemyDamage > 0)
             {
@@ -864,7 +869,7 @@ namespace DDA
             OnBattleStateChanged?.Invoke(_player.CurrentHP, _currentEnemy.CurrentHP, _turnCount);
 
             // Notify DDA agent turn ended
-            _ddaAgent?.OnTurnEnd(playerDamage, enemyDamage);
+            _ddaAgent?.OnTurnEnd(0, enemyDamage);
         }
 
         /// <summary>
@@ -911,10 +916,13 @@ namespace DDA
                     }
                 }
 
+                _ddaAgent?.OnTurnEnd(0, 0);
+
                 // Check if all enemies dead
                 if (!HasAliveEnemies(enemies)) break;
 
                 // --- Enemy Turn ---
+                _turnCount++;
                 _isPlayerTurn = false;
                 OnTurnChanged?.Invoke(_isPlayerTurn);
 
@@ -938,7 +946,7 @@ namespace DDA
                 // Update battle phase features for DDA agent
                 UpdateAgentBattlePhase(enemies);
 
-                _ddaAgent?.OnTurnEnd(playerDamage > 0 ? playerDamage : 0, enemyDamageMulti);
+                _ddaAgent?.OnTurnEnd(0, enemyDamageMulti);
             }
 
             // Determine outcome
@@ -1051,6 +1059,8 @@ namespace DDA
 
             int totalEnemyHP = GetTotalEnemyHP(enemies);
             OnBattleStateChanged?.Invoke(_player.CurrentHP, totalEnemyHP, _turnCount);
+            
+            _ddaAgent?.OnTurnEnd(0, 0);
 
             if (!HasAliveEnemies(enemies))
             {
@@ -1060,28 +1070,28 @@ namespace DDA
             yield return new WaitForSeconds(_turnDelay / 2f);
 
             // --- Enemy Turn ---
+            _turnCount++;
             _isPlayerTurn = false;
             OnTurnChanged?.Invoke(_isPlayerTurn);
 
             // ONE random alive enemy attacks
+            int enemyDamageMulti = 0;
             SimEnemy attackingEnemy = GetRandomAliveEnemy(enemies);
             _attackingEnemy = attackingEnemy; // Track for UI
             if (attackingEnemy != null)
             {
-                int enemyDamage = ExecuteEnemyTurnForEnemy(attackingEnemy);
-                if (enemyDamage > 0)
+                enemyDamageMulti = ExecuteEnemyTurnForEnemy(attackingEnemy);
+                if (enemyDamageMulti > 0)
                 {
-                    _player.TakeDamage(enemyDamage);
+                    _player.TakeDamage(enemyDamageMulti);
                 }
             }
 
             totalEnemyHP = GetTotalEnemyHP(enemies);
             OnBattleStateChanged?.Invoke(_player.CurrentHP, totalEnemyHP, _turnCount);
 
-            // Update battle phase observations for DDA agent
             UpdateAgentBattlePhase(enemies);
-
-            _ddaAgent?.OnTurnEnd(0, 0);
+            _ddaAgent?.OnTurnEnd(0, enemyDamageMulti);
         }
 
         // Helper methods for multi-enemy battles
@@ -1232,6 +1242,11 @@ namespace DDA
                         // Defend has no QTE (TapZone) — matches real game
                     }
                     break;
+            }
+
+            if (damage > 0)
+            {
+                _ddaAgent?.OnPlayerAttack(damage);
             }
 
             return damage;

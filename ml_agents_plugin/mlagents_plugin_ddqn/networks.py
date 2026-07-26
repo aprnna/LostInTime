@@ -5,7 +5,7 @@ ML-Agents hardcodes Swish (x * sigmoid(x)) in LinearEncoder and ConditionalEncod
 This module provides drop-in replacements that use nn.ReLU, so the DDQN plugin
 doesn't need to patch the installed mlagents package.
 """
-from typing import List, Optional, Tuple, Dict
+from typing import List, Optional, Tuple, Dict, Union, Any
 
 from mlagents.torch_utils import torch, nn
 from mlagents_envs.base_env import ActionSpec, ObservationSpec, ObservationType
@@ -28,9 +28,12 @@ from mlagents.trainers.torch_entities.attention import (
     ResidualSelfAttention,
     get_zero_entities_mask,
 )
-from mlagents.trainers.torch_entities.networks import ObservationEncoder
+from mlagents.trainers.torch_entities.networks import ObservationEncoder, Actor
+from mlagents.trainers.torch_entities.networks import Critic
+from mlagents.trainers.torch_entities.agent_action import AgentAction
 from mlagents.trainers.buffer import AgentBuffer
 from mlagents.trainers.trajectory import ObsUtil
+import numpy as np
 
 
 # ---------------------------------------------------------------------------
@@ -328,3 +331,120 @@ class ReLUValueNetwork(nn.Module):
         )
         output = self.value_heads(encoding)
         return output, memories
+
+
+# ---------------------------------------------------------------------------
+# Q-Network for DDQN (used as both Actor and Critic)
+# ---------------------------------------------------------------------------
+
+class QNetworkDDQN(nn.Module, Actor, Critic):
+    """Q-Network for DDQN with target network support."""
+
+    MODEL_EXPORT_VERSION = 3
+
+    def __init__(
+        self,
+        stream_names: List[str],
+        observation_specs: List[ObservationSpec],
+        network_settings: NetworkSettings,
+        action_spec: ActionSpec,
+        exploration_initial_eps: float = 1.0,
+    ):
+        self.exploration_rate = exploration_initial_eps
+        nn.Module.__init__(self)
+
+        output_act_size = max(sum(action_spec.discrete_branches), 1)
+        self.network_body = ReLUValueNetwork(
+            stream_names,
+            observation_specs,
+            network_settings,
+            outputs_per_stream=output_act_size,
+        )
+
+        self.action_spec = action_spec
+        self.version_number = torch.nn.Parameter(
+            torch.Tensor([self.MODEL_EXPORT_VERSION]), requires_grad=False
+        )
+        self.continuous_act_size_vector = torch.nn.Parameter(
+            torch.Tensor([int(self.action_spec.continuous_size)]), requires_grad=False
+        )
+        self.discrete_act_size_vector = torch.nn.Parameter(
+            torch.Tensor([self.action_spec.discrete_branches]), requires_grad=False
+        )
+        self.memory_size_vector = torch.nn.Parameter(
+            torch.Tensor([int(self.network_body.memory_size)]), requires_grad=False
+        )
+
+    def update_normalization(self, buffer: AgentBuffer) -> None:
+        self.network_body.update_normalization(buffer)
+
+    def critic_pass(
+        self,
+        inputs: List[torch.Tensor],
+        memories: Optional[torch.Tensor] = None,
+        sequence_length: int = 1,
+    ) -> Tuple[Dict[str, torch.Tensor], torch.Tensor]:
+        value_outputs, critic_mem_out = self.network_body(
+            inputs, memories=memories, sequence_length=sequence_length
+        )
+        return value_outputs, critic_mem_out
+
+    @property
+    def memory_size(self) -> int:
+        return self.network_body.memory_size
+
+    def forward(
+        self,
+        inputs: List[torch.Tensor],
+        masks: Optional[torch.Tensor] = None,
+        memories: Optional[torch.Tensor] = None,
+        sequence_length: int = 1,
+    ) -> Tuple[Union[int, torch.Tensor], ...]:
+        out_vals, memories = self.critic_pass(inputs, memories, sequence_length)
+
+        export_out = [self.version_number, self.memory_size_vector]
+
+        # FIX: disc_action_out (stochastic/exploratory slot) = random action
+        #      deterministic_disc_action_out (greedy slot) = argmax Q-value
+        # Unity InferenceOnly reads the DETERMINISTIC output — must be argmax,
+        # not random. Previously these were swapped, causing inference to always
+        # receive random actions regardless of what the model learned.
+        disc_action_out = self.get_random_action(out_vals)
+        deterministic_disc_action_out = self.get_greedy_action(out_vals)
+        export_out += [
+            disc_action_out,
+            self.discrete_act_size_vector,
+            deterministic_disc_action_out,
+        ]
+        return tuple(export_out)
+
+    def get_random_action(self, inputs) -> torch.Tensor:
+        action_out = torch.randint(
+            0, self.action_spec.discrete_branches[0], (len(inputs), 1)
+        )
+        return action_out
+
+    @staticmethod
+    def get_greedy_action(q_values) -> torch.Tensor:
+        all_q = torch.cat([val.unsqueeze(0) for val in q_values.values()])
+        return torch.argmax(all_q.sum(dim=0), dim=1, keepdim=True)
+
+    def get_action_and_stats(
+        self,
+        inputs: List[torch.Tensor],
+        masks: Optional[torch.Tensor] = None,
+        memories: Optional[torch.Tensor] = None,
+        sequence_length: int = 1,
+        deterministic: bool = False,
+    ) -> Tuple[AgentAction, Dict[str, Any], torch.Tensor]:
+        run_out = {}
+        if not deterministic and np.random.rand() < self.exploration_rate:
+            action_out = self.get_random_action(inputs)
+            action_out = AgentAction(None, [action_out])
+            run_out["env_action"] = action_out.to_action_tuple()
+        else:
+            out_vals, _ = self.critic_pass(inputs, memories, sequence_length)
+            action_out = self.get_greedy_action(out_vals)
+            action_out = AgentAction(None, [action_out])
+            run_out["env_action"] = action_out.to_action_tuple()
+        return action_out, run_out, torch.Tensor([])

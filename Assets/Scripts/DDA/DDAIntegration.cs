@@ -1,7 +1,10 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using Manager;
 using Player;
+using Player.Item;
 using DDA;
 using Playfab;
 
@@ -24,7 +27,17 @@ namespace DDA
 
         private BattleSystem _battleSystem;
         private BattleLogger _battleLogger;
+        private DDADebugPanel _debugPanel;
         private int _playerStartHP;
+
+        // Cached PlayerStats singleton for player-level tracking (null-checked each use; scene-level
+        // singleton may briefly be unavailable after scene transitions but persistent across battle scenes).
+        private PlayerStats _playerStats;
+
+        // Cached player action SOs (loaded once from Resources). Used by ComputeResourceDepletion to
+        // mirror training-sim's (swordDepletion + gunDepletion + defendDepletion) / 3 observation.
+        private BaseAction[] _playerActions;
+        private bool _actionsLoaded;
 
         public static DDAIntegration Instance { get; private set; }
 
@@ -75,6 +88,56 @@ namespace DDA
             // Keep applier in sync with the shared settings instance
             if (_difficultyApplier != null && _difficultySettings != null)
                 _difficultyApplier.SetDifficultySettings(_difficultySettings);
+
+            // Debug overlay / logger (created by DDABootstrap, optional)
+            if (_debugPanel == null)
+                _debugPanel = FindObjectOfType<DDADebugPanel>();
+
+            // Subscribe to player level-up event once. PlayerStats is a PersistentSingleton,
+            // so it survives battle scene reloads — no need to re-subscribe per scene.
+            if (_playerStats == null)
+            {
+                _playerStats = PlayerStats.Instance;
+                if (_playerStats != null)
+                {
+                    _playerStats.OnPlayerLevelUp += HandlePlayerLevelUp;
+                    // Push the current level immediately in case we missed earlier events
+                    if (_ddaAgent != null)
+                        _ddaAgent.SetPlayerLevel(_playerStats.Level);
+                }
+            }
+
+            // Player action ScriptableObjects loaded from Resources (one-time). Same lookup path
+            // GameManager.InitializeActions uses — we get the live, limit-tracking instances.
+            if (!_actionsLoaded)
+            {
+                _playerActions = Resources.LoadAll<BaseAction>("Player/Actions");
+                _actionsLoaded = true;
+            }
+        }
+
+        /// <summary>
+        /// Computes resource depletion exactly like training-sim:
+        ///   (swordDepletion + gunDepletion + defendDepletion) / 3
+        /// Each depletion = 1 - (CurrentLimit / Limit). Unlimited actions → 0 for that term.
+        /// </summary>
+        private float ComputeResourceDepletion()
+        {
+            if (_playerActions == null || _playerActions.Length == 0) return 0f;
+
+            float sword = 0f, gun = 0f, defend = 0f;
+            foreach (var action in _playerActions)
+            {
+                if (action == null) continue;
+                // Align with training-sim's enum mapping: Sword=1, Gun=2, Shield=3
+                switch ((int)action.ActionType)
+                {
+                    case 1: sword   = action.GetDepletionRatio(); break;
+                    case 2: gun     = action.GetDepletionRatio(); break;
+                    case 3: defend  = action.GetDepletionRatio(); break;
+                }
+            }
+            return (sword + gun + defend) / 3f;
         }
 
         private void Start()
@@ -83,6 +146,10 @@ namespace DDA
             _battleLogger = BattleLogger.Instance;
 
             ResolveReferences();
+
+            Debug.Log($"[DDAIntegration] Start: _ddaAgent={(_ddaAgent != null ? "OK" : "NULL")}, " +
+                      $"_difficultySettings={(_difficultySettings != null ? "OK" : "NULL")}, " +
+                      $"_enableDDA={_enableDDA}");
 
             // Set training mode
             if (_ddaAgent != null)
@@ -98,6 +165,30 @@ namespace DDA
                 OnRunStart();
                 OnAreaEnter(MapType.Enemy, 0, 12);
             }
+        }
+
+        private void OnDestroy()
+        {
+            // Unsubscribe to avoid dangling delegate into a destroyed DDAIntegration
+            // (e.g. if a second DDABootstrap wins the singleton race).
+            if (_playerStats != null)
+            {
+                _playerStats.OnPlayerLevelUp -= HandlePlayerLevelUp;
+                _playerStats = null;
+            }
+        }
+
+        /// <summary>
+        /// PlayerStats.OnPlayerLevelUp handler — pushes current player level to the DDA agent
+        /// so the "Player Level" observation (normalized /5) is up-to-date when RequestDecision fires.
+        /// </summary>
+        private void HandlePlayerLevelUp()
+        {
+            if (_ddaAgent == null) return;
+            if (_playerStats == null) _playerStats = PlayerStats.Instance;
+            if (_playerStats == null) return;
+            _ddaAgent.SetPlayerLevel(_playerStats.Level);
+            Debug.Log($"[DDAIntegration] Player leveled up → {_playerStats.Level}. Agent observation updated.");
         }
 
         /// <summary>
@@ -131,14 +222,40 @@ namespace DDA
         }
 
         /// <summary>
+        /// Called immediately when player deals damage (before enemy turn).
+        /// Updates agent's damage observation in real-time for debug panel display.
+        /// </summary>
+        public void OnPlayerAttack(int damage)
+        {
+            if (!_enableDDA)
+            {
+                Debug.LogWarning("[DDAIntegration] OnPlayerAttack: DDA is DISABLED!");
+                return;
+            }
+            ResolveReferences();
+            if (_ddaAgent == null)
+            {
+                Debug.LogWarning("[DDAIntegration] OnPlayerAttack: _ddaAgent is NULL!");
+                return;
+            }
+            Debug.Log($"[DDAIntegration] OnPlayerAttack: damage={damage}");
+            _ddaAgent.OnPlayerAttack(damage);
+        }
+
+        /// <summary>
         /// Called after each turn. Updates DDA state.
         /// </summary>
         public void OnTurnEnd(int damageDealtThisTurn, int damageTakenThisTurn = 0)
         {
             if (!_enableDDA) return;
             ResolveReferences();
-            if (_ddaAgent == null) return;
+            if (_ddaAgent == null)
+            {
+                Debug.LogWarning("[DDAIntegration] OnTurnEnd: _ddaAgent is NULL — damage not tracked!");
+                return;
+            }
 
+            Debug.Log($"[DDAIntegration] OnTurnEnd: dmgDealt={damageDealtThisTurn}, dmgTaken={damageTakenThisTurn}");
             _ddaAgent.OnTurnEnd(damageDealtThisTurn, damageTakenThisTurn);
         }
 
@@ -165,6 +282,14 @@ namespace DDA
 
             _ddaAgent.OnBattleEnd(playerWon, playerEndHP);
 
+            // Refresh real-time observations (hpRatio + resourceDepletion) right after the battle ends,
+            // mirroring training-sim's UpdateBattlePhase(hpRatio, resourceDepletion) call between the
+            // last OnBattleEnd and the upcoming OnAreaComplete → RequestDecision(). Both observations
+            // are now live in the real game instead of stuck at the initial value.
+            float hpRatio = _ddaAgent.GetHpRatio();
+            float resourceDepletion = ComputeResourceDepletion();
+            _ddaAgent.UpdateBattlePhase(hpRatio, resourceDepletion);
+
             // Log DDA event to BattleLogger (JSONL + PlayFab)
             if (_battleLogger != null)
             {
@@ -184,11 +309,14 @@ namespace DDA
                     dda_episode_count = 0, // not tracked in live game
                     player_hp_ratio = _playerStartHP > 0 ? (float)playerEndHP / _playerStartHP : 0f,
                     total_turns = _ddaAgent.GetTurnCount(),
-                    damage_taken = 0, // TODO: track from BattleSystem
+                    damage_taken = _ddaAgent.GetDamageTaken(),
                     heals_used = 0 // TODO: track from BattleSystem
                 };
                 _battleLogger.LogDDAEvent(payload);
             }
+
+            // Notify debug panel / logger
+            _debugPanel?.OnBattleEnd(playerWon, playerEndHP, _playerStartHP);
 
             Debug.Log($"[DDAIntegration] Battle end. Won: {playerWon}, " +
                       $"End HP: {playerEndHP}/{_playerStartHP}");
@@ -231,6 +359,14 @@ namespace DDA
         public void SetEnabled(bool enabled)
         {
             _enableDDA = enabled;
+        }
+
+        /// <summary>
+        /// Injects a runtime DifficultySettings instance (called by DDABootstrap).
+        /// </summary>
+        public void SetDifficultySettings(DifficultySettings settings)
+        {
+            _difficultySettings = settings;
         }
 
         /// <summary>
@@ -281,6 +417,9 @@ namespace DDA
 
             _ddaAgent.OnAreaEnter(areaIndex, areaType, totalAreas);
 
+            // Notify debug panel
+            _debugPanel?.OnAreaEnter(areaIndex, areaType.ToString());
+
             Debug.Log($"[DDAIntegration] Area enter. Type={areaType}, " +
                       $"Depth={areaIndex}/{totalAreas}, " +
                       $"Difficulty: {_difficultySettings?.GetLevelName() ?? "N/A"}");
@@ -304,8 +443,17 @@ namespace DDA
             if (_ddaAgent == null) return;
 
             string diffBefore = _difficultySettings?.GetLevelName() ?? "N/A";
+            float hpMultBefore = _difficultySettings?.HPMultiplier ?? 1f;
+            float dmgMultBefore = _difficultySettings?.DamageMultiplier ?? 1f;
+            int areaIdx = MapSystem.Instance?.AreaIndex ?? 0;
+            string areaType = MapSystem.Instance?.GetMapType().ToString() ?? "";
+
             _ddaAgent.OnAreaComplete(areaWon);
-            // Note: agent action is async (RequestDecision). Difficulty may change next frame.
+
+            // Log the decision (difficulty may change next frame after RequestDecision)
+            // Use a delayed check to capture the new difficulty
+            StartCoroutine(LogDecisionAfterFrame(areaIdx, areaType, diffBefore, hpMultBefore, dmgMultBefore));
+
             Debug.Log($"[DDAIntegration] Area complete. Won={areaWon}, Difficulty was {diffBefore} (agent decision pending).");
         }
 
@@ -327,6 +475,23 @@ namespace DDA
             if (_ddaAgent == null) return;
             _ddaAgent.OnPlayerDeath(areasCompleted, totalAreas);
             Debug.Log($"[DDAIntegration] Player died! Areas={areasCompleted}/{totalAreas}.");
+        }
+
+        /// <summary>
+        /// Waits one frame for the agent's RequestDecision to be processed by Academy,
+        /// then logs any difficulty change.
+        /// </summary>
+        private IEnumerator LogDecisionAfterFrame(int areaIdx, string areaType,
+            string diffBefore, float hpMultBefore, float dmgMultBefore)
+        {
+            yield return null; // wait one frame for Academy to process decision
+
+            string diffAfter = _difficultySettings?.GetLevelName() ?? "N/A";
+
+            if (diffBefore != diffAfter)
+            {
+                Debug.Log($"[DDAIntegration] Difficulty changed: {diffBefore} → {diffAfter}");
+            }
         }
     }
 }

@@ -8,15 +8,13 @@
 # Usage:
 #   mlagents-learn config/ddqn.yaml --run-id=ddqn_dda_v1 --train
 #
-# Observations (8 total):
+# Observations (6 total):
 #   1. HP Ratio (current/max)
 #   2. Turn Count (normalized, cap 15)
 #   3. Player Level (normalized, cap 5)
 #   4. Damage Dealt Ratio (dealt / totalEnemyHP in area)
 #   5. QTE Accuracy (successful QTE / total QTE opportunities)
 #   6. Resource Depletion (avg depletion of actions)
-#   7. Area Progress Ratio (completed/total)
-#   8. Current Difficulty (index/4, normalized)
 #
 # Actions (5 discrete — absolute difficulty level):
 #   0 = Very Easy
@@ -48,15 +46,16 @@ behaviors:
 
       # Experience Replay
       batch_size: 128
-      buffer_size: 10000
+      buffer_size: 50000
 
       # DDQN - Target Network Update
       tau: 0.005 # Soft update rate
+      steps_per_update: 4 
 
       # Exploration (Epsilon-greedy)
       exploration_initial_eps: 1.0
       exploration_final_eps: 0.03
-      exploration_decay_steps: 250000
+      exploration_decay_steps: 300000
 
       # Discount factor
       gamma: 0.99
@@ -77,14 +76,14 @@ behaviors:
     keep_checkpoints: 5
     max_steps: 1000000
     # time_horizon: 64
-    summary_freq: 5000
+    summary_freq: 6000
     checkpoint_interval: 50000
 
 # Environment settings
 env_settings:
   env_path: null
   base_port: 5005
-  num_envs: 8
+  num_envs: 1
   num_areas: 1
   timeout_wait: 60
   seed: -1

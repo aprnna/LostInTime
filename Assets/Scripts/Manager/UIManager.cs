@@ -2,6 +2,7 @@ using System;
 using Input;
 using Player;
 using Player.UI;
+using Playfab;
 using Roulette;
 using TMPro;
 using UnityEngine;
@@ -31,28 +32,37 @@ namespace Manager
             _gameManager = GameManager.Instance;
 
             if (_textSessionId != null)
-                _textSessionId.text = "Session: " + GameManager.SessionID;
+                _textSessionId.text = "Session: " + (SessionManager.Instance?.SessionId ?? GameManager.SessionID);
 
             _playerStats.OnPlayerLevelUp += OnPlayerLevelUp;
             _gameManager.OnChangeInstruction += OnChangeInstruction;
             _gameManager.OnChangeDungeon += OnChangeDungeon;
             _gameManager.OnBattleEnd += OnBattleEnd;
 
+            if (SessionManager.Instance != null)
+                SessionManager.Instance.OnSessionStarted += OnSessionStarted;
         }
 
         private void OnDisable()
         {
-
             _playerStats.OnPlayerLevelUp -= OnPlayerLevelUp;
             _gameManager.OnChangeInstruction -= OnChangeInstruction;
             _gameManager.OnChangeDungeon -= OnChangeDungeon;
             _gameManager.OnBattleEnd -= OnBattleEnd;
 
+            if (SessionManager.Instance != null)
+                SessionManager.Instance.OnSessionStarted -= OnSessionStarted;
         }
 
         private void OnPlayerLevelUp()
         {
             SetLevelUpPanel(!_levelUpPanel.activeSelf);
+        }
+
+        private void OnSessionStarted(string newSessionId)
+        {
+            if (_textSessionId != null)
+                _textSessionId.text = "Session: " + newSessionId;
         }
 
         private void OnChangeDungeon(bool value)

@@ -6,6 +6,30 @@ using Unity.MLAgents.Sensors;
 
 namespace DDA
 {
+    /// <summary>
+    /// Snapshot of a single agent decision, fired from OnActionReceived for EVERY decision
+    /// (including ones that keep the same difficulty). Lets the debug panel / real-game UI
+    /// show what the agent decided and what it observed, instead of only seeing level changes.
+    /// </summary>
+    public struct AgentDecisionInfo
+    {
+        public int action;            // discrete action chosen (0-4 = absolute difficulty level)
+        public int prevLevelIndex;
+        public int newLevelIndex;
+        public string prevLevelName;
+        public string newLevelName;
+        public bool changed;          // true if the difficulty level actually changed
+        public int areaIndex;         // area the decision applies to (areasCompleted after OnAreaComplete)
+
+        // Observation snapshot at decision time (all normalized 0-1, matches CollectObservations)
+        public float hpRatio;
+        public float turnCountNorm;
+        public float playerLevelNorm;
+        public float damageDealtRatio;
+        public float qteAccuracy;
+        public float resourceDepletion;
+    }
+
     public class DDAAgent : Agent
     {
         [Header("References")] [SerializeField]
@@ -31,8 +55,6 @@ namespace DDA
         // --- Observations ---
         private float _hpRatio = 1f;          // HP ratio after last battle
         private float _resourceDepletion = 0f; // Resource depletion ratio
-        private float _areaProgressRatio = 0f; // Area progress ratio (areasCompleted / totalAreas)
-        private float _currentDifficultyNorm = 0.5f; // Current difficulty normalized (index/4, starts at Normal=0.5)
 
 
         // --- Area / Run state ---
@@ -59,6 +81,13 @@ namespace DDA
 
         public event Action<int> OnDifficultyChanged;
 
+        /// <summary>
+        /// Fires for EVERY agent decision (including no-op "stays" decisions), carrying the
+        /// chosen action, the prev→new difficulty transition, and the observation snapshot.
+        /// Use this for real-game UI; OnDifficultyChanged only fires on actual level changes.
+        /// </summary>
+        public event Action<AgentDecisionInfo> OnAgentDecision;
+
         // ----------------------------------------------------------------
         // ML-Agents overrides
         // ----------------------------------------------------------------
@@ -67,6 +96,19 @@ namespace DDA
         {
             if (_difficultySettings == null)
                 _difficultySettings = Resources.Load<DifficultySettings>("DDA/DefaultDifficultySettings");
+
+            // Log model status for debugging
+            var bp = GetComponent<Unity.MLAgents.Policies.BehaviorParameters>();
+            if (bp != null)
+            {
+                bool hasModel = bp.Model != null;
+                Debug.Log($"[DDAAgent] Initialize: BehaviorType={bp.BehaviorType}, " +
+                          $"hasModel={hasModel}, BehaviorName={bp.BehaviorName}");
+            }
+            else
+            {
+                Debug.LogWarning("[DDAAgent] Initialize: BehaviorParameters NOT FOUND!");
+            }
         }
 
         public override void OnEpisodeBegin()
@@ -84,8 +126,6 @@ namespace DDA
             _lastDifficultyLevel = -1;
             _hpRatio = 1f;
             _resourceDepletion = 0f;
-            _areaProgressRatio = 0f;
-            _currentDifficultyNorm = 0.5f; // Normal difficulty
             _playerLevel = 1;
             _totalAreas = 12;
             _areaStartHP = 0;
@@ -98,30 +138,28 @@ namespace DDA
         }
 
         /// <summary>
-        /// 8 observations — all normalized to [0,1]:
+        /// 6 observations — all normalized to [0,1]:
         ///  1. HP Ratio
         ///  2. Turn Count (cap 15)
         ///  3. Player Level (cap 5)
         ///  4. Damage Dealt Ratio (dealt / totalEnemyHP in area)
         ///  5. QTE Accuracy (successful QTE / total QTE opportunities)
         ///  6. Resource Depletion
-        ///  7. Area Progress Ratio
-        ///  8. Current Difficulty
         /// </summary>
         public override void CollectObservations(VectorSensor sensor)
         {
             // 1. HP Ratio (0=dead, 1=full)
             sensor.AddObservation(_hpRatio);
 
-            // 2. Turn Count normalized (cap at 15)
-            sensor.AddObservation(Mathf.Clamp01(_turnCount / 15f));
+            // 2. Turn Count normalized (cap at 30)
+            sensor.AddObservation(Mathf.Clamp01(_turnCount / 30f));
 
             // 3. Player Level normalized (cap at 5)
             sensor.AddObservation(Mathf.Clamp01(_playerLevel / 5f));
 
-            // 4. Damage Dealt Ratio: dealt / totalEnemyHP in area
-            float dmgDealtRatio = _areaTotalEnemyHP > 0
-                ? Mathf.Clamp01(_damageDealt / (float)_areaTotalEnemyHP)
+            // 4. Damage Dealt Ratio: totalEnemyHP / dealt (1.0 = perfect efficiency, lower = overkill)
+            float dmgDealtRatio = _damageDealt > 0
+                ? Mathf.Clamp01((float)_areaTotalEnemyHP / _damageDealt)
                 : 0f;
             sensor.AddObservation(dmgDealtRatio);
 
@@ -133,45 +171,64 @@ namespace DDA
 
             // 6. Resource Depletion (ratio of used actions)
             sensor.AddObservation(_resourceDepletion);
-
-            // 7. Area Progress Ratio (how far into the run)
-            sensor.AddObservation(_areaProgressRatio);
-
-            // 8. Current Difficulty (normalized: index/4 for 5 levels)
-            sensor.AddObservation(_currentDifficultyNorm);
         }
 
         public override void OnActionReceived(ActionBuffers actions)
         {
+            // Guard: only process when explicitly requested by OnAreaComplete
             if (!_decisionPending) return;
             _decisionPending = false;
 
             if (_difficultySettings == null) return;
 
+            int action = actions.DiscreteActions[0];
             int prevLevel = _difficultySettings.CurrentLevelIndex;
             string prevDiffName = _difficultySettings.GetLevelName();
-            int action = actions.DiscreteActions[0];
 
             // Action space = absolute difficulty level (5 discrete):
             //   0 = Very Easy, 1 = Easy, 2 = Normal, 3 = Hard, 4 = Very Hard
             _difficultySettings.SetLevel(action);
 
-            // Update difficulty observation after action
-            _currentDifficultyNorm = _difficultySettings.CurrentLevelIndex / 4f;
-
             string actionName = _difficultySettings.GetLevelName();
+            bool levelChanged = _difficultySettings.CurrentLevelIndex != prevLevel;
 
             TrainingLogger.LogAgentAction(action, actionName, prevLevel,
                 _difficultySettings.CurrentLevelIndex, prevDiffName,
                 _difficultySettings.GetLevelName(), _envId);
 
-            if (_difficultySettings.CurrentLevelIndex != prevLevel)
+            // Fire the per-decision event for every decision (changed or not), carrying the
+            // full transition + observation snapshot so the real-game UI can show what the
+            // agent decided and what it was observing at decision time.
+            var decision = new AgentDecisionInfo
+            {
+                action = action,
+                prevLevelIndex = prevLevel,
+                newLevelIndex = _difficultySettings.CurrentLevelIndex,
+                prevLevelName = prevDiffName,
+                newLevelName = actionName,
+                changed = levelChanged,
+                areaIndex = _areasCompleted,
+                hpRatio = _hpRatio,
+                turnCountNorm = Mathf.Clamp01(_turnCount / 30f),
+                playerLevelNorm = Mathf.Clamp01(_playerLevel / 5f),
+                damageDealtRatio = GetDamageDealtRatio(),
+                qteAccuracy = GetQTEAccuracy(),
+                resourceDepletion = _resourceDepletion,
+            };
+            OnAgentDecision?.Invoke(decision);
+
+            if (levelChanged)
             {
                 _lastDifficultyLevel = _difficultySettings.CurrentLevelIndex;
                 OnDifficultyChanged?.Invoke(_difficultySettings.CurrentLevelIndex);
+                Debug.Log($"[DDAAgent] DECISION: action={action}, {prevDiffName} → {actionName}");
             }
-
+            else
+            {
+                Debug.Log($"[DDAAgent] DECISION: action={action}, stays {actionName}");
             }
+            // (OnAgentDecision already fired above for every decision — kept or changed.)
+        }
 
         public override void Heuristic(in ActionBuffers actionsOut)
         {
@@ -197,10 +254,6 @@ namespace DDA
 
             // Reset difficulty to baseline at start of run
             _difficultySettings?.ResetToNormal();
-
-            // Reset progress and difficulty observations
-            _areaProgressRatio = 0f;
-            _currentDifficultyNorm = 0.5f; // Normal difficulty (index 2 / 4)
 
             TrainingLogger.LogMessage($"DDAAgent: Run started. Difficulty reset to baseline. " +
                 $"Epsilon={(_isTrainingMode ? "training" : "inference")}", _envId);
@@ -258,11 +311,20 @@ namespace DDA
         /// </summary>
         public void OnAreaEnter(int areaIndex, MapType areaType, int totalAreas)
         {
-            // Reset area-level tracking only
+            // Reset ALL per-area tracking here (not in OnBattleStart) so accumulators
+            // are populated by the time OnAreaComplete → RequestDecision fires.
+            // (1 area = 1 battle in the real game, so this is the correct reset point.)
             _areaStartHP = 0;
             _areaEndHP = 0;
             _areaWon = false;
-            _areaTotalEnemyHP = 0; // Reset total enemy HP for new area
+            _areaTotalEnemyHP = 0;
+
+            // Per-battle accumulators reset here (area = battle in real game)
+            _damageDealt = 0;
+            _damageTaken = 0;
+            _successfulQTE = 0;
+            _totalQTEOpportunities = 0;
+            _turnCount = 0;
         }
 
         public void OnBattleStart(int playerStartHP, int totalEnemyHP)
@@ -274,19 +336,33 @@ namespace DDA
             _battleStartHP = playerStartHP;
             _totalEnemyHP = totalEnemyHP;
             _areaTotalEnemyHP += totalEnemyHP; // Accumulate total enemy HP for area
-            _damageDealt = 0;
-            _damageTaken = 0;
-            _successfulQTE = 0;
-            _totalQTEOpportunities = 0;
-            _turnCount = 0;
+            // NOTE: Per-area accumulators (_damageDealt, _turnCount, QTE) are reset in
+            // OnAreaEnter(), NOT here — so observations remain valid from battle-end
+            // all the way through OnAreaComplete() → RequestDecision().
             _battleInProgress = true;
+            Debug.Log($"[DDAAgent] OnBattleStart: playerHP={playerStartHP}, enemyHP={totalEnemyHP}, " +
+                      $"areaTotalEnemyHP={_areaTotalEnemyHP}");
         }
 
         public void OnTurnEnd(int damageDealtThisTurn, int damageTakenThisTurn = 0)
         {
-            _damageDealt += damageDealtThisTurn;
+            // NOTE: _damageDealt is tracked in real-time via OnPlayerAttack() — do NOT
+            // add damageDealtThisTurn here again or it will be double-counted.
+            // Only track enemy damage and increment turn count here.
             _damageTaken += damageTakenThisTurn;
             _turnCount++;
+            Debug.Log($"[DDAAgent] OnTurnEnd: dmgTaken={damageTakenThisTurn}, " +
+                      $"totalDealt={_damageDealt}, totalTaken={_damageTaken}, turns={_turnCount}");
+        }
+
+        /// <summary>
+        /// Called immediately when player deals damage (before enemy turn).
+        /// Updates damage observation in real-time for debug panel display.
+        /// </summary>
+        public void OnPlayerAttack(int damage)
+        {
+            _damageDealt += damage;
+            Debug.Log($"[DDAAgent] OnPlayerAttack: +{damage} damage, totalDealt={_damageDealt}");
         }
 
         /// <summary>
@@ -337,8 +413,10 @@ namespace DDA
             _areasCompleted++;
             _areaWon = areaWon;
 
-            // Update progress ratio observation
-            _areaProgressRatio = (float)_areasCompleted / _totalAreas;
+            Debug.Log($"[DDAAgent] OnAreaComplete: won={areaWon}, areasCompleted={_areasCompleted}, " +
+                      $"damageDealt={_damageDealt}, damageTaken={_damageTaken}, turns={_turnCount}, " +
+                      $"hpRatio={_hpRatio:F2}, areaTotalEnemyHP={_areaTotalEnemyHP}, " +
+                      $"damageDealtRatio={GetDamageDealtRatio():F2}");
 
             // Calculate progressive weight with base 0.5 (ensures early areas still matter)
             // Range: 0.5 (area 1) to 1.0 (area 12)
@@ -367,13 +445,17 @@ namespace DDA
         // Public getters for DDA logging
         public float GetHpRatio() => _hpRatio;
         public int GetTurnCount() => _turnCount;
-        public float GetTurnCountNormalized() => Mathf.Clamp01(_turnCount / 15f);
+        public int GetDamageDealt() => _damageDealt;
+        public int GetDamageTaken() => _damageTaken;
+        public float GetTurnCountNormalized() => Mathf.Clamp01(_turnCount / 30f);
         public float GetPlayerLevelNormalized() => Mathf.Clamp01(_playerLevel / 5f);
         public float GetDamageDealtRatio()
         {
-            // New formula: damageDealt / totalEnemyHP in area
-            return _areaTotalEnemyHP > 0 ? Mathf.Clamp01(_damageDealt / (float)_areaTotalEnemyHP) : 0f;
+            // New formula: totalEnemyHP / damageDealt (efficiency: 1.0 = exact kill, < 1.0 = overkill)
+            return _damageDealt > 0 ? Mathf.Clamp01((float)_areaTotalEnemyHP / _damageDealt) : 0f;
         }
+        public int GetDamageDealtRaw() => _damageDealt;
+        public int GetAreaTotalEnemyHP() => _areaTotalEnemyHP;
         public float GetDamageTakenRatio()
         {
             int total = _damageDealt + _damageTaken;
@@ -460,8 +542,6 @@ namespace DDA
                    $"QTE={GetQTEAccuracy():F2} ({_successfulQTE}/{_totalQTEOpportunities}) | " +
                    $"ResDepl={_resourceDepletion:F2} | " +
                    $"Diff={_difficultySettings?.GetLevelName() ?? "N/A"} | " +
-                   $"Prog={_areaProgressRatio:F2} | " +
-                   $"DiffNorm={_currentDifficultyNorm:F2} | " +
                    $"ProgWeight={progressWeight:F2} | " +
                    $"AreasCompleted={_areasCompleted} | " +
                    $"WinRate={(_battlesTotal > 0 ? ((float)_battlesWon / _battlesTotal).ToString("F2") : "N/A")}";

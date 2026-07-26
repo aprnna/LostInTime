@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using Manager;
 using Player;
+using Player.Item;
 using Playfab;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -34,6 +36,27 @@ public class ShopManager : MonoBehaviour
         ShowItem();
         _gameManager = GameManager.Instance;
         LogShopEnter();
+    }
+
+    /// <summary>
+    /// Snapshot all limited actions for logging (current uses / max uses).
+    /// </summary>
+    private List<object> SnapshotAllActions()
+    {
+        var all = Resources.LoadAll<BaseAction>("Player/Actions");
+        var list = new List<object>();
+        foreach (var a in all)
+        {
+            if (a == null || !a.IsLimited) continue;
+            list.Add(new
+            {
+                action_name = a.ActionName,
+                action_type = a.ActionType.ToString(),
+                current_limit = a.CurrentLimit,
+                max_limit = a.Limit
+            });
+        }
+        return list;
     }
 
     public void ShowItem()
@@ -71,7 +94,8 @@ public class ShopManager : MonoBehaviour
             player_coin = ps?.Coin ?? 0,
             player_level = ps?.Level ?? 0,
             player_hp = ps?.Health ?? 0,
-            player_max_hp = ps?.MaxHealth ?? 0
+            player_max_hp = ps?.MaxHealth ?? 0,
+            action_limits = SnapshotAllActions()
         });
 
         Debug.Log($"[ShopManager] Player entered shop with {ps?.Coin ?? 0} coin, {itemList.Length} items available");
@@ -86,7 +110,8 @@ public class ShopManager : MonoBehaviour
             player_coin = ps?.Coin ?? 0,
             player_level = ps?.Level ?? 0,
             player_hp = ps?.Health ?? 0,
-            player_max_hp = ps?.MaxHealth ?? 0
+            player_max_hp = ps?.MaxHealth ?? 0,
+            action_limits = SnapshotAllActions()
         });
 
         PlayfabManager.Instance?.EnqueueEvent("shop_visit", new
