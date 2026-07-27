@@ -8,32 +8,6 @@
 # Usage:
 #   mlagents-learn config/ddqn.yaml --run-id=ddqn_dda_v1 --train
 #
-# Observations (6 total):
-#   1. HP Ratio (current/max)
-#   2. Turn Count (normalized, cap 15)
-#   3. Player Level (normalized, cap 5)
-#   4. Damage Dealt Ratio (dealt / totalEnemyHP in area)
-#   5. QTE Accuracy (successful QTE / total QTE opportunities)
-#   6. Resource Depletion (avg depletion of actions)
-#
-# Actions (5 discrete — absolute difficulty level):
-#   0 = Very Easy
-#   1 = Easy
-#   2 = Normal
-#   3 = Hard
-#   4 = Very Hard
-# NOTE: Set BehaviorParameters on the DDAAgent GameObject
-#       (Space Size / Discrete Branch Size) to 5 to match.
-#
-# Reward (based on battleSurvivalRatio = player_hp_end / player_hp_start):
-#   - Loss: -1.0
-#   - Win, survivalRatio in [0.4, 0.6]: 1 - 25*(ratio - 0.5)^2 (parabolic peak at 50%)
-#   - Win, survivalRatio < 0.4: 0.1 * ratio
-#   - Win, survivalRatio > 0.6: 0.1 * (1 - ratio)
-#   - Progressive weighting: 0.5 + 0.5 * progress
-#   - Run win bonus: +0.5
-#   - Death penalty: -0.5 (when player dies mid-run)
-#   - Run loss penalty: -0.1 (when run ends without death)
 
 behaviors:
   ddqn_dda:
@@ -41,12 +15,12 @@ behaviors:
 
     hyperparameters:
       # Learning
-      learning_rate: 0.0003
+      learning_rate: 0.0001
       learning_rate_schedule: constant
 
       # Experience Replay
       batch_size: 128
-      buffer_size: 50000
+      buffer_size: 10000
 
       # DDQN - Target Network Update
       tau: 0.005 # Soft update rate
@@ -54,11 +28,11 @@ behaviors:
 
       # Exploration (Epsilon-greedy)
       exploration_initial_eps: 1.0
-      exploration_final_eps: 0.03
+      exploration_final_eps: 0.3
       exploration_decay_steps: 300000
 
       # Discount factor
-      gamma: 0.99
+      gamma: 0.97
 
     network_settings:
       normalize: true

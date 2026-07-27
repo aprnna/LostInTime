@@ -148,45 +148,30 @@ namespace DDA
         /// </summary>
         public override void CollectObservations(VectorSensor sensor)
         {
-            // 1. HP Ratio (0=dead, 1=full)
             sensor.AddObservation(_hpRatio);
-
-            // 2. Turn Count normalized (cap at 30)
             sensor.AddObservation(Mathf.Clamp01(_turnCount / 30f));
-
-            // 3. Player Level normalized (cap at 5)
             sensor.AddObservation(Mathf.Clamp01(_playerLevel / 5f));
-
-            // 4. Damage Dealt Ratio: totalEnemyHP / dealt (1.0 = perfect efficiency, lower = overkill)
             float dmgDealtRatio = _damageDealt > 0
                 ? Mathf.Clamp01((float)_areaTotalEnemyHP / _damageDealt)
                 : 0f;
             sensor.AddObservation(dmgDealtRatio);
-
-            // 5. QTE Accuracy: successful QTE / total QTE opportunities
             float qteAccuracy = _totalQTEOpportunities > 0
                 ? Mathf.Clamp01(_successfulQTE / (float)_totalQTEOpportunities)
                 : 0f;
             sensor.AddObservation(qteAccuracy);
-
-            // 6. Resource Depletion (ratio of used actions)
             sensor.AddObservation(_resourceDepletion);
         }
 
         public override void OnActionReceived(ActionBuffers actions)
         {
-            // Guard: only process when explicitly requested by OnAreaComplete
             if (!_decisionPending) return;
             _decisionPending = false;
-
             if (_difficultySettings == null) return;
 
             int action = actions.DiscreteActions[0];
             int prevLevel = _difficultySettings.CurrentLevelIndex;
             string prevDiffName = _difficultySettings.GetLevelName();
 
-            // Action space = absolute difficulty level (5 discrete):
-            //   0 = Very Easy, 1 = Easy, 2 = Normal, 3 = Hard, 4 = Very Hard
             _difficultySettings.SetLevel(action);
 
             string actionName = _difficultySettings.GetLevelName();
@@ -195,10 +180,6 @@ namespace DDA
             TrainingLogger.LogAgentAction(action, actionName, prevLevel,
                 _difficultySettings.CurrentLevelIndex, prevDiffName,
                 _difficultySettings.GetLevelName(), _envId);
-
-            // Fire the per-decision event for every decision (changed or not), carrying the
-            // full transition + observation snapshot so the real-game UI can show what the
-            // agent decided and what it was observing at decision time.
             var decision = new AgentDecisionInfo
             {
                 action = action,
@@ -227,7 +208,6 @@ namespace DDA
             {
                 Debug.Log($"[DDAAgent] DECISION: action={action}, stays {actionName}");
             }
-            // (OnAgentDecision already fired above for every decision — kept or changed.)
         }
 
         public override void Heuristic(in ActionBuffers actionsOut)
@@ -512,22 +492,15 @@ namespace DDA
         // ----------------------------------------------------------------
         public static float CalculateReward(bool won, int endHP, int startHP)
         {
-            // Loss
             if (!won) return -1.0f;
 
             // battleSurvivalRatio = player_hp_end / player_hp_start
-            // Clamp to [0,1]: endHP can exceed startHP (level-up heal mid-area)
             float battleSurvivalRatio = startHP > 0 ? Mathf.Clamp01((float)endHP / startHP) : 0f;
 
-            // Sweet spot 40-60%: parabolic peak at 50%, max reward = 1.0
             if (battleSurvivalRatio >= 0.4f && battleSurvivalRatio <= 0.6f)
                 return 1.0f - 25.0f * (battleSurvivalRatio - 0.5f) * (battleSurvivalRatio - 0.5f);
-
-            // Too hard (ratio < 40%): small positive, encourages easier difficulty
             if (battleSurvivalRatio < 0.4f)
                 return 0.1f * battleSurvivalRatio;
-
-            // Too easy (ratio > 60%): small positive, encourages harder difficulty
             return 0.1f * (1.0f - battleSurvivalRatio);
         }
 
