@@ -244,7 +244,8 @@ namespace DDA
             if (_isTrainingMode)
             {
                 // Run completion bonus/penalty
-                float runBonus = runWon ? 0.5f : -0.1f;
+                // +0.5 jika selesai run, -0.3 jika kalah (lebih proporsional dengan death penalty)
+                float runBonus = runWon ? 0.5f : -0.3f;
                 AddReward(runBonus);
 
                 TrainingLogger.LogMessage($"DDAAgent: Run end. Won={runWon}, Areas={areasCompleted}/{totalAreas}, " +
@@ -267,7 +268,8 @@ namespace DDA
             if (_isTrainingMode)
             {
                 // Death penalty (in addition to area loss reward)
-                float deathPenalty = -0.5f;
+                // Dikurangi dari -0.5 ke -0.3 agar tidak terlalu mendominasi cumulative reward
+                float deathPenalty = -0.3f;
                 AddReward(deathPenalty);
 
                 TrainingLogger.LogMessage($"DDAAgent: Player died! Areas={areasCompleted}/{totalAreas}, " +
@@ -488,20 +490,30 @@ namespace DDA
 
         // ----------------------------------------------------------------
         // Reward — based on battleSurvivalRatio (player_hp_end / player_hp_start)
-        // Parabolic sweet spot at 50%, linear decay outside 40-60%
+        // Gaussian curve centered at 0.5 (50% HP remaining = ideal challenge).
+        //
+        // Formula: exp(-8 * (r - 0.5)^2)
+        //   r = 0.5  → reward = 1.00  (perfect challenge)
+        //   r = 0.3  → reward = 0.45  (cukup sulit, masih bermakna)
+        //   r = 0.7  → reward = 0.45  (terlalu mudah, tapi tetap positif)
+        //   r = 0.0  → reward = 0.14  (hampir mati tapi menang)
+        //   r = 1.0  → reward = 0.14  (tidak ada damage sama sekali)
+        //
+        // Kelebihan vs parabolic lama:
+        //   - Selalu positif jika menang (tidak ada zona reward ~0)
+        //   - Smooth decay → sinyal gradient lebih baik untuk DDQN
+        //   - Loss (-0.5) masih dominan tapi tidak sepuluh kali lipat lebih besar
         // ----------------------------------------------------------------
         public static float CalculateReward(bool won, int endHP, int startHP)
         {
-            if (!won) return -1.0f;
+            if (!won) return -0.5f;
 
             // battleSurvivalRatio = player_hp_end / player_hp_start
-            float battleSurvivalRatio = startHP > 0 ? Mathf.Clamp01((float)endHP / startHP) : 0f;
+            float r = startHP > 0 ? Mathf.Clamp01((float)endHP / startHP) : 0f;
 
-            if (battleSurvivalRatio >= 0.4f && battleSurvivalRatio <= 0.6f)
-                return 1.0f - 25.0f * (battleSurvivalRatio - 0.5f) * (battleSurvivalRatio - 0.5f);
-            if (battleSurvivalRatio < 0.4f)
-                return 0.1f * battleSurvivalRatio;
-            return 0.1f * (1.0f - battleSurvivalRatio);
+            // Gaussian sweet spot di r=0.5: reward selalu positif, peak 1.0
+            // Range output: [~0.135, 1.0]
+            return Mathf.Exp(-8f * (r - 0.5f) * (r - 0.5f));
         }
 
 #if UNITY_EDITOR

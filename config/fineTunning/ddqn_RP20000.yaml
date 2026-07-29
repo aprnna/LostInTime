@@ -16,23 +16,23 @@ behaviors:
     hyperparameters:
       # Learning
       learning_rate: 0.0001
-      learning_rate_schedule: linear
+      learning_rate_schedule: constant
 
       # Experience Replay
-      batch_size: 256      # Gradient lebih stabil vs batch 128
-      buffer_size: 20000   # Dikembalikan lebih kecil: experience random (ε tinggi) lebih cepat tergantikan
+      batch_size: 128
+      buffer_size: 20000
 
       # DDQN - Target Network Update
       tau: 0.005 # Soft update rate
-      steps_per_update: 4 
+      steps_per_update: 4
 
       # Exploration (Epsilon-greedy)
       exploration_initial_eps: 1.0
-      exploration_final_eps: 0.05  # Turun dari 0.3 → 0.05 agar agen bisa exploit policy yang dipelajari
-      exploration_decay_steps: 500000  # Diperpanjang agar decay lebih gradual
+      exploration_final_eps: 0.3
+      exploration_decay_steps: 300000
 
       # Discount factor
-      gamma: 0.99  # Diselaraskan dengan reward_signals.extrinsic.gamma di bawah
+      gamma: 0.97
 
     network_settings:
       normalize: true
@@ -48,9 +48,10 @@ behaviors:
     # Training settings
 
     keep_checkpoints: 5
-    max_steps: 2000000       # Ditingkatkan dari 1M → 2M: fase exploit (post-500k) butuh lebih banyak steps
+    max_steps: 1000000
+    # time_horizon: 64
     summary_freq: 6000
-    checkpoint_interval: 100000
+    checkpoint_interval: 50000
 
 # Environment settings
 env_settings:
