@@ -15,12 +15,12 @@ behaviors:
 
     hyperparameters:
       # Learning
-      # learning_rate: 0.0005 pict the best LR
+      learning_rate: 0.0001
       learning_rate_schedule: constant
 
       # Experience Replay
       batch_size: 352
-      # buffer_size: 5000 Pict The Best RB
+      buffer_size: 5000
 
       # DDQN - Target Network Update
       tau: 0.005 # Soft update rate
@@ -32,7 +32,7 @@ behaviors:
       exploration_decay_steps: 300000
 
       # Discount factor
-      # gamma: 1.0 Pict The Best Gamma
+      gamma: 1.0
 
     network_settings:
       normalize: true
