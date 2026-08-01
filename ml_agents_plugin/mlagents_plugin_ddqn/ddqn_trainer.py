@@ -1,7 +1,3 @@
-"""
-DDQN Trainer implementation for ML-Agents.
-Based on DQN trainer with Double Q-Learning extension.
-"""
 from typing import cast
 
 import numpy as np

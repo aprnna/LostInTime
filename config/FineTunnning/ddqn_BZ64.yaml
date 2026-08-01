@@ -1,0 +1,87 @@
+# DDQN Training Configuration for Unity ML-Agents
+# Uses custom ddqn trainer plugin (mlagents-plugin-ddqn)
+#
+# Installation:
+#   cd ml_agents_plugin
+#   pip install -e .
+#
+# Usage:
+#   mlagents-learn config/ddqn.yaml --run-id=ddqn_dda_v1 --train
+#
+
+behaviors:
+  ddqn_dda:
+    trainer_type: ddqn # Custom DDQN trainer from plugin
+
+    hyperparameters:
+      # Learning
+      learning_rate: 0.0001
+      learning_rate_schedule: constant
+
+      # Experience Replay
+      batch_size: 64
+      buffer_size: 10000
+
+      # DDQN - Target Network Update
+      tau: 0.005 # Soft update rate
+      steps_per_update: 4
+
+      # Exploration (Epsilon-greedy)
+      exploration_initial_eps: 1.0
+      exploration_final_eps: 0.3
+      exploration_decay_steps: 300000
+
+      # Discount factor
+      gamma: 0.97
+
+    network_settings:
+      normalize: true
+      hidden_units: 128
+      num_layers: 2
+      vis_encode_type: simple
+
+    reward_signals:
+      extrinsic:
+        gamma: 0.99
+        strength: 1.0
+
+    # Training settings
+
+    keep_checkpoints: 5
+    max_steps: 1000000
+    # time_horizon: 64
+    summary_freq: 6000
+    checkpoint_interval: 50000
+
+# Environment settings
+env_settings:
+  env_path: null
+  base_port: 5005
+  num_envs: 1
+  num_areas: 1
+  timeout_wait: 60
+  seed: -1
+
+# Engine settings for training
+engine_settings:
+  width: 84
+  height: 84
+  quality_level: 5
+  time_scale: 100
+  target_frame_rate: -1
+  capture_frame_rate: 60
+  no_graphics: true
+
+# Checkpoint settings
+checkpoint_settings:
+  run_id: ddqn_dda_v1
+  initialize_from: null
+  load_model: false
+  resume: false
+  force: false
+  train_model: true
+  inference: false
+  results_dir: results
+
+# Debug settings
+debug: false

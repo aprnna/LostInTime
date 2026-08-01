@@ -1,10 +1,3 @@
-"""
-Custom network modules using ReLU activation instead of Swish.
-
-ML-Agents hardcodes Swish (x * sigmoid(x)) in LinearEncoder and ConditionalEncoder.
-This module provides drop-in replacements that use nn.ReLU, so the DDQN plugin
-doesn't need to patch the installed mlagents package.
-"""
 from typing import List, Optional, Tuple, Dict, Union, Any
 
 from mlagents.torch_utils import torch, nn
@@ -35,10 +28,6 @@ from mlagents.trainers.buffer import AgentBuffer
 from mlagents.trainers.trajectory import ObsUtil
 import numpy as np
 
-
-# ---------------------------------------------------------------------------
-# ReLU-based LinearEncoder (replaces Swish with ReLU)
-# ---------------------------------------------------------------------------
 
 class ReLULinearEncoder(torch.nn.Module):
     """Same as mlagents LinearEncoder but uses nn.ReLU instead of Swish."""
@@ -76,10 +65,6 @@ class ReLULinearEncoder(torch.nn.Module):
     def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
         return self.seq_layers(input_tensor)
 
-
-# ---------------------------------------------------------------------------
-# ReLU-based ConditionalEncoder (replaces Swish with ReLU in HyperNetwork too)
-# ---------------------------------------------------------------------------
 
 class _ReLUConditionalEncoder(torch.nn.Module):
     """Same as mlagents ConditionalEncoder but uses nn.ReLU instead of Swish."""
@@ -184,10 +169,6 @@ class _ReLUHyperNetwork(torch.nn.Module):
         return result
 
 
-# ---------------------------------------------------------------------------
-# ReLU-based NetworkBody
-# ---------------------------------------------------------------------------
-
 class ReLUNetworkBody(nn.Module):
     """Same as mlagents NetworkBody but uses ReLULinearEncoder / _ReLUConditionalEncoder."""
 
@@ -273,11 +254,6 @@ class ReLUNetworkBody(nn.Module):
             encoding = encoding.reshape([-1, self.m_size // 2])
         return encoding, memories
 
-
-# ---------------------------------------------------------------------------
-# ReLU-based ValueNetwork
-# ---------------------------------------------------------------------------
-
 class ReLUValueNetwork(nn.Module):
     """Same as mlagents ValueNetwork but backed by ReLUNetworkBody (ReLU activation)."""
 
@@ -332,10 +308,6 @@ class ReLUValueNetwork(nn.Module):
         output = self.value_heads(encoding)
         return output, memories
 
-
-# ---------------------------------------------------------------------------
-# Q-Network for DDQN (used as both Actor and Critic)
-# ---------------------------------------------------------------------------
 
 class QNetworkDDQN(nn.Module, Actor, Critic):
     """Q-Network for DDQN with target network support."""
@@ -404,11 +376,6 @@ class QNetworkDDQN(nn.Module, Actor, Critic):
 
         export_out = [self.version_number, self.memory_size_vector]
 
-        # FIX: disc_action_out (stochastic/exploratory slot) = random action
-        #      deterministic_disc_action_out (greedy slot) = argmax Q-value
-        # Unity InferenceOnly reads the DETERMINISTIC output — must be argmax,
-        # not random. Previously these were swapped, causing inference to always
-        # receive random actions regardless of what the model learned.
         disc_action_out = self.get_random_action(out_vals)
         deterministic_disc_action_out = self.get_greedy_action(out_vals)
         export_out += [
