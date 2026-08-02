@@ -1,0 +1,65 @@
+{
+    "ddqn_dda": {
+        "checkpoints": [
+            {
+                "steps": 249986,
+                "file_path": "results\\ddqn_LR031\\ddqn_dda\\ddqn_dda-249986.onnx",
+                "reward": null,
+                "creation_time": 1785674109.8718271,
+                "auxillary_file_paths": [
+                    "results\\ddqn_LR031\\ddqn_dda\\ddqn_dda-249986.pt"
+                ]
+            },
+            {
+                "steps": 299967,
+                "file_path": "results\\ddqn_LR031\\ddqn_dda\\ddqn_dda-299967.onnx",
+                "reward": null,
+                "creation_time": 1785675064.0887792,
+                "auxillary_file_paths": [
+                    "results\\ddqn_LR031\\ddqn_dda\\ddqn_dda-299967.pt"
+                ]
+            },
+            {
+                "steps": 349967,
+                "file_path": "results\\ddqn_LR031\\ddqn_dda\\ddqn_dda-349967.onnx",
+                "reward": null,
+                "creation_time": 1785676021.0044563,
+                "auxillary_file_paths": [
+                    "results\\ddqn_LR031\\ddqn_dda\\ddqn_dda-349967.pt"
+                ]
+            },
+            {
+                "steps": 399980,
+                "file_path": "results\\ddqn_LR031\\ddqn_dda\\ddqn_dda-399980.onnx",
+                "reward": null,
+                "creation_time": 1785677005.039868,
+                "auxillary_file_paths": [
+                    "results\\ddqn_LR031\\ddqn_dda\\ddqn_dda-399980.pt"
+                ]
+            },
+            {
+                "steps": 413903,
+                "file_path": "results\\ddqn_LR031\\ddqn_dda\\ddqn_dda-413903.onnx",
+                "reward": null,
+                "creation_time": 1785677268.0878077,
+                "auxillary_file_paths": [
+                    "results\\ddqn_LR031\\ddqn_dda\\ddqn_dda-413903.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 413903,
+            "file_path": "results\\ddqn_LR031\\ddqn_dda.onnx",
+            "reward": null,
+            "creation_time": 1785677268.0878077,
+            "auxillary_file_paths": [
+                "results\\ddqn_LR031\\ddqn_dda\\ddqn_dda-413903.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.2.2+cu121"
+    }
+}
