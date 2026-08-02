@@ -2,58 +2,58 @@
     "ddqn_dda": {
         "checkpoints": [
             {
-                "steps": 249984,
-                "file_path": "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-249984.onnx",
+                "steps": 849993,
+                "file_path": "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-849993.onnx",
                 "reward": null,
-                "creation_time": 1785674216.4748218,
+                "creation_time": 1785693004.1418512,
                 "auxillary_file_paths": [
-                    "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-249984.pt"
+                    "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-849993.pt"
                 ]
             },
             {
-                "steps": 299978,
-                "file_path": "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-299978.onnx",
+                "steps": 899979,
+                "file_path": "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-899979.onnx",
                 "reward": null,
-                "creation_time": 1785675172.6124456,
+                "creation_time": 1785693722.6021237,
                 "auxillary_file_paths": [
-                    "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-299978.pt"
+                    "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-899979.pt"
                 ]
             },
             {
-                "steps": 349967,
-                "file_path": "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-349967.onnx",
+                "steps": 949961,
+                "file_path": "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-949961.onnx",
                 "reward": null,
-                "creation_time": 1785676136.806385,
+                "creation_time": 1785694436.5295882,
                 "auxillary_file_paths": [
-                    "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-349967.pt"
+                    "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-949961.pt"
                 ]
             },
             {
-                "steps": 399984,
-                "file_path": "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-399984.onnx",
+                "steps": 999965,
+                "file_path": "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-999965.onnx",
                 "reward": null,
-                "creation_time": 1785677123.071377,
+                "creation_time": 1785695116.2374299,
                 "auxillary_file_paths": [
-                    "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-399984.pt"
+                    "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-999965.pt"
                 ]
             },
             {
-                "steps": 408881,
-                "file_path": "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-408881.onnx",
+                "steps": 1000029,
+                "file_path": "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-1000029.onnx",
                 "reward": null,
-                "creation_time": 1785677289.22908,
+                "creation_time": 1785695116.3241305,
                 "auxillary_file_paths": [
-                    "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-408881.pt"
+                    "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-1000029.pt"
                 ]
             }
         ],
         "final_checkpoint": {
-            "steps": 408881,
+            "steps": 1000029,
             "file_path": "results\\ddqn_LR041\\ddqn_dda.onnx",
             "reward": null,
-            "creation_time": 1785677289.22908,
+            "creation_time": 1785695116.3241305,
             "auxillary_file_paths": [
-                "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-408881.pt"
+                "results\\ddqn_LR041\\ddqn_dda\\ddqn_dda-1000029.pt"
             ]
         }
     },

@@ -73,7 +73,7 @@ checkpoint_settings:
   run_id: ddqn_LR041
   initialize_from: null
   load_model: false
-  resume: false
+  resume: true
   force: false
   train_model: true
   inference: false
