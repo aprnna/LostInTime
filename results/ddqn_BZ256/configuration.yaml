@@ -6,9 +6,9 @@ behaviors:
       learning_rate: 0.0001
       learning_rate_schedule: constant
       batch_size: 256
-      buffer_size: 5000
+      buffer_size: 10000
       buffer_init_steps: 0
-      gamma: 1.0
+      gamma: 0.97
       exploration_schedule: linear
       exploration_initial_eps: 1.0
       exploration_final_eps: 0.3
@@ -51,7 +51,7 @@ behaviors:
 env_settings:
   env_path: F:/Apri/RL8/Lost In Time.exe
   env_args: null
-  base_port: 5010
+  base_port: 5020
   num_envs: 4
   num_areas: 1
   timeout_wait: 60
@@ -74,7 +74,7 @@ checkpoint_settings:
   initialize_from: null
   load_model: false
   resume: false
-  force: false
+  force: true
   train_model: true
   inference: false
   results_dir: results
