@@ -45,6 +45,9 @@ namespace Roulette
                 itemCount = content.childCount;
             }
 
+            // Shuffle items (Fisher-Yates) so the cycling pattern is not deterministic
+            ShuffleItems();
+
             itemWidth = ((RectTransform)content.GetChild(0)).rect.width + 1;
             GameObject buttonStop = GameObject.Find("Stop Button");
             if (buttonStop != null)
@@ -53,7 +56,20 @@ namespace Roulette
                 stopButton.onClick.AddListener(StopScrolling);
             }
 
-            timer = Random.Range(2, 6);
+            // Use float range so timer duration is not limited to 4 discrete values
+            timer = Random.Range(2f, 6f);
+        }
+
+        private void ShuffleItems()
+        {
+            int count = content.childCount;
+            for (int i = count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                // Swap sibling index i and j
+                content.GetChild(j).SetSiblingIndex(i);
+                content.GetChild(i).SetSiblingIndex(j);
+            }
         }
 
         void Update()
@@ -92,6 +108,7 @@ namespace Roulette
         {
             isScrolling = false;
             autoStop = false;
+            stopAtIndex = Random.Range(0, content.childCount - 2);
             StartCoroutine(SnapToIndex(stopAtIndex));
         }
 
@@ -120,8 +137,9 @@ namespace Roulette
 
         public void GetData()
         {
-
-            RectTransform resultItem = content.GetChild(stopAtIndex + 2) as RectTransform;
+            // Clamp to ensure index is valid
+            int readIndex = Mathf.Clamp(stopAtIndex + 2, 0, content.childCount - 1);
+            RectTransform resultItem = content.GetChild(readIndex) as RectTransform;
             string resultText = resultItem.GetComponentInChildren<TextMeshProUGUI>().text;
 
             if (int.TryParse(resultText, out int resultValue))
