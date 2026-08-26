@@ -42,18 +42,31 @@ All Python under `tools/xai/`. One new C# file + one minimal hook.
 
 | # | Unit | File | Purpose |
 |---|------|------|---------|
-| 1 | State logger | `Assets/Scripts/DDA/ShapStateLogger.cs` | Static additive logger. Dumps per decision `{obs:[6], action:int, qvalues:[5], run:int, area:int}` to JSONL at `Application.persistentDataPath/.../DDA_Training/shap_states.jsonl`. Gated by `#if SHAP_LOG` define. Thread-safe (mirror `TrainingLogger` lock pattern). |
+| 1 | State logger | `Assets/Scripts/DDA/ShapStateLogger.cs` | Static additive logger. Dumps per decision `{obs:[6], action:int, qvalues:[5], run:int, area:int, hp_initial:float, hp_final:float, survival_ratio:float, outcome_label:str}` to JSONL at `Application.persistentDataPath/.../DDA_Training/shap_states.jsonl`. `survival_ratio = hp_final / hp_initial` (guard `hp_initial == 0` → skip decision). `outcome_label` assigned at run time (see §4.1). Gated by `#if SHAP_LOG` define. Thread-safe (mirror `TrainingLogger` lock pattern). |
 | 2 | Logger hook | `Assets/Scripts/DDA/DDAAgent.cs` | 2–3 lines in `OnActionReceived` under `#if SHAP_LOG`: call `ShapStateLogger.Log(...)`. Zero effect on normal builds (define off). |
-| 3 | State collector | `tools/xai/collect_states.py` | Parse `shap_states.jsonl` → `states.npy[N,6]`, `actions.npy[N]`, `qvalues.npy[N,5]`. Validate all values in `[0,1]`; clamp + warn on violation. |
+| 3 | State collector | `tools/xai/collect_states.py` | Parse `shap_states.jsonl` → `states.npy[N,6]`, `actions.npy[N]`, `qvalues.npy[N,5]`, `survival.npy[N]` (survival_ratio), `outcomes.npy[N]` (integer-coded outcome_label: 0=Subjugate, 1=Balanced, 2=Rebellious). Validate obs in `[0,1]`; clamp + warn on violation. Validate `survival_ratio` in `[0,1]` (clamp). |
 | 4 | Q-net replica | `tools/xai/shap_net.py` | `ShapQNet(obs=6, hidden=128, layers=2, actions=5)` with `Norm` layer (running mean/var + eps). `load_checkpoint(path)`: inspect ML-Agents checkpoint keys, map norm stats + encoder linears + value head. `forward(x)→[B,5]`. Fallback B path via `--backend plugin`. |
-| 5 | Explainer | `tools/xai/explain_shap.py` | CLI: `--checkpoint`, `--states`, `--decision N` (index or "representative"), `--all-actions`, `--counterfactual`, `--self-check`. Builds `GradientExplainer(net, background)` (background = random 100 from `states.npy`, or synthetic uniform if empty). Emits waterfalls, beeswarm, counterfactual diffs. |
-| 6 | Report generator | `tools/xai/report.py` (or part of explain_shap) | Auto-write `report.md`: per-decision top features, global feature ranking, counterfactual boundary notes. |
+| 5 | Explainer | `tools/xai/explain_shap.py` | CLI: `--checkpoint`, `--states`, `--decision N` (index or "representative"), `--all-actions`, `--counterfactual`, `--filter-outcome {Subjugate,Balanced,Rebellious}` (restrict explained + background subset to one outcome category; default all), `--self-check`. Builds `GradientExplainer(net, background)` (background = random 100 from the selected subset of `states.npy`, or synthetic uniform if empty). Emits waterfalls, beeswarm, counterfactual diffs. |
+| 6 | Report generator | `tools/xai/report.py` (or part of explain_shap) | Auto-write `report.md` with: per-decision top features, **global feature ranking**, **explicit "Pola kegagalan (Subjugate)" section** (dominant SHAP features among Subjugate decisions, not just global ranking), **"Pola kegagalan (Rebellious)" section** (dominant features among Rebellious decisions), counterfactual boundary notes. Per-category analysis: mean |SHAP| per feature restricted to that outcome subset, top-3 drivers, and the typical action chosen. |
+
+### 4.1 Outcome classification
+
+`outcome_label` derived solely from `survival_ratio = hp_final / hp_initial`:
+
+| Label | Rule | Meaning (DDA failure mode) |
+|-------|------|----------------------------|
+| **Balanced** | `0.4 ≤ SR ≤ 0.6` | Sweet spot — aligns with reward parabola peak at HP 50%. Intended DDA outcome. |
+| **Subjugate** | `SR > 0.6` | Under-challenged — agent kept difficulty too low; player retains too much HP, stomps enemies. Failure mode (unengaging). |
+| **Rebellious** | `SR < 0.4` | Over-challenged — agent set difficulty too high; player loses too much HP / dies. Failure mode. |
+
+Integer code for `outcomes.npy`: `0=Subjugate, 1=Balanced, 2=Rebellious`. Assignment done in C# at run time (`ShapStateLogger` or `TrainingBattleSimulator` computes label from `hp_initial`/`hp_final` before dumping). `hp_initial == 0` → decision skipped (no division). Thresholds are constants in the logger; not configurable at runtime.
 
 ### Output location
 `results/shap/499948/` containing:
 - `waterfall_decision{d}_action{a}.png` (5 × N_decision plots)
 - `summary_beeswarm.png`
 - `counterfactual_{feature}_{from}_to_{to}.png` + diff table
+- `failure_pattern_subjugate.png`, `failure_pattern_rebellious.png` (per-category mean |SHAP| bar)
 - `report.md`
 
 ## 5. Data Flow
@@ -82,6 +95,18 @@ Unity Editor
 ```
 
 Inference run is manual (user runs Unity; agent cannot). Spec records the exact procedure so it is reproducible.
+
+### 5.1 Data provenance & validity
+
+**Source: re-simulasi, bukan log training asli.** The explained states come from a *new* inference run that loads the final trained model (`ddqn_dda-499948.onnx`) and re-plays the `TrainingBattleSimulator` in instant mode. They are **not** states harvested from the original training log (`TrainingLogger` writes text-only event summaries, never the 6-obs vector) and **not** from the training replay buffer (`save_replay_buffer: false`, buffer discarded after training).
+
+Implications:
+
+- **Distribution match (good for the question asked).** Background and explained states are drawn from the *final policy's own visitation distribution* — exactly the policy being explained. SHAP's local-accuracy guarantee holds because background ≈ test distribution. This is the correct regime for "why does the final agent do X."
+- **Not the training distribution.** States reflect exploitation (epsilon ≈ 0.05 post-training), not the exploration-heavy distribution seen during learning. SHAP results therefore describe the *deployed* policy, not how it was learned. Do not claim attribution over training-time behavior.
+- **Deterministic sim, stochastic policy.** `TrainingBattleSimulator` instant mode is deterministic given seed; the policy is near-greedy at epsilon 0.05, so re-runs are mostly reproducible. Small stochasticity (ε-greedy random actions) means a few decisions may differ between runs — acceptable for thesis-level attribution; report notes run seed.
+- **Self-collected background caveat.** Background is on-policy (generated by the same network under explanation). This is standard for post-hoc policy explanation but means SHAP values are relative to *what the final agent typically sees*, not to a hand-defined "neutral" state. Counterfactuals that push observations outside the visited distribution (e.g. HP 0.30 when the agent rarely lets HP drop that low) are extrapolation — report flags them as such.
+- **Validity scope line for thesis.** SHAP explanations are valid for the final trained policy on states it actually visits; they are descriptive of deployed behavior, not causal claims about training and not guaranteed off-distribution.
 
 ## 6. Checkpoint Loading & Normalization
 
@@ -121,6 +146,8 @@ If any mapping fails → fallback B (instantiate real `QNetworkDDQN`, `load_stat
 2. **Range** — assert `states.npy` all in `[0,1]`, shape `[N,6]`.
 3. **Additivity** — per decision: `|base_value + sum(shap_values[chosen]) − Q[chosen]| < 1e-3`. SHAP property.
 4. **Determinism** — run SHAP twice on same state, assert identical results (GradientExplainer is deterministic given fixed background).
+5. **Outcome coverage** — assert all three labels present in `outcomes.npy` (Subjugate, Balanced, Rebellious each ≥ 1 decision). If a category is empty, the per-category failure-pattern section is skipped with a note (insufficient data), not fabricated.
+6. **Survival sanity** — assert `survival_ratio` consistent with `hp_final/hp_initial` per row; assert label matches threshold rule (§4.1).
 
 All pass → safe to generate thesis plots.
 
