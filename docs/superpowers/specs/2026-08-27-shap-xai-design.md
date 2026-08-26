@@ -24,7 +24,8 @@ Three explanation layers:
   5. QTE Accuracy (successfulQTE / totalQTEOpportunities)
   6. Resource Depletion
 - **Actions**: 5 discrete — Very Easy(0), Easy(1), Normal(2), Hard(3), Very Hard(4).
-- **Checkpoint**: `results/ddqn_retrain_sidang/ddqn_dda/ddqn_dda-499948.pt` (final step). Also `ddqn_dda-499948.onnx` for cross-check. ML-Agents standard checkpoint format.
+- **Model source**: the deployed beta `.onnx` in `Assets/Resources/DDA/Models/` (candidates: `ddqn_dda_sidang1.onnx` mtime 2026-08-03, `ddqn_dda_final.onnx` 2026-07-31, plus `ddqn_dda5.onnx`, `ddqn_dda_testing*.onnx`). The beta test (DataPost) ran 2026-08-10, so a model dated ≤ 2026-08-10 was deployed. The exact beta model is identified empirically by a match-rate probe (§9.7) across candidates — `argmax Q(onnx, obs)` vs `dda_action_taken`, highest match wins.
+- **`.pt` checkpoints evicted.** `ddqn_retrain_sidang` training is still running (pid 12692); `keep_checkpoints: 5` evicted every step before the current last 5 (599960–799978). The 499948 `.pt` referenced in earlier drafts is **gone**. No `.pt` matches the beta `.onnx` (verified: `results/ddqn_sidang1/` empty, no onnx/pt). → Weights are extracted from the beta `.onnx` initializers into `ShapQNet` (PyTorch). The `.onnx` is the ground-truth deployed model.
 - **Real beta-deployment logs (DATA SOURCE)**: `E:\COLLEGE\SKOM\Implementasi\Battle Logs\DataPost\*.jsonl` — 11 sessions, 99 battles, **98 `dda_event` records** = the 98 DDA decisions behind BCM 15.31% (Tabel VI). Each `dda_event` payload contains the exact 6-obs vector the agent acted on:
   ```
   {dda_action_taken:"Very Hard", dda_reward:0.0,
@@ -41,12 +42,12 @@ Three explanation layers:
 **Data source — Option 1 (chosen, feasible): reconstruct 6-obs from real beta logs.**
 The 98 `dda_event` records in `DataPost/` already carry `dda_obs_snapshot[6]` + `dda_action_taken`. Parse them → `states.npy[98,6]`, `actions.npy[98]`. Run `shap_net.forward()` on these real states for Q-values, then SHAP. **No Unity re-run, no simulation, no QTE imputation** — the explained states are exactly the states that produced BCM 15.31%.
 
-**Network side — Approach A (chosen): Reconstruct minimal PyTorch net + GradientExplainer (DeepSHAP).**
-Build a faithful minimal `ShapQNet` in pure PyTorch mirroring the plugin architecture (Norm + 2 Linear/ReLU + ValueHead), load weights from `.pt`. Use `shap.GradientExplainer` (native PyTorch, differentiable, fast) for per-decision attribution on all 5 Q-value outputs.
+**Network side — Approach A (chosen): Extract weights from beta `.onnx` into a minimal PyTorch net + GradientExplainer (DeepSHAP).**
+The beta `.onnx` initializers (normalization running mean/var, encoder Linear weights, value-head Linear weights) are loaded into a faithful minimal `ShapQNet` (Norm + 2 Linear/ReLU + ValueHead). Use `shap.GradientExplainer` (native PyTorch, differentiable, fast) for per-decision attribution on all 5 Q-value outputs. Extraction correctness is validated by the faithfulness self-check (§9.1: `ShapQNet.forward` vs `onnxruntime` inference on the same states, `max|diff| < 1e-4`).
 
-**Fallback B**: If checkpoint key mapping fails or normalization stats are not recoverable, instantiate the real `QNetworkDDQN` via `mlagents` (construct `ObservationSpec(shape=(6,), ObservationType.DEFAULT)`, `ActionSpec.create_discrete((5,))`, `NetworkSettings(hidden_units=128, num_layers=2, normalize=True)`), `load_state_dict`, and wrap `critic_pass`. The SHAP wrapper exposes the same `forward(x)→[B,5]` interface so `explain_shap.py` is backend-agnostic.
+**Fallback C (auto, if extraction fails faithfulness)**: `shap.KernelExplainer` running directly on the beta `.onnx` via `onnxruntime` — model-agnostic, no weight extraction, approximate SHAP. Slower but guaranteed to use the exact beta model. Engaged automatically if §9.1 fails after extraction attempt.
 
-**Rejected C**: KernelExplainer on ONNX — model-agnostic but slow (approx exponential), approximation not exact DeepSHAP, not differentiable (counterfactual only via re-run). Emergency only.
+**Rejected B**: instantiate real `QNetworkDDQN` via `mlagents` + `load_state_dict` — requires a `.pt`, which is gone. Not viable for the beta model.
 
 **Rejected (simulation re-run)**: §5/§10 originally proposed collecting states from a new `TrainingBattleSimulator` instant-mode run. Rejected because real beta logs with the exact 6-obs already exist, so simulation would explain a *different* distribution than the reported BCM 15.31% — a validity gap. Simulation remains a fallback only if the real logs were lost.
 
@@ -92,7 +93,7 @@ E:\COLLEGE\SKOM\Implementasi\Battle Logs\DataPost\*.jsonl  (11 files, 98 dda_eve
   outcomes.npy [98]   (0=Subjugate,1=Balanced,2=Rebellious)
   meta.json           (session→decision traceability)
      ↓ background = all 98 states (or --filter-outcome subset)
-  ddqn_dda-499948.pt → shap_net.load_checkpoint() → ShapQNet
+  beta .onnx (identified by probe §9.7) → ShapQNet.load_from_onnx() → ShapQNet
      ↓
   GradientExplainer(net, background)
      ↓
@@ -112,21 +113,20 @@ No Unity involvement. All offline Python.
 Implications:
 
 - **Population, not sample.** N=98 is the full set of DDA decisions in the beta run, not a draw. SHAP background = the 98 states themselves. Local-accuracy holds because background ≈ test distribution (identical population).
-- **Checkpoint↔beta model match (must verify).** The beta test deployed *some* trained checkpoint. SHAP loads `ddqn_dda-499948.pt`. If that is the same model the beta ran, `argmax Q(shap_net, obs)` should match `dda_action_taken` for ≈95% of decisions (allowing 5% ε-greedy random actions at `exploration_final_eps=0.05`). Self-check §9.6 computes this match rate. High match → 499948 is the beta model, SHAP explains beta behavior. Low match → 499948 differs from the deployed model; report must state SHAP explains the *current* checkpoint on real beta states, not the exact beta policy. **Resolve before claiming thesis validity.**
+- **Checkpoint↔beta model match (must verify).** The beta test deployed *some* trained `.onnx`. SHAP extracts weights from the beta `.onnx` identified by the §9.7 probe. If that is the true deployed model, `argmax Q(shap_net, obs)` matches `dda_action_taken` for ≈95% of decisions (allowing 5% ε-greedy random actions at `exploration_final_eps=0.05`). The probe computes this across all candidate `.onnx`. High match → identified model is the beta model, SHAP explains beta behavior. Low match across all candidates → the deployed model is missing; report must state SHAP explains the *closest available* model on real beta states, not the exact beta policy. **Resolve before claiming thesis validity.**
 - **On-policy, deployed regime.** States are from exploitation (near-greedy), the deployed regime. SHAP describes why the deployed agent did what it did on the states it actually met — the strongest validity claim available post-hoc.
 - **Counterfactual extrapolation.** Perturbations pushing an obs outside the 98-state distribution (e.g. HP 0.30 when beta HP ratios cluster high) are extrapolation. Report flags counterfactuals that leave the observed range.
 - **Validity scope line for thesis.** SHAP explanations are valid for the deployed DDQN policy on the real beta states that produced BCM 15.31%, provided the checkpoint-match self-check passes. They are descriptive of deployed behavior, not causal claims about training.
 
-## 6. Checkpoint Loading & Normalization
+## 6. ONNX Weight Extraction & Normalization
 
-`ddqn_dda-499948.pt` is ML-Agents format. Keys must be inspected at implementation time (structure varies: commonly `{"policy": {..., "model": <state_dict>, ...}}` or a direct state_dict under a behavior-id key). Extract the network state_dict.
+The beta `.onnx` (identified by §9.7 probe) is the weight source. Parse with the `onnx` package: list `graph.initializer` and map tensors to `ShapQNet`:
 
-Map to minimal net:
-- **Normalization** — `VectorInput` running mean / running var → `ShapQNet.norm.running_mean`, `running_var`. Forward: `(x - running_mean) / sqrt(running_var + eps)`, `eps = 1e-5` (ML-Agents default). These stats **must** be found; without them the replica is not faithful.
-- **Encoder** — 2 `Linear` layers (6→128, 128→128) + ReLU. Map `weight`/`bias`.
+- **Normalization** — `VectorInput` running mean / running var (stored as onnx initializers, e.g. `*_running_mean`, `*_running_var`). → `ShapQNet.norm.running_mean`, `running_var`. Forward: `(x - running_mean) / sqrt(running_var + eps)`, `eps = 1e-5` (ML-Agents default; confirm from onnx constant node). Stats **must** be found.
+- **Encoder** — 2 `Linear` (6→128, 128→128) + ReLU. Onnx exports Linear as `Gemm` or `MatMul`+`Add`; map `weight` (transposed if Gemm `alpha`/`beta`) + `bias`.
 - **ValueHead** — `ValueHeads` `Linear` (128→5). Map `weight`/`bias`.
 
-If any mapping fails → fallback B (instantiate real `QNetworkDDQN`, `load_state_dict`, wrap `critic_pass`). Log a warning. The `forward→[B,5]` interface stays identical so the explainer does not care which backend ran.
+Extraction is validated by §9.1 faithfulness (PyTorch forward vs onnxruntime on same states). If `max|diff| ≥ 1e-4` → extraction wrong; re-inspect initializer names; if unresolved → auto-switch to Fallback C (KernelExplainer on the .onnx). The `forward(x)→[B,5]` interface stays identical so the explainer is backend-agnostic.
 
 ## 7. SHAP Configuration
 
@@ -152,13 +152,13 @@ If any mapping fails → fallback B (instantiate real `QNetworkDDQN`, `load_stat
 
 `python -m explain_shap --self-check` runs:
 
-1. **Faithfulness** — Load `.pt` via `shap_net`, forward 10 random states. Run same states through `ddqn_dda-499948.onnx` via `onnxruntime`. Assert `max|Q_shap_net − Q_onnx| < 1e-4`. If fail → replica wrong; stop, do not produce plots.
+1. **Faithfulness** — `ShapQNet` (weights extracted from beta `.onnx`) forward on 10 states vs `onnxruntime` inference on the same beta `.onnx` for the same states. Assert `max|Q_shap_net − Q_onnx| < 1e-4`. If fail → extraction wrong; re-inspect initializers; if unresolved → auto-switch to Fallback C.
 2. **Range** — assert `states.npy` all in `[0,1]`, shape `[98,6]`.
 3. **Additivity** — per decision: `|base_value + sum(shap_values[chosen]) − Q[chosen]| < 1e-3`. SHAP property.
 4. **Determinism** — run SHAP twice on same state, assert identical results (GradientExplainer is deterministic given fixed background).
 5. **Outcome coverage** — assert all three labels present in `outcomes.npy` (Subjugate, Balanced, Rebellious each ≥ 1 decision). If a category is empty, the per-category failure-pattern section is skipped with a note (insufficient data), not fabricated.
 6. **Survival sanity** — assert `survival_ratio` consistent with `hp_final/hp_initial` per row; assert label matches threshold rule (§4.1).
-7. **Checkpoint↔beta model match** — for each of 98 states, `argmax Q(shap_net, obs)` vs `dda_action_taken`. Report match rate. ≥ 90% → 499948 confirmed as beta model (pass). 70–90% → warn, likely ε-greedy noise + minor drift (investigate). < 70% → hard flag: checkpoint ≠ beta model; do not claim SHAP explains the beta policy without resolving.
+7. **Beta-model identification (probe)** — for each candidate `.onnx` in `Assets/Resources/DDA/Models/`, run `onnxruntime` inference on the 98 `states.npy`, compute `argmax Q == dda_action_taken` match rate. Rank candidates. Highest match = beta model; write its path to `meta.json`. Expected ≥ 90% for the true beta model (allowing 5% ε-greedy random actions at `exploration_final_eps=0.05`). 70–90% → warn, investigate. < 70% across all candidates → hard flag: no candidate matches the beta policy; do not claim SHAP explains the beta policy without resolving (the deployed model may be missing from `Assets/Resources/DDA/Models/`).
 
 All pass → safe to generate thesis plots.
 
@@ -166,13 +166,17 @@ All pass → safe to generate thesis plots.
 
 No Unity run. The real beta logs already exist:
 
+## 10. Data Acquisition
+
+No Unity run. The real beta logs already exist:
+
 1. Confirm `E:\COLLEGE\SKOM\Implementasi\Battle Logs\DataPost\*.jsonl` present (11 files). If the path moved, pass `--log-dir` to `parse_dda_logs.py`.
 2. `python parse_dda_logs.py --log-dir "E:\COLLEGE\SKOM\Implementasi\Battle Logs\DataPost"` → `tools/xai/states.npy`, `actions.npy`, `survival.npy`, `outcomes.npy`, `meta.json`.
-3. Confirm `results/ddqn_retrain_sidang/ddqn_dda/ddqn_dda-499948.pt` + `ddqn_dda-499948.onnx` present (onnx only for self-check faithfulness).
-4. `python -m explain_shap --self-check` → must pass (incl. checkpoint↔beta match rate, §9.7).
-5. Run explain commands; outputs to `results/shap/499948/`.
+3. Confirm candidate `.onnx` models present in `Assets/Resources/DDA/Models/`. Install deps (`pip install -r requirements.txt` + `shap onnxruntime onnx`).
+4. `python -m explain_shap --self-check` → must pass, incl. §9.7 beta-model probe (writes chosen `.onnx` to `meta.json`) and §9.1 faithfulness (validates weight extraction).
+5. Run explain commands; outputs to `results/shap/<model-name>/`.
 
-(Simulation re-run procedure retained only as emergency fallback if real logs are lost: original §10 Unity procedure — ask user to confirm before adopting, since it changes validity scope.)
+(Simulation re-run procedure retained only as emergency fallback if real logs are lost: original Unity procedure — ask user to confirm before adopting, since it changes validity scope.)
 
 ## 11. Scope Exclusions (YAGNI)
 
@@ -184,9 +188,8 @@ No Unity run. The real beta logs already exist:
 
 ## 12. Open Items Resolved at Implementation
 
-- Exact ML-Agents checkpoint key layout (inspect `torch.load(...).keys()`).
-- `eps` value used by ML-Agents `VectorInput` normalization (confirm default 1e-5).
-- **Checkpoint↔beta model confirmation** — verify `ddqn_dda-499948.pt` is the checkpoint deployed during the DataPost beta run (self-check §9.7 match rate). If not, locate the correct deployed checkpoint before claiming validity.
+- Exact ONNX initializer names for norm running mean/var, encoder Gemm/MatMul weights, value-head weights (inspect via `onnx` package: `model.graph.initializer` + node names). Map to `ShapQNet`.
+- `eps` value used by ML-Agents `VectorInput` normalization (read from onnx constant node; default 1e-5).
 - **`dda_event` ↔ battle alignment** — confirm the in-session ordering rule that maps each `dda_event` (decision for upcoming battle) to that battle's `battle_start`/`battle_end` hp pair. Inspect one `DataPost` session end-to-end to validate the alignment before computing `survival_ratio`.
-- **`dda_obs_snapshot` index order** — confirm the 6 indices match `DDAAgent.CollectObservations` order (HP Ratio, Turn/15, Level/5, DmgDealtRatio, QTE Acc, Resource Depl) by cross-checking `player_hp_ratio` (logged separately) against `snapshot[0]`.
+- `dda_obs_snapshot` index order **CONFIRMED** — `snapshot[0] == player_hp_ratio` (cross-checked on 3 samples: 0.96, 0.75, 0.391 match exactly). Order = [HP Ratio, Turn/15, Level/5, DmgDealtRatio, QTE Acc, Resource Depl].
 - Representative decision indices for local waterfalls (pick programmatically: cluster by HP ratio buckets, early vs late run).
