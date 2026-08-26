@@ -3,10 +3,6 @@ using UnityEngine;
 
 namespace DDA
 {
-    /// <summary>
-    /// Applies difficulty multipliers to enemy stats.
-    /// Called during battle initialization before enemies spawn.
-    /// </summary>
     public class DifficultyApplier : MonoBehaviour
     {
         [Header("References")]
@@ -29,7 +25,6 @@ namespace DDA
 
         private void Start()
         {
-            // Fallback: load default settings if not assigned via inspector
             if (_difficultySettings == null)
             {
                 _difficultySettings = Resources.Load<DifficultySettings>("DDA/DefaultDifficultySettings");
@@ -38,11 +33,6 @@ namespace DDA
             }
         }
 
-        /// <summary>
-        /// Applies difficulty multipliers to enemy stats.
-        /// Call this after enemy is spawned, before battle starts.
-        /// </summary>
-        /// <param name="enemyStats">The enemy stats to modify.</param>
         public void ApplyDifficulty(EnemyStats enemyStats)
         {
             if (enemyStats == null)
@@ -68,17 +58,11 @@ namespace DDA
                       $"(HP x{hpMult:F2}, DMG x{dmgMult:F2}) to {enemyStats.EnemyName}");
         }
 
-        /// <summary>
-        /// Gets current difficulty settings for read-only access.
-        /// </summary>
         public DifficultySettings GetDifficultySettings()
         {
             return _difficultySettings;
         }
 
-        /// <summary>
-        /// Sets difficulty settings reference (useful for runtime injection).
-        /// </summary>
         public void SetDifficultySettings(DifficultySettings settings)
         {
             _difficultySettings = settings;

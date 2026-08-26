@@ -8,11 +8,6 @@ using DDA;
 
 namespace DDA
 {
-    /// <summary>
-    /// Simulates battles automatically for ML-Agents training.
-    /// Game-accurate mechanics: actions, damage roulette, area progression.
-    /// Shows learning progress in real-time.
-    /// </summary>
     public class TrainingBattleSimulator : MonoBehaviour
     {
         [Header("References")]
@@ -48,15 +43,15 @@ namespace DDA
         private List<SimArea> _areas;
         private SimEnemy _currentEnemy;
         private int _currentAreaIndex;
-        private int _enemyIndex; // Current enemy in area
+        private int _enemyIndex;
         private int _turnCount;
         private bool _battleInProgress;
         private bool _runInProgress;
 
         // Training stats
-        private int _battleCount;     // Counts individual battles
-        private int _runCount;        // Counts full runs (episodes)
-        private int _episodeCount;    // Counts episodes (1 episode = 1 area)
+        private int _battleCount;    
+        private int _runCount;       
+        private int _episodeCount;   
         private int _winCount;
         private int _lossCount;
         private int _totalTurns;
@@ -72,13 +67,13 @@ namespace DDA
         private int _battleStartHP;
 
         // Events for UI
-        public event Action<int, int, int> OnBattleStateChanged; // (playerHP, enemyHP, turn)
-        public event Action<bool, float, int> OnBattleEnded; // (won, reward, episode)
-        public event Action<int> OnDifficultyChanged; // (level)
-        public event Action<int, int> OnAreaChanged; // (areaIndex, totalAreas)
+        public event Action<int, int, int> OnBattleStateChanged;
+        public event Action<bool, float, int> OnBattleEnded; 
+        public event Action<int> OnDifficultyChanged; 
+        public event Action<int, int> OnAreaChanged;
         public event Action<TrainingStats> OnStatsUpdated;
         public event Action<RunResult> OnRunComplete;
-        public event Action<bool> OnTurnChanged; // (isPlayerTurn) - true = player turn, false = enemy turn
+        public event Action<bool> OnTurnChanged; 
 
         // Turn state for UI
         private bool _isPlayerTurn = true;
@@ -90,8 +85,8 @@ namespace DDA
         public static TrainingBattleSimulator Instance { get; private set; }
 
         // Public properties
-        public int BattleCount => _battleCount;        // Total battles fought
-        public int EpisodeCount => _episodeCount;      // Episodes = runs (1 episode = 1 full run)
+        public int BattleCount => _battleCount;      
+        public int EpisodeCount => _episodeCount;      
         public int WinCount => _winCount;
         public float WinRate => _battleCount > 0 ? (float)_winCount / _battleCount : 0f;
         public float AvgReward => _battleCount > 0 ? _totalReward / _battleCount : 0f;
@@ -158,7 +153,6 @@ namespace DDA
         private void Start()
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD || UNITY_STANDALONE
-            // Optimize engine speed for ML-Agents training
             Application.targetFrameRate = 9999;
             QualitySettings.vSyncCount = 0;
             Application.runInBackground = true;
@@ -170,19 +164,10 @@ namespace DDA
                 _difficultySettings = Resources.Load<DifficultySettings>("DDA/DefaultDifficultySettings");
             }
 
-            // CRITICAL for multi-env: Create a runtime copy of DifficultySettings
-            // so each environment has independent difficulty state.
-            // Without this, all envs share the same difficulty level.
-            // The widened 0.6x-1.4x range is authored on the DefaultDifficultySettings SO asset
-            // (single source of truth) and cloned here per environment.
             if (_difficultySettings != null)
             {
                 _difficultySettings = _difficultySettings.CreateRuntimeCopy();
             }
-
-            // Find DDAAgent in same scene/area (for multi-env, each env has its own agent)
-            // Prefer serialized reference, fallback to GetComponentInChildren (finds in own hierarchy)
-            // NEVER use FindObjectOfType as it returns ANY agent in the scene (wrong for multi-env)
             if (_ddaAgent == null)
             {
                 // Try to find in own hierarchy first (correct for multi-env)
@@ -202,16 +187,9 @@ namespace DDA
                 }
             }
 
-            // Pass envId to agent for logging
             if (_ddaAgent != null)
             {
                 _ddaAgent.SetEnvId(_envId);
-
-                // CRITICAL for convergence: share the runtime difficulty instance with the agent.
-                // Without this the agent mutates a separate DifficultySettings instance and its
-                // difficulty-level actions never reach the battles this simulator runs
-                // (root cause of non-convergence: Q-values collapsed to ~0 because no action
-                // affected reward). Done after the runtime copy is created above.
                 _ddaAgent.SetDifficultySettings(_difficultySettings);
             }
 
@@ -220,16 +198,11 @@ namespace DDA
                 _playerData = Resources.Load<PlayerSO>("Player/CurrentPlayerData");
             }
 
-            // Initialize areas
             InitializeAreas();
 
             // Initialize player
             _player = new SimPlayer();
 
-            // Enforce survivable skill for training. The serialized _playerSkill value bakes
-            // into the build and may still hold the old 0.5; force a minimum of 0.7 so Normal
-            // difficulty is survivable and the full widened range spans win (Very Easy) to loss
-            // (Very Hard). Inspector values above 0.7 are preserved.
             _playerSkill = Mathf.Max(_playerSkill, 0.7f);
 
             // Initialize training logger (thread-safe, only first env creates file)
@@ -265,11 +238,6 @@ namespace DDA
             }
         }
 
-        /// <summary>
-        /// Build a random path through the branching map graph.
-        /// At each branch point, randomly pick one connection.
-        /// Returns a linear list of areas (start to finish).
-        /// </summary>
         private List<SimArea> BuildRandomPath()
         {
             var path = new List<SimArea>();
@@ -428,6 +396,10 @@ namespace DDA
             _currentAreaIndex = 0;
             _runCount++;
 
+            // Randomize player skill each run for training diversity
+            // Range [0.3, 0.9] exposes agent to weak and strong players
+            _playerSkill = UnityEngine.Random.Range(0.3f, 0.9f);
+
             // Reset player for new run
             _player.Reset();
 
@@ -441,8 +413,6 @@ namespace DDA
             // Notify agent that run is starting
             _ddaAgent?.OnRunStart();
 
-            // Difficulty is reset to baseline inside DDAAgent.OnRunStart
-
             TrainingLogger.LogRunStart(_runCount, _areas.Count, _difficultySettings?.GetLevelName() ?? "Normal", _envId);
             Debug.Log($"[TrainingSim] Starting run {_runCount} with {_areas.Count} areas");
 
@@ -454,16 +424,11 @@ namespace DDA
 
                 if (isBattleArea)
                 {
-                    // Yield 1 frame so Academy can process the previous RequestDecision
-                    // before we read _difficultySettings for this area.
-                    // First battle has no prior RequestDecision, so skip the yield.
                     if (_currentAreaIndex > 0)
                     {
                         yield return null;
                     }
 
-                    // Apply difficulty that was set at end of PREVIOUS enemy area
-                    // (or default difficulty for first enemy area)
                     float hpMult = _difficultySettings?.HPMultiplier ?? 1.0f;
                     float dmgMult = _difficultySettings?.DamageMultiplier ?? 1.0f;
                     _areas[_currentAreaIndex].ApplyDifficulty(hpMult, dmgMult);
@@ -504,30 +469,20 @@ namespace DDA
 
                     _ddaAgent?.OnAreaComplete(areaWon);
 
-                    // OnAreaComplete calls RequestDecision() internally.
-                    // The next battle area will yield 1 frame for Academy to process it.
-                    // No yield needed here — the yield at the top of the next battle area
-                    // ensures Academy processes the decision before we read difficulty settings.
-
                     // Calculate area-level reward for UI stats
                     _lastReward = DDAAgent.CalculateReward(areaWon, _player.CurrentHP, _areaStartHP);
                     _totalReward += _lastReward;
 
-                    // Calculate progress weight for logging (matches DDAAgent)
-                    float progressWeight = 0.5f + 0.5f * ((float)(_currentAreaIndex + 1) / _areasPerRun);
-
                     TrainingLogger.LogAreaComplete(_currentAreaIndex, areaWon,
                         _player.CurrentHP, _areaStartHP, _lastReward,
                         _ddaAgent != null ? _ddaAgent.GetCumulativeRewardValue : 0f,
-                        progressWeight, _envId);
+                        _envId);
                     TrainingLogger.LogPlayerState(_player.CurrentHP, _player.MaxHP,
                         _player.Level, _player.Coin,
                         _player.SwordUses, _player.GunUses, _player.DefendUses, _envId);
                 }
                 else
                 {
-                    // Rest/Shop areas: no reward, no decision
-                    // State changes (healing, items) already updated above
                     _lastReward = 0f;
                     TrainingLogger.LogMessage($"Area {_currentAreaIndex} ({areaType}) - No reward, no decision", _envId);
                 }
@@ -546,10 +501,6 @@ namespace DDA
 
                 _currentAreaIndex++;
                 OnAreaChanged?.Invoke(_currentAreaIndex, _areas.Count);
-
-                // No yield here in instant mode — the yield before the next battle area
-                // is the only frame needed for Academy to process RequestDecision.
-                // Non-instant mode yields for visual pacing.
                 if (!_instantMode)
                 {
                     yield return null;
@@ -560,8 +511,7 @@ namespace DDA
             bool runWon = _player.IsAlive() && _currentAreaIndex >= _areas.Count;
 
             TrainingLogger.LogRunEnd(_runCount, runWon, _currentAreaIndex, _areas.Count,
-                _ddaAgent != null ? _ddaAgent.GetCumulativeRewardValue : 0f,
-                runWon ? 0.5f : -0.1f, _envId);
+                _ddaAgent != null ? _ddaAgent.GetCumulativeRewardValue : 0f, _envId);
 
             var runResult = new RunResult
             {
@@ -594,10 +544,6 @@ namespace DDA
             _runInProgress = false;
         }
 
-        /// <summary>
-        /// Instant area processing — no yields, runs synchronously.
-        /// Battles use RunBattleInstantWithMultipleEnemies, rest/shop run inline.
-        /// </summary>
         private void ProcessAreaInstant(SimArea area)
         {
             switch (area.AreaType)
@@ -644,14 +590,7 @@ namespace DDA
 
         private IEnumerator ProcessBattleArea(SimArea area)
         {
-            // Reset turn count for entire area (not per enemy)
             _turnCount = 0;
-
-            // Note: _areaStartHP is set in RunTrainingRun before this method is called
-
-            // Set all enemies in area as active (like actual game)
-            // In actual game, player fights ALL enemies in ONE battle
-            // Each turn: player attacks ONE enemy, ONE random enemy attacks back
 
             if (_instantMode)
             {
@@ -872,11 +811,6 @@ namespace DDA
             _ddaAgent?.OnTurnEnd(0, enemyDamage);
         }
 
-        /// <summary>
-        /// Instant battle with multiple enemies - matches actual game flow.
-        /// Player fights all enemies in ONE battle, one enemy at a time.
-        /// Each turn: player attacks ONE enemy, ONE random enemy attacks back.
-        /// </summary>
         private void RunBattleInstantWithMultipleEnemies(List<SimEnemy> enemies)
         {
             // Reset turn count for this battle
@@ -1235,11 +1169,8 @@ namespace DDA
                 case SimAction.Defend:
                     if (_player.DefendUses > 0)
                     {
-                        // Set Defend absorb value and consume a shield charge
-                        // Matches real game: UseShield() decrements charge, SetPlayerDefend() sets absorb
                         _player.Defend = _player.BaseDefend;
                         _player.DefendUses--;
-                        // Defend has no QTE (TapZone) — matches real game
                     }
                     break;
             }
@@ -1292,8 +1223,6 @@ namespace DDA
 
         private int ExecuteEnemyTurn()
         {
-            // No accuracy check - matches actual game (100% hit rate)
-            // Calculate damage with variance
             int damage = _currentEnemy.CalculateDamage();
             return Mathf.Max(1, damage);
         }
@@ -1412,14 +1341,12 @@ namespace DDA
         }
     }
 
-    /// <summary>
-    /// Training statistics data structure for UI display.
-    /// </summary>
+
     [Serializable]
     public struct TrainingStats
     {
-        public int BattleCount;          // Individual battles fought
-        public int EpisodeCount;         // Areas completed (1 episode = 1 area)
+        public int BattleCount;         
+        public int EpisodeCount;         
         public int WinCount;
         public float WinRate;
         public float AvgReward;
@@ -1432,9 +1359,7 @@ namespace DDA
         public float AvgTurnsPerBattle;
     }
 
-    /// <summary>
-    /// Result of a training run (12 areas).
-    /// </summary>
+
     [Serializable]
     public struct RunResult
     {

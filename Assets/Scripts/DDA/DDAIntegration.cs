@@ -30,21 +30,14 @@ namespace DDA
         private DDADebugPanel _debugPanel;
         private int _playerStartHP;
 
-        // Cached PlayerStats singleton for player-level tracking (null-checked each use; scene-level
-        // singleton may briefly be unavailable after scene transitions but persistent across battle scenes).
         private PlayerStats _playerStats;
 
-        // Cached player action SOs (loaded once from Resources). Used by ComputeResourceDepletion to
-        // mirror training-sim's (swordDepletion + gunDepletion + defendDepletion) / 3 observation.
         private BaseAction[] _playerActions;
         private bool _actionsLoaded;
 
         public static DDAIntegration Instance { get; private set; }
 
-        /// <summary>Is DDA currently enabled?</summary>
         public bool IsEnabled => _enableDDA;
-
-        /// <summary>Is training mode active?</summary>
         public bool IsTrainingMode => _isTrainingMode;
 
         private void Awake()
@@ -52,7 +45,7 @@ namespace DDA
             if (Instance == null)
             {
                 Instance = this;
-                DontDestroyOnLoad(gameObject); // keep agent + difficulty state alive across battle scenes
+                DontDestroyOnLoad(gameObject); 
             }
             else
             {
@@ -63,13 +56,8 @@ namespace DDA
 
         private bool _runStarted = false;
 
-        /// <summary>
-        /// Lazily resolves DDAAgent and DifficultySettings if references are stale/null
-        /// (e.g. after scene reload where scene-level agents are destroyed/recreated).
-        /// </summary>
         private void ResolveReferences()
         {
-            // BattleSystem is scene-level (recreated per battle scene) — must re-resolve each call
             if (_battleSystem == null)
                 _battleSystem = BattleSystem.Instance;
 
@@ -85,16 +73,12 @@ namespace DDA
             if (_difficultyApplier == null)
                 _difficultyApplier = DifficultyApplier.Instance;
 
-            // Keep applier in sync with the shared settings instance
             if (_difficultyApplier != null && _difficultySettings != null)
                 _difficultyApplier.SetDifficultySettings(_difficultySettings);
 
-            // Debug overlay / logger (created by DDABootstrap, optional)
             if (_debugPanel == null)
                 _debugPanel = FindObjectOfType<DDADebugPanel>();
 
-            // Subscribe to player level-up event once. PlayerStats is a PersistentSingleton,
-            // so it survives battle scene reloads — no need to re-subscribe per scene.
             if (_playerStats == null)
             {
                 _playerStats = PlayerStats.Instance;
@@ -282,15 +266,10 @@ namespace DDA
 
             _ddaAgent.OnBattleEnd(playerWon, playerEndHP);
 
-            // Refresh real-time observations (hpRatio + resourceDepletion) right after the battle ends,
-            // mirroring training-sim's UpdateBattlePhase(hpRatio, resourceDepletion) call between the
-            // last OnBattleEnd and the upcoming OnAreaComplete → RequestDecision(). Both observations
-            // are now live in the real game instead of stuck at the initial value.
             float hpRatio = _ddaAgent.GetHpRatio();
             float resourceDepletion = ComputeResourceDepletion();
             _ddaAgent.UpdateBattlePhase(hpRatio, resourceDepletion);
 
-            // Log DDA event to BattleLogger (JSONL + PlayFab)
             if (_battleLogger != null)
             {
                 var payload = new DDALogPayload
@@ -315,7 +294,6 @@ namespace DDA
                 _battleLogger.LogDDAEvent(payload);
             }
 
-            // Notify debug panel / logger
             _debugPanel?.OnBattleEnd(playerWon, playerEndHP, _playerStartHP);
 
             Debug.Log($"[DDAIntegration] Battle end. Won: {playerWon}, " +
@@ -450,8 +428,6 @@ namespace DDA
 
             _ddaAgent.OnAreaComplete(areaWon);
 
-            // Log the decision (difficulty may change next frame after RequestDecision)
-            // Use a delayed check to capture the new difficulty
             StartCoroutine(LogDecisionAfterFrame(areaIdx, areaType, diffBefore, hpMultBefore, dmgMultBefore));
 
             Debug.Log($"[DDAIntegration] Area complete. Won={areaWon}, Difficulty was {diffBefore} (agent decision pending).");

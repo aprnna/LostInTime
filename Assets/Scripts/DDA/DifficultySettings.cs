@@ -7,7 +7,7 @@ namespace DDA
     {
         [Header("Difficulty Levels")]
         [Tooltip("Multiplier values for each difficulty level")]
-        [SerializeField] private float[] _difficultyLevels = { 0.6f, 0.8f, 1.0f, 1.2f, 1.4f };
+        [SerializeField] private float[] _difficultyLevels = { 0.8f, 0.9f, 1.0f, 1.1f, 1.2f };
 
         [Header("Current State (Per-Instance)")]
         [Tooltip("Current difficulty level index (0-4). NOTE: For multi-env training, ensure each env has its own instance.")]

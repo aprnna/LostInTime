@@ -3,20 +3,14 @@ using UnityEngine;
 
 namespace DDA
 {
-    /// <summary>
-    /// Action types for battle simulation.
-    /// </summary>
     public enum SimAction
     {
-        Punch,    // 30% base damage, unlimited
-        Sword,    // 80% base damage, 15 uses
-        Gun,      // 120% base damage, 10 uses
-        Defend    // Gain shield HP, 3 uses
+        Punch,    
+        Sword,    
+        Gun,      
+        Defend    
     }
 
-    /// <summary>
-    /// Battle state snapshot for AI decisions.
-    /// </summary>
     public struct BattleState
     {
         public int PlayerHP;
@@ -30,24 +24,14 @@ namespace DDA
         public int TurnCount;
     }
 
-    /// <summary>
-    /// Result of a simulated player attack, including QTE outcome.
-    /// </summary>
     public struct DamageResult
     {
         public int Damage;
-        public bool QTESuccess; // true if simulated TapZone was successful (critical hit)
+        public bool QTESuccess; 
     }
 
-    /// <summary>
-    /// Smart AI for battle action selection.
-    /// Prioritizes: survival, finishing enemies, resource management.
-    /// </summary>
     public static class SmartBattleAI
     {
-        /// <summary>
-        /// Choose next action based on battle state.
-        /// </summary>
         public static SimAction ChooseAction(BattleState state)
         {
             // Priority 1: Defend if low HP and defend available
@@ -83,7 +67,6 @@ namespace DDA
                 return SimAction.Defend;
             }
 
-            // Priority 5: Weighted random selection
             return WeightedRandomAction(state);
         }
 
@@ -96,13 +79,13 @@ namespace DDA
             switch (action)
             {
                 case SimAction.Gun:
-                    estimatedMaxDamage = 13; // 100% of 12 + 10% crit
+                    estimatedMaxDamage = 13; 
                     break;
                 case SimAction.Sword:
-                    estimatedMaxDamage = 11; // 80% of 12 + 10% crit
+                    estimatedMaxDamage = 11;
                     break;
                 default:
-                    estimatedMaxDamage = 4; // Punch + crit
+                    estimatedMaxDamage = 4; 
                     break;
             }
 
@@ -123,8 +106,8 @@ namespace DDA
         private static SimAction WeightedRandomAction(BattleState state)
         {
             // Weights based on damage and resource conservation
-            float swordWeight = state.SwordUsesRemaining > 0 ? 0.30f : 0f;  // Mid damage, conserve
-            float gunWeight = state.GunUsesRemaining > 0 ? 0.25f : 0f;      // High damage, limited
+            float swordWeight = state.SwordUsesRemaining > 0 ? 0.30f : 0f;  
+            float gunWeight = state.GunUsesRemaining > 0 ? 0.25f : 0f;      
             float defendWeight = (state.DefendUsesRemaining > 0 && state.PlayerHP < state.PlayerMaxHP * 0.7f) ? 0.15f : 0f;
             float punchWeight = 1f - swordWeight - gunWeight - defendWeight;
 
@@ -239,9 +222,9 @@ namespace DDA
         {
             return choice switch
             {
-                SimPlayer.LevelUpChoice.Damage => 10,  // +10 base damage
-                SimPlayer.LevelUpChoice.Health => 20,  // +20 max HP
-                SimPlayer.LevelUpChoice.Shield => 5,   // +5 base defend
+                SimPlayer.LevelUpChoice.Damage => 10,  
+                SimPlayer.LevelUpChoice.Health => 20, 
+                SimPlayer.LevelUpChoice.Shield => 5,   
                 _ => 10
             };
         }

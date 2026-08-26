@@ -5,9 +5,7 @@ using Player;
 
 namespace DDA
 {
-    /// <summary>
-    /// Drop item for simulated rewards.
-    /// </summary>
+
     [Serializable]
     public struct SimDropItem
     {
@@ -42,10 +40,7 @@ namespace DDA
         }
     }
 
-    /// <summary>
-    /// Simulated area from MapNode for training progression.
-    /// 12 areas per run: Enemy, Rest, Shop, Boss.
-    /// </summary>
+
     [Serializable]
     public class SimArea
     {
@@ -53,22 +48,17 @@ namespace DDA
         public List<SimEnemy> Enemies;
         public List<SimDropItem> Drops;
         public bool IsBossArea;
-
-        /// <summary>Default constructor.</summary>
         public SimArea()
         {
             Enemies = new List<SimEnemy>();
             Drops = new List<SimDropItem>();
         }
-
-        /// <summary>Create from MapNode.</summary>
         public SimArea(MapNode node)
         {
             AreaType = node.mapType;
             Enemies = new List<SimEnemy>();
             Drops = new List<SimDropItem>();
             IsBossArea = node.mapType == MapType.Boss;
-
             // Load enemies
             if (node.enemies != null)
             {
@@ -80,7 +70,6 @@ namespace DDA
                     }
                 }
             }
-
             // Load drops
             if (node.DropItems != null)
             {
@@ -126,14 +115,12 @@ namespace DDA
             }
         }
 
-        /// <summary>Rest area: heal player 10-24 HP.</summary>
         public void ApplyRest(SimPlayer player)
         {
             int healAmount = UnityEngine.Random.Range(10, 25);
             player.Heal(healAmount);
         }
 
-        /// <summary>Shop logic: buy items if smart.</summary>
         public void ApplyShop(SimPlayer player, bool smartBuy = true)
         {
             if (!smartBuy) return;

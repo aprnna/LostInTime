@@ -81,10 +81,10 @@ namespace DDA
         /// Log a run end event.
         /// </summary>
         public static void LogRunEnd(int runNumber, bool won, int areasCompleted, int totalAreas,
-            float cumulativeReward, float runBonus, int envId = 0)
+            float cumulativeReward, int envId = 0)
         {
             WriteLog($"[RUN END] Run #{runNumber} | Won: {won} | Areas: {areasCompleted}/{totalAreas} | " +
-                    $"CumulativeReward: {cumulativeReward:F3} | RunBonus: {runBonus:F2}", envId);
+                    $"CumulativeReward: {cumulativeReward:F3}", envId);
         }
 
         /// <summary>
@@ -101,10 +101,10 @@ namespace DDA
         /// Log area complete event with reward.
         /// </summary>
         public static void LogAreaComplete(int areaIndex, bool won, int endHP, int startHP,
-            float areaReward, float cumulativeReward, float progressWeight = 0f, int envId = 0)
+            float areaReward, float cumulativeReward, int envId = 0)
         {
             WriteLog($"[AREA COMPLETE] Area {areaIndex} | Won: {won} | HP: {endHP}/{startHP} | " +
-                    $"AreaReward: {areaReward:F3} | ProgressWeight: {progressWeight:F2} | Cumulative: {cumulativeReward:F3}", envId);
+                    $"AreaReward: {areaReward:F3} | Cumulative: {cumulativeReward:F3}", envId);
         }
 
         /// <summary>

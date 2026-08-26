@@ -4,11 +4,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Runtime debug overlay that displays DDA agent actions in real-time.
-/// Shows current difficulty + decision log (difficulty changes).
-/// Toggle with F9.
-/// </summary>
 public class DDADebugPanel : MonoBehaviour
 {
     [Header("Layout")]
@@ -33,11 +28,9 @@ public class DDADebugPanel : MonoBehaviour
     private readonly List<string> _logEntries = new List<string>();
     private bool _visible = true;
 
-    // Rate-limit for retrying agent/integration resolution so Update() doesn't spam FindObjectOfType.
     private float _lastResolveAttempt = -999f;
     private const float ResolveRetryInterval = 1f;
 
-    // Timestamp of the last received OnAgentDecision event (for staleness display).
     private string _lastDecisionTimestamp = "--";
 
     private void Start()
@@ -63,7 +56,6 @@ public class DDADebugPanel : MonoBehaviour
                 _agent.OnAgentDecision += OnAgentDecision;
                 AddLog("DDA Agent connected.");
             }
-            // If still null, Update() will retry after ResolveRetryInterval.
         }
     }
 
@@ -90,10 +82,6 @@ public class DDADebugPanel : MonoBehaviour
             if (_panelRoot != null) _panelRoot.SetActive(_visible);
         }
 
-        // Retry resolving agent/integration references if not yet connected.
-        // Uses a rate-limited retry (every ResolveRetryInterval seconds) instead of
-        // spamming FindObjectOfType every frame — safe for DontDestroyOnLoad objects
-        // that may not be available in the first few frames after scene load.
         if ((_agent == null || _integration == null) &&
             Time.unscaledTime - _lastResolveAttempt >= ResolveRetryInterval)
         {
@@ -281,11 +269,6 @@ public class DDADebugPanel : MonoBehaviour
         AddLog($"<color={color}><b>→ {diffName}</b></color>");
     }
 
-    /// <summary>
-    /// Fired for EVERY agent decision (kept or changed). Shows the chosen action, the
-    /// prev→new transition, and the observation snapshot at decision time — so the real
-    /// game displays what the agent decided, not just the resulting difficulty change.
-    /// </summary>
     private void OnAgentDecision(AgentDecisionInfo info)
     {
         _lastDecisionTimestamp = System.DateTime.Now.ToString("HH:mm:ss");
@@ -338,10 +321,6 @@ public class DDADebugPanel : MonoBehaviour
         if (_logText != null)
             _logText.text = string.Join("\n", _logEntries);
     }
-
-    // ----------------------------------------------------------------
-    // Helpers
-    // ----------------------------------------------------------------
 
     private static string DifficultyColor(string diffName)
     {

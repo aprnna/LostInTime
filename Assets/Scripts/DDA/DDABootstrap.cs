@@ -6,10 +6,6 @@ using Unity.MLAgents.Actuators; // ActionSpec
 
 namespace DDA
 {
-    /// <summary>
-    /// Auto-creates DDA system GameObjects at runtime for real-game inference.
-    /// Attach this to a persistent GameObject (e.g. GameManager) or let it self-bootstrap.
-    ///
     /// Creates DontDestroyOnLoad GameObjects:
     ///  1. "DDA Agent"       — BehaviorParameters + DDAAgent (no DecisionRequester — explicit decisions only)
     ///  2. "DDA Integration" — DDAIntegration (bridge to BattleSystem)
@@ -32,16 +28,11 @@ namespace DDA
 
         private void Awake()
         {
-            // Skip if DDAIntegration already exists (e.g. duplicate bootstrap)
             if (DDAIntegration.Instance != null)
             {
                 Debug.Log("[DDABootstrap] DDAIntegration already exists — skipping bootstrap.");
                 return;
             }
-
-            // Skip if a DDAAgent is already placed in the scene (e.g. a hand-authored DDA GameObject
-            // with assigned model). Prevents a race where this bootstrap's newly-created
-            // DDAIntegration would win the Instance singleton and destroy the hand-placed DDA system.
             if (FindObjectOfType<DDAAgent>() != null)
             {
                 Debug.Log("[DDABootstrap] DDAAgent already exists in scene — deferring to hand-placed setup.");
@@ -60,8 +51,6 @@ namespace DDA
         private void Bootstrap()
         {
             // 1. Load difficulty settings and create a RUNTIME COPY.
-            //    IMPORTANT: The asset on disk must not be mutated — SetLevel() modifies
-            //    _currentLevelIndex which would persist after PlayMode exits in the editor.
             DifficultySettings settingsAsset = Resources.Load<DifficultySettings>("DDA/DefaultDifficultySettings");
             if (settingsAsset == null)
             {
@@ -79,17 +68,12 @@ namespace DDA
             }
 
             // --- Create DDA Agent ---
-            // CRITICAL: BehaviorParameters MUST be added BEFORE DDAAgent.
-            // AddComponent<DDAAgent>() triggers OnEnable() → Initialize() immediately,
-            // and ML-Agents needs BehaviorParameters to already exist on the GameObject.
             var agentObj = new GameObject("DDA Agent");
             DontDestroyOnLoad(agentObj);
 
             // 1st: BehaviorParameters (needed by agent's Initialize/OnEnable)
             var behaviorParams = agentObj.AddComponent<BehaviorParameters>();
             behaviorParams.BehaviorName = "ddqn_dda";
-            // CRITICAL: VectorObservationSize must match CollectObservations() count (6 sensors)
-            // Otherwise ML-Agents truncates all observations after the first one!
             behaviorParams.BrainParameters.VectorObservationSize = 6;
             behaviorParams.BrainParameters.ActionSpec = ActionSpec.MakeDiscrete(5);
 
@@ -109,11 +93,6 @@ namespace DDA
             var agent = agentObj.AddComponent<DDAAgent>();
             agent.SetTrainingMode(false);
             agent.SetDifficultySettings(runtimeSettings);
-
-            // NOTE: DecisionRequester NOT added.
-            // Decisions are triggered EXPLICITLY by RequestDecision() in OnAreaComplete().
-            // This ensures the agent only acts once per area (after battle ends),
-            // not every N frames. Observations are collected at decision time only.
 
             // --- Create DDA Integration ---
             var integrationObj = new GameObject("DDA Integration");

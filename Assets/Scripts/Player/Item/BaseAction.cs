@@ -40,14 +40,8 @@ namespace Player.Item
         public GameObject VFX => _vfx;
         public int CurrentLimit => _currentLimit;
         public bool IsLimited => _isLimited;
-        // Maximum limit (initial) — used by DDA to compute depletion ratio matching
-        // training-sim's MaxSwordUses/MaxGunUses/MaxDefendUses constants.
         public int Limit => _limit;
 
-        /// <summary>
-        /// DDA depletion ratio for this action: 0 = full uses remaining, 1 = fully depleted.
-        /// Mirrors training-sim's `1f - usesRemaining / maxUses`. Unlimited actions → 0.
-        /// </summary>
         public float GetDepletionRatio()
         {
             if (!IsLimited || _limit <= 0) return 0f;
@@ -90,7 +84,6 @@ namespace Player.Item
 
         public void AddLimit(int value)
         {
-            // Clamp so repair can never exceed the original maximum limit
             _currentLimit = Mathf.Min(_currentLimit + value, _limit);
         }
         public void InitializeDamage(int baseDamagePlayer, int criticalPercentage)

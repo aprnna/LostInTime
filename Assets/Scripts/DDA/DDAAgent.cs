@@ -6,22 +6,16 @@ using Unity.MLAgents.Sensors;
 
 namespace DDA
 {
-    /// <summary>
-    /// Snapshot of a single agent decision, fired from OnActionReceived for EVERY decision
-    /// (including ones that keep the same difficulty). Lets the debug panel / real-game UI
-    /// show what the agent decided and what it observed, instead of only seeing level changes.
-    /// </summary>
     public struct AgentDecisionInfo
     {
-        public int action;            // discrete action chosen (0-4 = absolute difficulty level)
+        public int action;           
         public int prevLevelIndex;
         public int newLevelIndex;
         public string prevLevelName;
         public string newLevelName;
-        public bool changed;          // true if the difficulty level actually changed
-        public int areaIndex;         // area the decision applies to (areasCompleted after OnAreaComplete)
-
-        // Observation snapshot at decision time (all normalized 0-1, matches CollectObservations)
+        public bool changed;          
+        public int areaIndex;        
+        
         public float hpRatio;
         public float turnCountNorm;
         public float playerLevelNorm;
@@ -42,7 +36,7 @@ namespace DDA
 
         // --- Battle state (per-battle) ---
         private int _battleStartHP;
-        private int _totalEnemyHP; // Total max HP of all enemies in battle
+        private int _totalEnemyHP; 
         private int _turnCount;
         private int _damageDealt;
         private int _damageTaken;
@@ -53,9 +47,8 @@ namespace DDA
         private int _totalQTEOpportunities;
 
         // --- Observations ---
-        private float _hpRatio = 1f;          // HP ratio after last battle
-        private float _resourceDepletion = 0f; // Resource depletion ratio
-
+        private float _hpRatio = 1f;          
+        private float _resourceDepletion = 0f; 
 
         // --- Area / Run state ---
         private int _playerLevel = 1;
@@ -80,17 +73,8 @@ namespace DDA
         private int _envId = 0;
 
         public event Action<int> OnDifficultyChanged;
-
-        /// <summary>
-        /// Fires for EVERY agent decision (including no-op "stays" decisions), carrying the
-        /// chosen action, the prev→new difficulty transition, and the observation snapshot.
-        /// Use this for real-game UI; OnDifficultyChanged only fires on actual level changes.
-        /// </summary>
         public event Action<AgentDecisionInfo> OnAgentDecision;
 
-        // ----------------------------------------------------------------
-        // ML-Agents overrides
-        // ----------------------------------------------------------------
 
         public override void Initialize()
         {
@@ -142,14 +126,14 @@ namespace DDA
         ///  1. HP Ratio
         ///  2. Turn Count (cap 15)
         ///  3. Player Level (cap 5)
-        ///  4. Damage Dealt Ratio (dealt / totalEnemyHP in area)
+        ///  4. Damage Dealt Ratio (totalEnemyHP / dealt in area)
         ///  5. QTE Accuracy (successful QTE / total QTE opportunities)
         ///  6. Resource Depletion
         /// </summary>
         public override void CollectObservations(VectorSensor sensor)
         {
             sensor.AddObservation(_hpRatio);
-            sensor.AddObservation(Mathf.Clamp01(_turnCount / 30f));
+            sensor.AddObservation(Mathf.Clamp01(_turnCount / 15f));
             sensor.AddObservation(Mathf.Clamp01(_playerLevel / 5f));
             float dmgDealtRatio = _damageDealt > 0
                 ? Mathf.Clamp01((float)_areaTotalEnemyHP / _damageDealt)
@@ -243,8 +227,6 @@ namespace DDA
         {
             if (_isTrainingMode)
             {
-                // Run completion bonus/penalty
-                // +0.5 jika selesai run, -0.3 jika kalah (lebih proporsional dengan death penalty)
                 float runBonus = runWon ? 0.5f : -0.3f;
                 AddReward(runBonus);
 
@@ -259,17 +241,11 @@ namespace DDA
             EndEpisode();
         }
 
-        /// <summary>
-        /// Called when player dies mid-run (HP = 0).
-        /// This is a terminal step — episode ends immediately.
-        /// </summary>
         public void OnPlayerDeath(int areasCompleted, int totalAreas)
         {
             if (_isTrainingMode)
             {
-                // Death penalty (in addition to area loss reward)
-                // Dikurangi dari -0.5 ke -0.3 agar tidak terlalu mendominasi cumulative reward
-                float deathPenalty = -0.3f;
+                float deathPenalty = -0.5f;
                 AddReward(deathPenalty);
 
                 TrainingLogger.LogMessage($"DDAAgent: Player died! Areas={areasCompleted}/{totalAreas}, " +
@@ -287,21 +263,14 @@ namespace DDA
         // Area lifecycle hooks (1 episode spans all 12 areas)
         // ----------------------------------------------------------------
 
-        /// <summary>
-        /// Called when entering a new area.
-        /// No EndEpisode — episode spans the entire run.
-        /// </summary>
         public void OnAreaEnter(int areaIndex, MapType areaType, int totalAreas)
         {
-            // Reset ALL per-area tracking here (not in OnBattleStart) so accumulators
-            // are populated by the time OnAreaComplete → RequestDecision fires.
-            // (1 area = 1 battle in the real game, so this is the correct reset point.)
+            
             _areaStartHP = 0;
             _areaEndHP = 0;
             _areaWon = false;
             _areaTotalEnemyHP = 0;
 
-            // Per-battle accumulators reset here (area = battle in real game)
             _damageDealt = 0;
             _damageTaken = 0;
             _successfulQTE = 0;
@@ -317,10 +286,7 @@ namespace DDA
 
             _battleStartHP = playerStartHP;
             _totalEnemyHP = totalEnemyHP;
-            _areaTotalEnemyHP += totalEnemyHP; // Accumulate total enemy HP for area
-            // NOTE: Per-area accumulators (_damageDealt, _turnCount, QTE) are reset in
-            // OnAreaEnter(), NOT here — so observations remain valid from battle-end
-            // all the way through OnAreaComplete() → RequestDecision().
+            _areaTotalEnemyHP += totalEnemyHP; 
             _battleInProgress = true;
             Debug.Log($"[DDAAgent] OnBattleStart: playerHP={playerStartHP}, enemyHP={totalEnemyHP}, " +
                       $"areaTotalEnemyHP={_areaTotalEnemyHP}");
@@ -328,29 +294,18 @@ namespace DDA
 
         public void OnTurnEnd(int damageDealtThisTurn, int damageTakenThisTurn = 0)
         {
-            // NOTE: _damageDealt is tracked in real-time via OnPlayerAttack() — do NOT
-            // add damageDealtThisTurn here again or it will be double-counted.
-            // Only track enemy damage and increment turn count here.
             _damageTaken += damageTakenThisTurn;
             _turnCount++;
             Debug.Log($"[DDAAgent] OnTurnEnd: dmgTaken={damageTakenThisTurn}, " +
                       $"totalDealt={_damageDealt}, totalTaken={_damageTaken}, turns={_turnCount}");
         }
 
-        /// <summary>
-        /// Called immediately when player deals damage (before enemy turn).
-        /// Updates damage observation in real-time for debug panel display.
-        /// </summary>
         public void OnPlayerAttack(int damage)
         {
             _damageDealt += damage;
             Debug.Log($"[DDAAgent] OnPlayerAttack: +{damage} damage, totalDealt={_damageDealt}");
         }
 
-        /// <summary>
-        /// Called when a QTE (TapZone) minigame completes.
-        /// </summary>
-        /// <param name="success">True if player hit the success zone (critical hit).</param>
         public void OnQTECompleted(bool success)
         {
             _totalQTEOpportunities++;
@@ -362,20 +317,13 @@ namespace DDA
             _battleInProgress = false;
             _battlesTotal++;
 
-            // Update HP ratio observation
             _hpRatio = _battleStartHP > 0
                 ? Mathf.Clamp01((float)playerEndHP / _battleStartHP)
                 : 1.0f;
 
-            // Track area-level state (last battle in area)
             _areaEndHP = playerEndHP;
             if (playerWon) _battlesWon++;
 
-            // No reward here — reward is given at OnAreaComplete
-
-            // Note: _areasCompleted is NOT yet incremented here (that happens in OnAreaComplete)
-            // But we still want to log for debugging. The caller (TrainingBattleSimulator) knows
-            // the actual area index and logs it separately.
             // Debug.Log($"[DDAAgent] Battle end. Won={playerWon}, HP={playerEndHP}/{_battleStartHP}, " +
             //           $"HPRatio={_hpRatio:F2}, Difficulty={_difficultySettings?.GetLevelName()}, " +
             //           $"BattlesWon={_battlesWon}/{_battlesTotal}");
@@ -400,22 +348,16 @@ namespace DDA
                       $"hpRatio={_hpRatio:F2}, areaTotalEnemyHP={_areaTotalEnemyHP}, " +
                       $"damageDealtRatio={GetDamageDealtRatio():F2}");
 
-            // Calculate progressive weight with base 0.5 (ensures early areas still matter)
-            // Range: 0.5 (area 1) to 1.0 (area 12)
             float progressWeight = 0.5f + 0.5f * ((float)_areasCompleted / _totalAreas);
 
             if (_isTrainingMode)
             {
-                // Calculate area-level reward based on overall area outcome
-                // Reward is attributed to the action that set difficulty for this area
                 float baseReward = CalculateReward(areaWon, _areaEndHP, _areaStartHP);
 
-                // Apply progressive weighting to both wins and losses
                 float weightedReward = baseReward * progressWeight;
                 AddReward(weightedReward);
             }
 
-            // Request decision — agent observes current state and decides difficulty for next area
             _decisionPending = true;
             RequestDecision();
         }
@@ -429,11 +371,10 @@ namespace DDA
         public int GetTurnCount() => _turnCount;
         public int GetDamageDealt() => _damageDealt;
         public int GetDamageTaken() => _damageTaken;
-        public float GetTurnCountNormalized() => Mathf.Clamp01(_turnCount / 30f);
+        public float GetTurnCountNormalized() => Mathf.Clamp01(_turnCount / 15f);
         public float GetPlayerLevelNormalized() => Mathf.Clamp01(_playerLevel / 5f);
         public float GetDamageDealtRatio()
         {
-            // New formula: totalEnemyHP / damageDealt (efficiency: 1.0 = exact kill, < 1.0 = overkill)
             return _damageDealt > 0 ? Mathf.Clamp01((float)_areaTotalEnemyHP / _damageDealt) : 0f;
         }
         public int GetDamageDealtRaw() => _damageDealt;
@@ -447,14 +388,6 @@ namespace DDA
         public int GetSuccessfulQTE() => _successfulQTE;
         public int GetTotalQTEOpportunities() => _totalQTEOpportunities;
         public float GetResourceDepletion() => _resourceDepletion;
-
-        /// <summary>
-        /// Sets the shared DifficultySettings instance (called by the training simulator).
-        /// CRITICAL for convergence: the agent and the TrainingBattleSimulator MUST share one
-        /// DifficultySettings instance, otherwise the agent mutates a separate object and its
-        /// absolute-difficulty-level actions never reach the battles the simulator runs. That disconnect
-        /// was the root cause of Q-values collapsing to ~0 (no action had any effect on reward).
-        /// </summary>
         public void SetDifficultySettings(DifficultySettings settings)
         {
             _difficultySettings = settings;
@@ -462,10 +395,6 @@ namespace DDA
 
         public float GetCumulativeRewardValue => GetCumulativeReward();
 
-        /// <summary>
-        /// Encode MapType enum to float [0,1]:
-        /// Enemy=0, Boss=0.33, Rest=0.67, Shop=1.0
-        /// </summary>
         public static float EncodeMapType(MapType type)
         {
             return type switch
@@ -478,41 +407,19 @@ namespace DDA
             };
         }
 
-        /// <summary>
-        /// Update battle phase observations from simulator.
-        /// Call each turn to provide real-time battle state.
-        /// </summary>
         public void UpdateBattlePhase(float hpRatio, float resourceDepletion)
         {
             _hpRatio = hpRatio;
             _resourceDepletion = resourceDepletion;
         }
 
-        // ----------------------------------------------------------------
-        // Reward — based on battleSurvivalRatio (player_hp_end / player_hp_start)
-        // Gaussian curve centered at 0.5 (50% HP remaining = ideal challenge).
-        //
-        // Formula: exp(-8 * (r - 0.5)^2)
-        //   r = 0.5  → reward = 1.00  (perfect challenge)
-        //   r = 0.3  → reward = 0.45  (cukup sulit, masih bermakna)
-        //   r = 0.7  → reward = 0.45  (terlalu mudah, tapi tetap positif)
-        //   r = 0.0  → reward = 0.14  (hampir mati tapi menang)
-        //   r = 1.0  → reward = 0.14  (tidak ada damage sama sekali)
-        //
-        // Kelebihan vs parabolic lama:
-        //   - Selalu positif jika menang (tidak ada zona reward ~0)
-        //   - Smooth decay → sinyal gradient lebih baik untuk DDQN
-        //   - Loss (-0.5) masih dominan tapi tidak sepuluh kali lipat lebih besar
-        // ----------------------------------------------------------------
+      
         public static float CalculateReward(bool won, int endHP, int startHP)
         {
             if (!won) return -0.5f;
 
-            // battleSurvivalRatio = player_hp_end / player_hp_start
             float r = startHP > 0 ? Mathf.Clamp01((float)endHP / startHP) : 0f;
 
-            // Gaussian sweet spot di r=0.5: reward selalu positif, peak 1.0
-            // Range output: [~0.135, 1.0]
             return Mathf.Exp(-8f * (r - 0.5f) * (r - 0.5f));
         }
 

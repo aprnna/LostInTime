@@ -4,11 +4,6 @@ using Player;
 
 namespace DDA
 {
-    /// <summary>
-    /// Simulated player state for training.
-    /// Loads from PlayerSO ScriptableObject and mirrors PlayerStats.
-    /// Persists across areas during a training run.
-    /// </summary>
     [Serializable]
     public class SimPlayer
     {
@@ -17,9 +12,9 @@ namespace DDA
         public int CurrentHP;
         public int BaseDamage;
         public int BaseDefend;
-        public int Defend;          // Damage-absorbing buffer per defend action (resets after absorbing)
-        public int CriticalHitChance; // Percentage
-        public int CriticalHitBonus;   // Percentage extra damage
+        public int Defend;          
+        public int CriticalHitChance; 
+        public int CriticalHitBonus;  
 
         // Resources
         public int Coin;
@@ -28,28 +23,26 @@ namespace DDA
         public int Level;
 
         // Action limits (reset per area) - loaded from BaseAction assets
-        public int PunchUses;       // Unlimited
-        public int SwordUses;       // Limited: 15
-        public int GunUses;         // Limited: 10
-        public int DefendUses;      // Limited: 3
+        public int PunchUses;      
+        public int SwordUses;       
+        public int GunUses;        
+        public int DefendUses;      
 
         public int MaxPunchUses = int.MaxValue;
         public int MaxSwordUses = 15;
         public int MaxGunUses = 10;
-        public int MaxDefendUses = 2; // Matches playerStats.Shield (2)
+        public int MaxDefendUses = 2; 
 
         // Actions config (loaded from BaseAction assets)
-        public int PunchPercentage = 30;   // 30% of base damage
-        public int SwordPercentage = 75;   // 75% of base damage (matches Sword.asset)
-        public int GunPercentage = 100;    // 100% of base damage (matches Gun.asset)
+        public int PunchPercentage = 30;   
+        public int SwordPercentage = 75;   
+        public int GunPercentage = 100;    
 
-        /// <summary>Default constructor - uses default values.</summary>
         public SimPlayer()
         {
             LoadFromDefaults();
         }
 
-        /// <summary>Load from PlayerSO ScriptableObject.</summary>
         public SimPlayer(PlayerSO playerSO)
         {
             LoadFromPlayerSO(playerSO);
