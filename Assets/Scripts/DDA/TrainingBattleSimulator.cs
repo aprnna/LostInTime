@@ -28,7 +28,7 @@ namespace DDA
         [SerializeField] private bool _autoTrain = true;
         [SerializeField] private float _battleDelay = 0.1f;
         [SerializeField] private float _turnDelay = 0.05f;
-        [SerializeField] private int _maxTurnsPerBattle = 40;
+        [SerializeField] private int _maxTurnsPerBattle = 30;
         [SerializeField] private bool _useSmartAI = true;
         [SerializeField] [Range(0f, 1f)] private float _playerSkill = 0.7f;
         [SerializeField] private bool _resetOnRunComplete = true;
@@ -65,6 +65,13 @@ namespace DDA
 
         // Track HP at battle start for battle-level logging
         private int _battleStartHP;
+
+        // ponytail: snapshot resource depletion at battle end (before ResetActionUses)
+        // so the observation reflects per-battle usage, not the post-reset zero.
+        private float _areaEndResourceDepletion;
+        private int _areaEndSwordUses;
+        private int _areaEndGunUses;
+        private int _areaEndDefendUses;
 
         // Events for UI
         public event Action<int, int, int> OnBattleStateChanged;
@@ -452,14 +459,12 @@ namespace DDA
                     yield return StartCoroutine(ProcessArea(_areas[_currentAreaIndex]));
                 }
 
-                // Update agent observations after any area (HP changes from rest/shop)
+                // Update agent observations after any area (HP changes from rest/shop).
+                // Resource depletion uses the per-battle snapshot taken before ResetActionUses
+                // (post-reset state would always read 0 and starve the observation).
                 float hpRatio = _player.MaxHP > 0 ? (float)_player.CurrentHP / _player.MaxHP : 1f;
-                float swordDepletion = _player.MaxSwordUses > 0 ? 1f - (float)_player.SwordUses / _player.MaxSwordUses : 0f;
-                float gunDepletion = _player.MaxGunUses > 0 ? 1f - (float)_player.GunUses / _player.MaxGunUses : 0f;
-                float defendDepletion = _player.MaxDefendUses > 0 ? 1f - (float)_player.DefendUses / _player.MaxDefendUses : 0f;
-                float resourceDepletion = (swordDepletion + gunDepletion + defendDepletion) / 3f;
 
-                _ddaAgent.UpdateBattlePhase(hpRatio, resourceDepletion);
+                _ddaAgent.UpdateBattlePhase(hpRatio, _areaEndResourceDepletion);
                 _ddaAgent?.SetPlayerLevel(_player.Level);
 
                 if (isBattleArea)
@@ -479,7 +484,7 @@ namespace DDA
                         _envId);
                     TrainingLogger.LogPlayerState(_player.CurrentHP, _player.MaxHP,
                         _player.Level, _player.Coin,
-                        _player.SwordUses, _player.GunUses, _player.DefendUses, _envId);
+                        _areaEndSwordUses, _areaEndGunUses, _areaEndDefendUses, _envId);
                 }
                 else
                 {
@@ -551,6 +556,7 @@ namespace DDA
                 case MapType.Enemy:
                 case MapType.Boss:
                     RunBattleInstantWithMultipleEnemies(area.Enemies);
+                    SnapshotResourceState();
                     if (_player.IsAlive())
                     {
                         area.ApplyDrops(_player);
@@ -600,6 +606,8 @@ namespace DDA
             {
                 yield return StartCoroutine(RunBattleEpisodeWithMultipleEnemies(area.Enemies));
             }
+
+            SnapshotResourceState();
 
             if (!_player.IsAlive())
             {
@@ -1308,13 +1316,31 @@ namespace DDA
             // HP ratio
             float hpRatio = _player.MaxHP > 0 ? (float)_player.CurrentHP / _player.MaxHP : 1f;
 
-            // Resource depletion (weighted average of used actions)
-            float swordDepletion = 1f - (float)_player.SwordUses / _player.MaxSwordUses;
-            float gunDepletion = 1f - (float)_player.GunUses / _player.MaxGunUses;
-            float defendDepletion = 1f - (float)_player.DefendUses / _player.MaxDefendUses;
-            float resourceDepletion = (swordDepletion + gunDepletion + defendDepletion) / 3f;
+            _ddaAgent.UpdateBattlePhase(hpRatio, ComputeResourceDepletion());
+        }
 
-            _ddaAgent.UpdateBattlePhase(hpRatio, resourceDepletion);
+        /// <summary>
+        /// Resource depletion = fraction of action uses spent. 0 = full, 1 = empty.
+        /// Zero-guarded so a Max of 0 reads as 0 depletion instead of NaN.
+        /// </summary>
+        private float ComputeResourceDepletion()
+        {
+            float swordDepletion = _player.MaxSwordUses > 0 ? 1f - (float)_player.SwordUses / _player.MaxSwordUses : 0f;
+            float gunDepletion = _player.MaxGunUses > 0 ? 1f - (float)_player.GunUses / _player.MaxGunUses : 0f;
+            float defendDepletion = _player.MaxDefendUses > 0 ? 1f - (float)_player.DefendUses / _player.MaxDefendUses : 0f;
+            return (swordDepletion + gunDepletion + defendDepletion) / 3f;
+        }
+
+        /// <summary>
+        /// Snapshot resource state at battle end, before ResetActionUses zeroes it.
+        /// Feeds both the depletion observation and the player-state log.
+        /// </summary>
+        private void SnapshotResourceState()
+        {
+            _areaEndResourceDepletion = ComputeResourceDepletion();
+            _areaEndSwordUses = _player.SwordUses;
+            _areaEndGunUses = _player.GunUses;
+            _areaEndDefendUses = _player.DefendUses;
         }
 
         /// <summary>

@@ -174,7 +174,7 @@ namespace DDA
                 changed = levelChanged,
                 areaIndex = _areasCompleted,
                 hpRatio = _hpRatio,
-                turnCountNorm = Mathf.Clamp01(_turnCount / 30f),
+                turnCountNorm = Mathf.Clamp01(_turnCount / 15f),
                 playerLevelNorm = Mathf.Clamp01(_playerLevel / 5f),
                 damageDealtRatio = GetDamageDealtRatio(),
                 qteAccuracy = GetQTEAccuracy(),
@@ -348,14 +348,14 @@ namespace DDA
                       $"hpRatio={_hpRatio:F2}, areaTotalEnemyHP={_areaTotalEnemyHP}, " +
                       $"damageDealtRatio={GetDamageDealtRatio():F2}");
 
-            float progressWeight = 0.5f + 0.5f * ((float)_areasCompleted / _totalAreas);
+            // float progressWeight = 0.5f + 0.5f * ((float)_areasCompleted / _totalAreas);
 
             if (_isTrainingMode)
             {
                 float baseReward = CalculateReward(areaWon, _areaEndHP, _areaStartHP);
 
-                float weightedReward = baseReward * progressWeight;
-                AddReward(weightedReward);
+                // float weightedReward = baseReward * progressWeight;
+                AddReward(baseReward);
             }
 
             _decisionPending = true;
@@ -426,7 +426,7 @@ namespace DDA
 #if UNITY_EDITOR
         public string GetDebugState()
         {
-            float progressWeight = 0.5f + 0.5f * ((float)_areasCompleted / _totalAreas);
+            // float progressWeight = 0.5f + 0.5f * ((float)_areasCompleted / _totalAreas);
             return $"HPRatio={_hpRatio:F2} | " +
                    $"Turns={_turnCount} | " +
                    $"Level={_playerLevel} | " +
@@ -434,7 +434,7 @@ namespace DDA
                    $"QTE={GetQTEAccuracy():F2} ({_successfulQTE}/{_totalQTEOpportunities}) | " +
                    $"ResDepl={_resourceDepletion:F2} | " +
                    $"Diff={_difficultySettings?.GetLevelName() ?? "N/A"} | " +
-                   $"ProgWeight={progressWeight:F2} | " +
+                   // $"ProgWeight={progressWeight:F2} | " +
                    $"AreasCompleted={_areasCompleted} | " +
                    $"WinRate={(_battlesTotal > 0 ? ((float)_battlesWon / _battlesTotal).ToString("F2") : "N/A")}";
         }
