@@ -323,10 +323,6 @@ namespace DDA
 
             _areaEndHP = playerEndHP;
             if (playerWon) _battlesWon++;
-
-            // Debug.Log($"[DDAAgent] Battle end. Won={playerWon}, HP={playerEndHP}/{_battleStartHP}, " +
-            //           $"HPRatio={_hpRatio:F2}, Difficulty={_difficultySettings?.GetLevelName()}, " +
-            //           $"BattlesWon={_battlesWon}/{_battlesTotal}");
         }
 
         /// <summary>

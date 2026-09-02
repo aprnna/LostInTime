@@ -15,3 +15,8 @@ seaborn>=0.12.0
 
 # Optional: Progress bars
 tqdm>=4.65.0
+
+# SHAP XAI (offline explanation) -- see docs/superpowers/specs/2026-08-27-shap-xai-design.md
+shap>=0.44
+onnxruntime>=1.17
+onnx>=1.15

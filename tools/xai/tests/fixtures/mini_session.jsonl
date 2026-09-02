@@ -1,0 +1,7 @@
+# tools/xai/tests/fixtures/mini_session.jsonl
+{"ts":"2026-08-10T21:43:00Z","session_id":"s1","event_type":"dda_event","payload":{"dda_action_taken":"Normal","dda_reward":0.0,"dda_obs_snapshot":[0.96,0.1,0.2,0.9375,1.0,0.0222222228],"dda_episode_count":0,"player_hp_ratio":0.96,"total_turns":3,"damage_taken":4,"heals_used":0}}
+{"ts":"2026-08-10T21:43:05Z","session_id":"s1","event_type":"battle_start","payload":{"player_performance":{"player_hp":100,"player_max_hp":100,"player_level":1}}}
+{"ts":"2026-08-10T21:43:10Z","session_id":"s1","event_type":"battle_end","payload":{"player_performance":{"player_hp":96,"player_max_hp":100,"player_level":1}}}
+{"ts":"2026-08-10T21:44:00Z","session_id":"s1","event_type":"dda_event","payload":{"dda_action_taken":"Very Hard","dda_reward":0.0,"dda_obs_snapshot":[0.75,0.233333334,0.2,0.9148936,1.0,0.12222223],"dda_episode_count":0,"player_hp_ratio":0.75,"total_turns":7,"damage_taken":24,"heals_used":0}}
+{"ts":"2026-08-10T21:44:05Z","session_id":"s1","event_type":"battle_start","payload":{"player_performance":{"player_hp":96,"player_max_hp":100,"player_level":1}}}
+{"ts":"2026-08-10T21:44:10Z","session_id":"s1","event_type":"battle_end","payload":{"player_performance":{"player_hp":38,"player_max_hp":100,"player_level":1}}}

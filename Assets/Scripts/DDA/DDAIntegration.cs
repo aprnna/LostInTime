@@ -35,6 +35,12 @@ namespace DDA
         private BaseAction[] _playerActions;
         private bool _actionsLoaded;
 
+        // Area-level resource tracking for per-area delta depletion
+        private int _areaStartSwordLimit;
+        private int _areaStartGunLimit;
+        private int _areaStartDefendLimit;
+        private bool _areaResourceSnapshotTaken = false;
+
         public static DDAIntegration Instance { get; private set; }
 
         public bool IsEnabled => _enableDDA;
@@ -101,24 +107,60 @@ namespace DDA
         }
 
         /// <summary>
-        /// Computes resource depletion exactly like training-sim:
+        /// Takes a snapshot of action limits when entering a new area to compute per-area delta depletion.
+        /// </summary>
+        private void SnapshotAreaStartResources()
+        {
+            if (_playerActions == null) return;
+            foreach (var action in _playerActions)
+            {
+                if (action == null) continue;
+                switch ((int)action.ActionType)
+                {
+                    case 1: _areaStartSwordLimit = action.CurrentLimit; break;
+                    case 2: _areaStartGunLimit = action.CurrentLimit; break;
+                    case 3: _areaStartDefendLimit = action.CurrentLimit; break;
+                }
+            }
+            _areaResourceSnapshotTaken = true;
+        }
+
+        /// <summary>
+        /// Computes resource depletion for this specific area:
         ///   (swordDepletion + gunDepletion + defendDepletion) / 3
-        /// Each depletion = 1 - (CurrentLimit / Limit). Unlimited actions → 0 for that term.
+        /// Each depletion = (areaStartLimit - currentLimit) / maxLimit. Unlimited actions → 0 for that term.
         /// </summary>
         private float ComputeResourceDepletion()
         {
             if (_playerActions == null || _playerActions.Length == 0) return 0f;
 
+            if (!_areaResourceSnapshotTaken)
+            {
+                SnapshotAreaStartResources();
+            }
+
             float sword = 0f, gun = 0f, defend = 0f;
             foreach (var action in _playerActions)
             {
-                if (action == null) continue;
-                // Align with training-sim's enum mapping: Sword=1, Gun=2, Shield=3
+                if (action == null || !action.IsLimited || action.Limit <= 0) continue;
+
+                int startLimit = 0;
                 switch ((int)action.ActionType)
                 {
-                    case 1: sword   = action.GetDepletionRatio(); break;
-                    case 2: gun     = action.GetDepletionRatio(); break;
-                    case 3: defend  = action.GetDepletionRatio(); break;
+                    case 1: startLimit = _areaStartSwordLimit; break;
+                    case 2: startLimit = _areaStartGunLimit; break;
+                    case 3: startLimit = _areaStartDefendLimit; break;
+                    default: continue;
+                }
+
+                int spent = Mathf.Max(0, startLimit - action.CurrentLimit);
+                float depletion = Mathf.Clamp01((float)spent / action.Limit);
+
+                switch ((int)action.ActionType)
+                {
+                    case 1: sword = depletion; break;
+                    case 2: gun = depletion; break;
+                    case 3: defend = depletion; break;
                 }
             }
             return (sword + gun + defend) / 3f;
@@ -393,6 +435,8 @@ namespace DDA
             ResolveReferences();
             if (_ddaAgent == null) return;
 
+            SnapshotAreaStartResources();
+
             _ddaAgent.OnAreaEnter(areaIndex, areaType, totalAreas);
 
             // Notify debug panel
@@ -409,6 +453,7 @@ namespace DDA
             if (!_enableDDA) return;
             ResolveReferences();
             if (_ddaAgent == null) return;
+            SnapshotAreaStartResources();
             _ddaAgent.OnRunStart();
             Debug.Log($"[DDAIntegration] Run started. Difficulty reset to {_difficultySettings?.GetLevelName() ?? "N/A"}.");
         }

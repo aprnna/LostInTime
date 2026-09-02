@@ -244,7 +244,7 @@ public class DDADebugPanel : MonoBehaviour
                     $"HP Ratio     {_agent.GetHpRatio():F2}\n" +
                     $"Turns (nrm)  {_agent.GetTurnCountNormalized():F2}  ({_agent.GetTurnCount()} turns)\n" +
                     $"Player Lvl   {_agent.GetPlayerLevelNormalized():F2}\n" +
-                    $"Dmg Dealt    {dmgRatio:F2}  ({dmgRaw}/{enemyHPTotal} hp)\n" +
+                    $"Dmg Dealt    {dmgRatio:F2}  ({enemyHPTotal}/{dmgRaw}hp)\n" +
                     $"QTE Acc      {_agent.GetQTEAccuracy():F2}  ({_agent.GetSuccessfulQTE()}/{_agent.GetTotalQTEOpportunities()})\n" +
                     $"Res Depl     {_agent.GetResourceDepletion():F2}";
             }

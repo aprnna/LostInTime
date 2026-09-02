@@ -1,0 +1,27 @@
+﻿# XAI Pipeline Dependencies (tools/xai)
+# Terpisah dari requirements.txt root (training mlagents).
+# Install: pip install -r tools/requirements.txt
+#
+# Catatan versi:
+#   shap>=0.45   -- GradientExplainer API berubah di 0.45 (layout ndarray, expected_value
+#                   dihapus). Kode _GradExplainerWrapper di explain_shap.py sudah
+#                   diadaptasi untuk 0.52. Jangan install <0.45.
+#   onnx>=1.15   -- numpy_from_onnx memakai typed data fields (float_data dll.) yang
+#                   tersedia sejak 1.14; 1.15 untuk keamanan.
+#   onnxruntime  -- CPU-only cukup untuk inferensi Q-value dalam pipeline XAI.
+
+# PyTorch (ShapQNet replica + GradientExplainer)
+torch>=2.0.0
+
+# Numerik
+numpy>=1.24.0
+
+# SHAP -- GradientExplainer (Expected Gradients) + KernelExplainer fallback
+shap>=0.45
+
+# ONNX -- load/parse .onnx model untuk ekstraksi weight dan inferensi
+onnx>=1.15
+onnxruntime>=1.17
+
+# Visualisasi -- waterfall plot, beeswarm summary
+matplotlib>=3.7.0

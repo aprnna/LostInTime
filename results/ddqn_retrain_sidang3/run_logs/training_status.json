@@ -1,0 +1,65 @@
+{
+    "ddqn_dda": {
+        "checkpoints": [
+            {
+                "steps": 849973,
+                "file_path": "results\\ddqn_retrain_sidang3\\ddqn_dda\\ddqn_dda-849973.onnx",
+                "reward": null,
+                "creation_time": 1788086231.6344523,
+                "auxillary_file_paths": [
+                    "results\\ddqn_retrain_sidang3\\ddqn_dda\\ddqn_dda-849973.pt"
+                ]
+            },
+            {
+                "steps": 899972,
+                "file_path": "results\\ddqn_retrain_sidang3\\ddqn_dda\\ddqn_dda-899972.onnx",
+                "reward": null,
+                "creation_time": 1788088514.3494596,
+                "auxillary_file_paths": [
+                    "results\\ddqn_retrain_sidang3\\ddqn_dda\\ddqn_dda-899972.pt"
+                ]
+            },
+            {
+                "steps": 949990,
+                "file_path": "results\\ddqn_retrain_sidang3\\ddqn_dda\\ddqn_dda-949990.onnx",
+                "reward": null,
+                "creation_time": 1788090508.5058749,
+                "auxillary_file_paths": [
+                    "results\\ddqn_retrain_sidang3\\ddqn_dda\\ddqn_dda-949990.pt"
+                ]
+            },
+            {
+                "steps": 999989,
+                "file_path": "results\\ddqn_retrain_sidang3\\ddqn_dda\\ddqn_dda-999989.onnx",
+                "reward": null,
+                "creation_time": 1788092511.6520371,
+                "auxillary_file_paths": [
+                    "results\\ddqn_retrain_sidang3\\ddqn_dda\\ddqn_dda-999989.pt"
+                ]
+            },
+            {
+                "steps": 1000053,
+                "file_path": "results\\ddqn_retrain_sidang3\\ddqn_dda\\ddqn_dda-1000053.onnx",
+                "reward": null,
+                "creation_time": 1788092512.0324209,
+                "auxillary_file_paths": [
+                    "results\\ddqn_retrain_sidang3\\ddqn_dda\\ddqn_dda-1000053.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 1000053,
+            "file_path": "results\\ddqn_retrain_sidang3\\ddqn_dda.onnx",
+            "reward": null,
+            "creation_time": 1788092512.0324209,
+            "auxillary_file_paths": [
+                "results\\ddqn_retrain_sidang3\\ddqn_dda\\ddqn_dda-1000053.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.2.2+cu121"
+    }
+}

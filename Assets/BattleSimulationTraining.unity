@@ -1265,7 +1265,7 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 1000000
+  MaxStep: 100
   _difficultySettings: {fileID: 11400000, guid: b608018e3e3b4ac409681bc8e02072ec, type: 2}
   _difficultyApplier: {fileID: 403596222}
   _isTrainingMode: 1

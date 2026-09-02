@@ -1,0 +1,904 @@
+{
+  "n_decisions": 87,
+  "feature_names": [
+    "HP Ratio",
+    "Turn Count",
+    "Player Level",
+    "Dmg Dealt Ratio",
+    "QTE Accuracy",
+    "Resource Depletion"
+  ],
+  "pairing": "cross_event",
+  "decisions": [
+    {
+      "session_id": "083a58a3-465f-4f98-9dae-b68a6d1efa14",
+      "decision_ts": "2026-08-10T21:43:01.1808476Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:44:09.3752177Z",
+      "hp_initial": 96,
+      "hp_final": 72,
+      "survival_ratio": 0.75,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "083a58a3-465f-4f98-9dae-b68a6d1efa14",
+      "decision_ts": "2026-08-10T21:44:09.3752177Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:46:11.2864659Z",
+      "hp_initial": 92,
+      "hp_final": 36,
+      "survival_ratio": 0.391304347826087,
+      "outcome": "Rebellious"
+    },
+    {
+      "session_id": "083a58a3-465f-4f98-9dae-b68a6d1efa14",
+      "decision_ts": "2026-08-10T21:46:11.2864659Z",
+      "action": "Very Easy",
+      "governed_battle_ts": "2026-08-10T21:46:42.2516266Z",
+      "hp_initial": 47,
+      "hp_final": 47,
+      "survival_ratio": 1.0,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "083a58a3-465f-4f98-9dae-b68a6d1efa14",
+      "decision_ts": "2026-08-10T21:46:42.2516266Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:47:48.1990994Z",
+      "hp_initial": 47,
+      "hp_final": 20,
+      "survival_ratio": 0.425531914893617,
+      "outcome": "Balanced"
+    },
+    {
+      "session_id": "083a58a3-465f-4f98-9dae-b68a6d1efa14",
+      "decision_ts": "2026-08-10T21:47:48.1990994Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T21:49:11.8790607Z",
+      "hp_initial": 100,
+      "hp_final": 88,
+      "survival_ratio": 0.88,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "083a58a3-465f-4f98-9dae-b68a6d1efa14",
+      "decision_ts": "2026-08-10T21:49:11.8790607Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T21:50:53.9083210Z",
+      "hp_initial": 100,
+      "hp_final": 74,
+      "survival_ratio": 0.74,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "083a58a3-465f-4f98-9dae-b68a6d1efa14",
+      "decision_ts": "2026-08-10T21:50:53.9083210Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T21:51:05.7908029Z",
+      "hp_initial": 74,
+      "hp_final": 74,
+      "survival_ratio": 1.0,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "329e7210-b76c-4a50-9a3f-ca96a55b72a6",
+      "decision_ts": "2026-07-31T15:25:30.4939154Z",
+      "action": "Very Easy",
+      "governed_battle_ts": "2026-07-31T15:26:07.4595302Z",
+      "hp_initial": 92,
+      "hp_final": 86,
+      "survival_ratio": 0.9347826086956522,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "329e7210-b76c-4a50-9a3f-ca96a55b72a6",
+      "decision_ts": "2026-07-31T15:26:07.4595302Z",
+      "action": "Very Easy",
+      "governed_battle_ts": "2026-07-31T15:26:58.7188932Z",
+      "hp_initial": 86,
+      "hp_final": 71,
+      "survival_ratio": 0.8255813953488372,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "329e7210-b76c-4a50-9a3f-ca96a55b72a6",
+      "decision_ts": "2026-07-31T15:26:58.7188932Z",
+      "action": "Very Easy",
+      "governed_battle_ts": "2026-07-31T15:27:40.3876540Z",
+      "hp_initial": 71,
+      "hp_final": 60,
+      "survival_ratio": 0.8450704225352113,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "329e7210-b76c-4a50-9a3f-ca96a55b72a6",
+      "decision_ts": "2026-07-31T15:27:40.3876540Z",
+      "action": "Very Easy",
+      "governed_battle_ts": "2026-07-31T15:28:51.0981182Z",
+      "hp_initial": 79,
+      "hp_final": 68,
+      "survival_ratio": 0.8607594936708861,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "329e7210-b76c-4a50-9a3f-ca96a55b72a6",
+      "decision_ts": "2026-07-31T15:28:51.0981182Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-07-31T15:31:07.1501105Z",
+      "hp_initial": 68,
+      "hp_final": 43,
+      "survival_ratio": 0.6323529411764706,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "329e7210-b76c-4a50-9a3f-ca96a55b72a6",
+      "decision_ts": "2026-07-31T15:31:07.1501105Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-07-31T15:32:03.5412268Z",
+      "hp_initial": 43,
+      "hp_final": 21,
+      "survival_ratio": 0.4883720930232558,
+      "outcome": "Balanced"
+    },
+    {
+      "session_id": "329e7210-b76c-4a50-9a3f-ca96a55b72a6",
+      "decision_ts": "2026-07-31T15:32:03.5412268Z",
+      "action": "Very Easy",
+      "governed_battle_ts": "2026-07-31T15:32:52.7651049Z",
+      "hp_initial": 21,
+      "hp_final": 10,
+      "survival_ratio": 0.47619047619047616,
+      "outcome": "Balanced"
+    },
+    {
+      "session_id": "329e7210-b76c-4a50-9a3f-ca96a55b72a6",
+      "decision_ts": "2026-07-31T15:32:52.7651049Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-07-31T15:34:13.4439084Z",
+      "hp_initial": 100,
+      "hp_final": 90,
+      "survival_ratio": 0.9,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "329e7210-b76c-4a50-9a3f-ca96a55b72a6",
+      "decision_ts": "2026-07-31T15:34:13.4439084Z",
+      "action": "Very Easy",
+      "governed_battle_ts": "2026-07-31T15:34:26.6084941Z",
+      "hp_initial": 90,
+      "hp_final": 90,
+      "survival_ratio": 1.0,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "401daa50-320d-48e1-952a-91a470d3e10a",
+      "decision_ts": "2026-08-10T22:33:25.6870813Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T22:34:17.5921972Z",
+      "hp_initial": 95,
+      "hp_final": 65,
+      "survival_ratio": 0.6842105263157895,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "401daa50-320d-48e1-952a-91a470d3e10a",
+      "decision_ts": "2026-08-10T22:34:17.5921972Z",
+      "action": "Very Easy",
+      "governed_battle_ts": "2026-08-10T22:35:42.7019655Z",
+      "hp_initial": 85,
+      "hp_final": 60,
+      "survival_ratio": 0.7058823529411765,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "401daa50-320d-48e1-952a-91a470d3e10a",
+      "decision_ts": "2026-08-10T22:35:42.7019655Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T22:36:19.3551301Z",
+      "hp_initial": 100,
+      "hp_final": 81,
+      "survival_ratio": 0.81,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "401daa50-320d-48e1-952a-91a470d3e10a",
+      "decision_ts": "2026-08-10T22:36:19.3551301Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T22:37:14.6208638Z",
+      "hp_initial": 81,
+      "hp_final": 49,
+      "survival_ratio": 0.6049382716049383,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "401daa50-320d-48e1-952a-91a470d3e10a",
+      "decision_ts": "2026-08-10T22:37:14.6208638Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T22:38:10.7394040Z",
+      "hp_initial": 49,
+      "hp_final": 25,
+      "survival_ratio": 0.5102040816326531,
+      "outcome": "Balanced"
+    },
+    {
+      "session_id": "401daa50-320d-48e1-952a-91a470d3e10a",
+      "decision_ts": "2026-08-10T22:38:10.7394040Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T22:38:51.9815611Z",
+      "hp_initial": 25,
+      "hp_final": 10,
+      "survival_ratio": 0.4,
+      "outcome": "Balanced"
+    },
+    {
+      "session_id": "401daa50-320d-48e1-952a-91a470d3e10a",
+      "decision_ts": "2026-08-10T22:38:51.9815611Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T22:39:37.0675873Z",
+      "hp_initial": 100,
+      "hp_final": 83,
+      "survival_ratio": 0.83,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "401daa50-320d-48e1-952a-91a470d3e10a",
+      "decision_ts": "2026-08-10T22:39:37.0675873Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T22:40:15.2098494Z",
+      "hp_initial": 83,
+      "hp_final": 43,
+      "survival_ratio": 0.5180722891566265,
+      "outcome": "Balanced"
+    },
+    {
+      "session_id": "46cfa315-9336-4361-99f1-0cb5f6dcc03d",
+      "decision_ts": "2026-08-10T21:44:14.6308926Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:45:10.9816419Z",
+      "hp_initial": 94,
+      "hp_final": 61,
+      "survival_ratio": 0.648936170212766,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "46cfa315-9336-4361-99f1-0cb5f6dcc03d",
+      "decision_ts": "2026-08-10T21:45:10.9816419Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:46:57.0228758Z",
+      "hp_initial": 81,
+      "hp_final": 24,
+      "survival_ratio": 0.2962962962962963,
+      "outcome": "Rebellious"
+    },
+    {
+      "session_id": "46cfa315-9336-4361-99f1-0cb5f6dcc03d",
+      "decision_ts": "2026-08-10T21:46:57.0228758Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:47:43.6139145Z",
+      "hp_initial": 64,
+      "hp_final": 24,
+      "survival_ratio": 0.375,
+      "outcome": "Rebellious"
+    },
+    {
+      "session_id": "46cfa315-9336-4361-99f1-0cb5f6dcc03d",
+      "decision_ts": "2026-08-10T21:47:43.6139145Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:48:33.5686864Z",
+      "hp_initial": 24,
+      "hp_final": 0,
+      "survival_ratio": 0.0,
+      "outcome": "Rebellious"
+    },
+    {
+      "session_id": "46cfa315-9336-4361-99f1-0cb5f6dcc03d",
+      "decision_ts": "2026-08-10T21:48:33.5686864Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:48:56.8146331Z",
+      "hp_initial": 100,
+      "hp_final": 92,
+      "survival_ratio": 0.92,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "46cfa315-9336-4361-99f1-0cb5f6dcc03d",
+      "decision_ts": "2026-08-10T21:48:56.8146331Z",
+      "action": "Very Easy",
+      "governed_battle_ts": "2026-08-10T21:49:37.8442992Z",
+      "hp_initial": 92,
+      "hp_final": 83,
+      "survival_ratio": 0.9021739130434783,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "46cfa315-9336-4361-99f1-0cb5f6dcc03d",
+      "decision_ts": "2026-08-10T21:49:37.8442992Z",
+      "action": "Very Easy",
+      "governed_battle_ts": "2026-08-10T21:51:04.1320621Z",
+      "hp_initial": 100,
+      "hp_final": 79,
+      "survival_ratio": 0.79,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "46cfa315-9336-4361-99f1-0cb5f6dcc03d",
+      "decision_ts": "2026-08-10T21:51:04.1320621Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T21:51:31.2357231Z",
+      "hp_initial": 100,
+      "hp_final": 82,
+      "survival_ratio": 0.82,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "46cfa315-9336-4361-99f1-0cb5f6dcc03d",
+      "decision_ts": "2026-08-10T21:51:31.2357231Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:52:27.0347770Z",
+      "hp_initial": 82,
+      "hp_final": 45,
+      "survival_ratio": 0.5487804878048781,
+      "outcome": "Balanced"
+    },
+    {
+      "session_id": "46cfa315-9336-4361-99f1-0cb5f6dcc03d",
+      "decision_ts": "2026-08-10T21:52:27.0347770Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T21:53:09.1135970Z",
+      "hp_initial": 45,
+      "hp_final": 25,
+      "survival_ratio": 0.5555555555555556,
+      "outcome": "Balanced"
+    },
+    {
+      "session_id": "46cfa315-9336-4361-99f1-0cb5f6dcc03d",
+      "decision_ts": "2026-08-10T21:53:09.1135970Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T21:53:51.7967827Z",
+      "hp_initial": 25,
+      "hp_final": 4,
+      "survival_ratio": 0.16,
+      "outcome": "Rebellious"
+    },
+    {
+      "session_id": "46cfa315-9336-4361-99f1-0cb5f6dcc03d",
+      "decision_ts": "2026-08-10T21:53:51.7967827Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T21:55:16.7759333Z",
+      "hp_initial": 100,
+      "hp_final": 63,
+      "survival_ratio": 0.63,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "46cfa315-9336-4361-99f1-0cb5f6dcc03d",
+      "decision_ts": "2026-08-10T21:55:16.7759333Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T21:55:39.3605227Z",
+      "hp_initial": 63,
+      "hp_final": 41,
+      "survival_ratio": 0.6507936507936508,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "564e725d-8b8b-4978-b5f3-9a0fae6c6c94",
+      "decision_ts": "2026-08-10T21:36:25.3282144Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:37:48.5156176Z",
+      "hp_initial": 92,
+      "hp_final": 61,
+      "survival_ratio": 0.6630434782608695,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "564e725d-8b8b-4978-b5f3-9a0fae6c6c94",
+      "decision_ts": "2026-08-10T21:37:48.5156176Z",
+      "action": "Very Easy",
+      "governed_battle_ts": "2026-08-10T21:38:57.0369189Z",
+      "hp_initial": 81,
+      "hp_final": 68,
+      "survival_ratio": 0.8395061728395061,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "564e725d-8b8b-4978-b5f3-9a0fae6c6c94",
+      "decision_ts": "2026-08-10T21:38:57.0369189Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:39:23.0607262Z",
+      "hp_initial": 100,
+      "hp_final": 76,
+      "survival_ratio": 0.76,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "564e725d-8b8b-4978-b5f3-9a0fae6c6c94",
+      "decision_ts": "2026-08-10T21:39:23.0607262Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:40:45.5579263Z",
+      "hp_initial": 76,
+      "hp_final": 45,
+      "survival_ratio": 0.5921052631578947,
+      "outcome": "Balanced"
+    },
+    {
+      "session_id": "564e725d-8b8b-4978-b5f3-9a0fae6c6c94",
+      "decision_ts": "2026-08-10T21:40:45.5579263Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T21:41:26.5465482Z",
+      "hp_initial": 45,
+      "hp_final": 26,
+      "survival_ratio": 0.5777777777777777,
+      "outcome": "Balanced"
+    },
+    {
+      "session_id": "564e725d-8b8b-4978-b5f3-9a0fae6c6c94",
+      "decision_ts": "2026-08-10T21:41:26.5465482Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T21:42:07.5498811Z",
+      "hp_initial": 26,
+      "hp_final": 9,
+      "survival_ratio": 0.34615384615384615,
+      "outcome": "Rebellious"
+    },
+    {
+      "session_id": "564e725d-8b8b-4978-b5f3-9a0fae6c6c94",
+      "decision_ts": "2026-08-10T21:42:07.5498811Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T21:42:50.5127842Z",
+      "hp_initial": 100,
+      "hp_final": 85,
+      "survival_ratio": 0.85,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "564e725d-8b8b-4978-b5f3-9a0fae6c6c94",
+      "decision_ts": "2026-08-10T21:42:50.5127842Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T21:43:14.9498778Z",
+      "hp_initial": 85,
+      "hp_final": 68,
+      "survival_ratio": 0.8,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "674cdd95-d3d5-49d7-b5d6-d077b4e31146",
+      "decision_ts": "2026-08-03T16:19:55.1508618Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-03T16:20:47.7795931Z",
+      "hp_initial": 93,
+      "hp_final": 66,
+      "survival_ratio": 0.7096774193548387,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "674cdd95-d3d5-49d7-b5d6-d077b4e31146",
+      "decision_ts": "2026-08-03T16:20:47.7795931Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-03T16:22:49.4744434Z",
+      "hp_initial": 86,
+      "hp_final": 32,
+      "survival_ratio": 0.37209302325581395,
+      "outcome": "Rebellious"
+    },
+    {
+      "session_id": "674cdd95-d3d5-49d7-b5d6-d077b4e31146",
+      "decision_ts": "2026-08-03T16:22:49.4744434Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-03T16:23:20.7890718Z",
+      "hp_initial": 72,
+      "hp_final": 50,
+      "survival_ratio": 0.6944444444444444,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "674cdd95-d3d5-49d7-b5d6-d077b4e31146",
+      "decision_ts": "2026-08-03T16:23:20.7890718Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-03T16:24:23.2948900Z",
+      "hp_initial": 50,
+      "hp_final": 10,
+      "survival_ratio": 0.2,
+      "outcome": "Rebellious"
+    },
+    {
+      "session_id": "674cdd95-d3d5-49d7-b5d6-d077b4e31146",
+      "decision_ts": "2026-08-03T16:24:23.2948900Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-03T16:25:08.6860106Z",
+      "hp_initial": 70,
+      "hp_final": 54,
+      "survival_ratio": 0.7714285714285715,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "674cdd95-d3d5-49d7-b5d6-d077b4e31146",
+      "decision_ts": "2026-08-03T16:25:08.6860106Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-03T16:26:00.8565064Z",
+      "hp_initial": 54,
+      "hp_final": 38,
+      "survival_ratio": 0.7037037037037037,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "674cdd95-d3d5-49d7-b5d6-d077b4e31146",
+      "decision_ts": "2026-08-03T16:26:00.8565064Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-03T16:26:23.4200278Z",
+      "hp_initial": 38,
+      "hp_final": 20,
+      "survival_ratio": 0.5263157894736842,
+      "outcome": "Balanced"
+    },
+    {
+      "session_id": "79b29c98-8c20-4d9b-bda0-3f3d032e62ab",
+      "decision_ts": "2026-08-10T22:42:35.9622787Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T22:43:55.2667898Z",
+      "hp_initial": 94,
+      "hp_final": 62,
+      "survival_ratio": 0.6595744680851063,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "79b29c98-8c20-4d9b-bda0-3f3d032e62ab",
+      "decision_ts": "2026-08-10T22:43:55.2667898Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T22:45:56.6904809Z",
+      "hp_initial": 82,
+      "hp_final": 26,
+      "survival_ratio": 0.3170731707317073,
+      "outcome": "Rebellious"
+    },
+    {
+      "session_id": "79b29c98-8c20-4d9b-bda0-3f3d032e62ab",
+      "decision_ts": "2026-08-10T22:45:56.6904809Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T22:46:23.3588665Z",
+      "hp_initial": 66,
+      "hp_final": 43,
+      "survival_ratio": 0.6515151515151515,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "79b29c98-8c20-4d9b-bda0-3f3d032e62ab",
+      "decision_ts": "2026-08-10T22:46:23.3588665Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T22:47:04.9771344Z",
+      "hp_initial": 43,
+      "hp_final": 16,
+      "survival_ratio": 0.37209302325581395,
+      "outcome": "Rebellious"
+    },
+    {
+      "session_id": "79b29c98-8c20-4d9b-bda0-3f3d032e62ab",
+      "decision_ts": "2026-08-10T22:47:04.9771344Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T22:47:50.3024728Z",
+      "hp_initial": 76,
+      "hp_final": 60,
+      "survival_ratio": 0.7894736842105263,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "79b29c98-8c20-4d9b-bda0-3f3d032e62ab",
+      "decision_ts": "2026-08-10T22:47:50.3024728Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T22:48:42.1892272Z",
+      "hp_initial": 60,
+      "hp_final": 43,
+      "survival_ratio": 0.7166666666666667,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "79b29c98-8c20-4d9b-bda0-3f3d032e62ab",
+      "decision_ts": "2026-08-10T22:48:42.1892272Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T22:49:07.6203238Z",
+      "hp_initial": 43,
+      "hp_final": 21,
+      "survival_ratio": 0.4883720930232558,
+      "outcome": "Balanced"
+    },
+    {
+      "session_id": "7d519488-b437-4ebe-aeab-9674cc977e2d",
+      "decision_ts": "2026-08-10T20:54:42.2228017Z",
+      "action": "Very Easy",
+      "governed_battle_ts": "2026-08-10T20:55:50.6695444Z",
+      "hp_initial": 86,
+      "hp_final": 69,
+      "survival_ratio": 0.8023255813953488,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "7d519488-b437-4ebe-aeab-9674cc977e2d",
+      "decision_ts": "2026-08-10T20:55:50.6695444Z",
+      "action": "Very Easy",
+      "governed_battle_ts": "2026-08-10T20:57:22.9066438Z",
+      "hp_initial": 89,
+      "hp_final": 66,
+      "survival_ratio": 0.7415730337078652,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "7d519488-b437-4ebe-aeab-9674cc977e2d",
+      "decision_ts": "2026-08-10T20:57:22.9066438Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T20:57:52.7594811Z",
+      "hp_initial": 100,
+      "hp_final": 81,
+      "survival_ratio": 0.81,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "7d519488-b437-4ebe-aeab-9674cc977e2d",
+      "decision_ts": "2026-08-10T20:57:52.7594811Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T20:58:46.4623540Z",
+      "hp_initial": 81,
+      "hp_final": 46,
+      "survival_ratio": 0.5679012345679012,
+      "outcome": "Balanced"
+    },
+    {
+      "session_id": "7d519488-b437-4ebe-aeab-9674cc977e2d",
+      "decision_ts": "2026-08-10T20:58:46.4623540Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T20:59:29.4383166Z",
+      "hp_initial": 100,
+      "hp_final": 82,
+      "survival_ratio": 0.82,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "7d519488-b437-4ebe-aeab-9674cc977e2d",
+      "decision_ts": "2026-08-10T20:59:29.4383166Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T21:00:42.1443421Z",
+      "hp_initial": 82,
+      "hp_final": 66,
+      "survival_ratio": 0.8048780487804879,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "7d519488-b437-4ebe-aeab-9674cc977e2d",
+      "decision_ts": "2026-08-10T21:00:42.1443421Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T21:01:03.7790523Z",
+      "hp_initial": 66,
+      "hp_final": 52,
+      "survival_ratio": 0.7878787878787878,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "8ef342b2-af7d-45c8-87df-7c002c32e721",
+      "decision_ts": "2026-08-10T21:25:11.3190168Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:28:56.1087377Z",
+      "hp_initial": 96,
+      "hp_final": 15,
+      "survival_ratio": 0.15625,
+      "outcome": "Rebellious"
+    },
+    {
+      "session_id": "8ef342b2-af7d-45c8-87df-7c002c32e721",
+      "decision_ts": "2026-08-10T21:28:56.1087377Z",
+      "action": "Very Easy",
+      "governed_battle_ts": "2026-08-10T21:29:50.0927633Z",
+      "hp_initial": 15,
+      "hp_final": 0,
+      "survival_ratio": 0.0,
+      "outcome": "Rebellious"
+    },
+    {
+      "session_id": "8ef342b2-af7d-45c8-87df-7c002c32e721",
+      "decision_ts": "2026-08-10T21:29:50.0927633Z",
+      "action": "Very Easy",
+      "governed_battle_ts": "2026-08-10T21:30:12.6466072Z",
+      "hp_initial": 100,
+      "hp_final": 100,
+      "survival_ratio": 1.0,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "8ef342b2-af7d-45c8-87df-7c002c32e721",
+      "decision_ts": "2026-08-10T21:30:12.6466072Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:31:34.7434317Z",
+      "hp_initial": 100,
+      "hp_final": 65,
+      "survival_ratio": 0.65,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "8ef342b2-af7d-45c8-87df-7c002c32e721",
+      "decision_ts": "2026-08-10T21:31:34.7434317Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:33:23.3468509Z",
+      "hp_initial": 85,
+      "hp_final": 23,
+      "survival_ratio": 0.27058823529411763,
+      "outcome": "Rebellious"
+    },
+    {
+      "session_id": "8ef342b2-af7d-45c8-87df-7c002c32e721",
+      "decision_ts": "2026-08-10T21:33:23.3468509Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:34:09.0311301Z",
+      "hp_initial": 63,
+      "hp_final": 26,
+      "survival_ratio": 0.4126984126984127,
+      "outcome": "Balanced"
+    },
+    {
+      "session_id": "8ef342b2-af7d-45c8-87df-7c002c32e721",
+      "decision_ts": "2026-08-10T21:34:09.0311301Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:35:14.1108659Z",
+      "hp_initial": 26,
+      "hp_final": 0,
+      "survival_ratio": 0.0,
+      "outcome": "Rebellious"
+    },
+    {
+      "session_id": "a5201578-f7e6-4518-a1be-f6a5cd6b5129",
+      "decision_ts": "2026-08-06T04:14:37.5967572Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-06T04:15:46.6638176Z",
+      "hp_initial": 94,
+      "hp_final": 67,
+      "survival_ratio": 0.7127659574468085,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "a5201578-f7e6-4518-a1be-f6a5cd6b5129",
+      "decision_ts": "2026-08-06T04:15:46.6638176Z",
+      "action": "Very Easy",
+      "governed_battle_ts": "2026-08-06T04:16:54.4968983Z",
+      "hp_initial": 87,
+      "hp_final": 71,
+      "survival_ratio": 0.8160919540229885,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "a5201578-f7e6-4518-a1be-f6a5cd6b5129",
+      "decision_ts": "2026-08-06T04:16:54.4968983Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-06T04:17:31.3665095Z",
+      "hp_initial": 71,
+      "hp_final": 50,
+      "survival_ratio": 0.704225352112676,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "a5201578-f7e6-4518-a1be-f6a5cd6b5129",
+      "decision_ts": "2026-08-06T04:17:31.3665095Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-06T04:18:13.9108266Z",
+      "hp_initial": 50,
+      "hp_final": 25,
+      "survival_ratio": 0.5,
+      "outcome": "Balanced"
+    },
+    {
+      "session_id": "a5201578-f7e6-4518-a1be-f6a5cd6b5129",
+      "decision_ts": "2026-08-06T04:18:13.9108266Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-06T04:18:59.3444807Z",
+      "hp_initial": 100,
+      "hp_final": 82,
+      "survival_ratio": 0.82,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "a5201578-f7e6-4518-a1be-f6a5cd6b5129",
+      "decision_ts": "2026-08-06T04:18:59.3444807Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-06T04:19:52.1885938Z",
+      "hp_initial": 82,
+      "hp_final": 71,
+      "survival_ratio": 0.8658536585365854,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "a5201578-f7e6-4518-a1be-f6a5cd6b5129",
+      "decision_ts": "2026-08-06T04:19:52.1885938Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-06T04:20:02.7209880Z",
+      "hp_initial": 71,
+      "hp_final": 71,
+      "survival_ratio": 1.0,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "df39738d-b9ac-4eba-89c0-b554263848fe",
+      "decision_ts": "2026-08-10T21:17:31.0060474Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:19:00.9456557Z",
+      "hp_initial": 92,
+      "hp_final": 66,
+      "survival_ratio": 0.717391304347826,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "df39738d-b9ac-4eba-89c0-b554263848fe",
+      "decision_ts": "2026-08-10T21:19:00.9456557Z",
+      "action": "Very Easy",
+      "governed_battle_ts": "2026-08-10T21:20:02.3420410Z",
+      "hp_initial": 86,
+      "hp_final": 69,
+      "survival_ratio": 0.8023255813953488,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "df39738d-b9ac-4eba-89c0-b554263848fe",
+      "decision_ts": "2026-08-10T21:20:02.3420410Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:20:47.1054763Z",
+      "hp_initial": 100,
+      "hp_final": 64,
+      "survival_ratio": 0.64,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "df39738d-b9ac-4eba-89c0-b554263848fe",
+      "decision_ts": "2026-08-10T21:20:47.1054763Z",
+      "action": "Very Hard",
+      "governed_battle_ts": "2026-08-10T21:21:43.5536394Z",
+      "hp_initial": 64,
+      "hp_final": 16,
+      "survival_ratio": 0.25,
+      "outcome": "Rebellious"
+    },
+    {
+      "session_id": "df39738d-b9ac-4eba-89c0-b554263848fe",
+      "decision_ts": "2026-08-10T21:21:43.5536394Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T21:22:28.2812403Z",
+      "hp_initial": 96,
+      "hp_final": 78,
+      "survival_ratio": 0.8125,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "df39738d-b9ac-4eba-89c0-b554263848fe",
+      "decision_ts": "2026-08-10T21:22:28.2812403Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T21:23:28.5962080Z",
+      "hp_initial": 78,
+      "hp_final": 63,
+      "survival_ratio": 0.8076923076923077,
+      "outcome": "Subjugate"
+    },
+    {
+      "session_id": "df39738d-b9ac-4eba-89c0-b554263848fe",
+      "decision_ts": "2026-08-10T21:23:28.5962080Z",
+      "action": "Hard",
+      "governed_battle_ts": "2026-08-10T21:23:50.7775829Z",
+      "hp_initial": 63,
+      "hp_final": 50,
+      "survival_ratio": 0.7936507936507936,
+      "outcome": "Subjugate"
+    }
+  ],
+  "beta_model": "../Assets/Resources/DDA/Models\\ddqn_dda_sidang1.onnx",
+  "beta_match_rate": 0.7701149425287356,
+  "model_rankings": [
+    [
+      "ddqn_dda_sidang1.onnx",
+      0.7701149425287356
+    ],
+    [
+      "ddqn_dda_final.onnx",
+      0.3448275862068966
+    ],
+    [
+      "ddqn_dda_retrain.onnx",
+      0.2988505747126437
+    ],
+    [
+      "ddqn_dda5.onnx",
+      0.04597701149425287
+    ]
+  ]
+}

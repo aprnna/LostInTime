@@ -66,9 +66,11 @@ namespace DDA
         // Track HP at battle start for battle-level logging
         private int _battleStartHP;
 
-        // ponytail: snapshot resource depletion at battle end (before ResetActionUses)
-        // so the observation reflects per-battle usage, not the post-reset zero.
+        // Snapshot resource depletion at battle end so the observation reflects per-area delta usage
         private float _areaEndResourceDepletion;
+        private int _areaStartSwordUses;
+        private int _areaStartGunUses;
+        private int _areaStartDefendUses;
         private int _areaEndSwordUses;
         private int _areaEndGunUses;
         private int _areaEndDefendUses;
@@ -446,8 +448,11 @@ namespace DDA
                     // Notify agent we're entering this battle area
                     _ddaAgent?.OnAreaEnter(_currentAreaIndex, areaType, _areas.Count);
 
-                    // Track HP at area start for reward calculation
+                    // Track HP and action uses at area start for reward and per-area delta depletion calculation
                     _areaStartHP = _player.CurrentHP;
+                    _areaStartSwordUses = _player.SwordUses;
+                    _areaStartGunUses = _player.GunUses;
+                    _areaStartDefendUses = _player.DefendUses;
                 }
 
                 if (_instantMode)
@@ -560,7 +565,6 @@ namespace DDA
                     if (_player.IsAlive())
                     {
                         area.ApplyDrops(_player);
-                        _player.ResetActionUses();
                     }
                     break;
 
@@ -616,9 +620,6 @@ namespace DDA
 
             // Apply drops after winning
             area.ApplyDrops(_player);
-
-            // Reset action uses for next area
-            _player.ResetActionUses();
         }
 
         private void ProcessRestArea(SimArea area)
@@ -1320,14 +1321,21 @@ namespace DDA
         }
 
         /// <summary>
-        /// Resource depletion = fraction of action uses spent. 0 = full, 1 = empty.
+        /// Resource depletion = fraction of action uses spent in this area specifically.
+        /// (areaStartUses - currentUses) / MaxUses, averaged across Sword, Gun, Defend.
         /// Zero-guarded so a Max of 0 reads as 0 depletion instead of NaN.
         /// </summary>
         private float ComputeResourceDepletion()
         {
-            float swordDepletion = _player.MaxSwordUses > 0 ? 1f - (float)_player.SwordUses / _player.MaxSwordUses : 0f;
-            float gunDepletion = _player.MaxGunUses > 0 ? 1f - (float)_player.GunUses / _player.MaxGunUses : 0f;
-            float defendDepletion = _player.MaxDefendUses > 0 ? 1f - (float)_player.DefendUses / _player.MaxDefendUses : 0f;
+            float swordDepletion = _player.MaxSwordUses > 0
+                ? Mathf.Clamp01((float)(_areaStartSwordUses - _player.SwordUses) / _player.MaxSwordUses)
+                : 0f;
+            float gunDepletion = _player.MaxGunUses > 0
+                ? Mathf.Clamp01((float)(_areaStartGunUses - _player.GunUses) / _player.MaxGunUses)
+                : 0f;
+            float defendDepletion = _player.MaxDefendUses > 0
+                ? Mathf.Clamp01((float)(_areaStartDefendUses - _player.DefendUses) / _player.MaxDefendUses)
+                : 0f;
             return (swordDepletion + gunDepletion + defendDepletion) / 3f;
         }
 
