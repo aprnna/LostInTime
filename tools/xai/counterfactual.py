@@ -184,7 +184,7 @@ def main():
     ap.add_argument("--res", type=float, default=None, help="Set new Resource Depletion [0.0 - 1.0]")
 
     ap.add_argument("--preset", choices=list(PRESETS.keys()), default=None, help="Use a preset archetype")
-    ap.add_argument("--sweep", choices=["hp", "qte", "turn", "dmg", "res"], default=None, help="Run 1D sweep on a feature")
+    ap.add_argument("--sweep", choices=["hp", "qte", "turn", "level", "dmg", "res"], default=None, help="Run 1D sweep on a feature")
     args = ap.parse_args()
 
     states = np.load(args.states).astype(np.float32)
@@ -209,6 +209,7 @@ def main():
             "hp": "HP Ratio",
             "qte": "QTE Accuracy",
             "turn": "Turn Count",
+            "level": "Player Level",
             "dmg": "Dmg Dealt Ratio",
             "res": "Resource Depletion"
         }

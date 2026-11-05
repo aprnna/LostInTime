@@ -78,15 +78,16 @@ Area 2 (Battle): ApplyDifficulty(agent's action from Area 0) → Battle → OnAr
 - `RequestDecision()` only after battle areas (not Rest/Shop)
 
 **Agent** (`DDAAgent.cs`):
-- 8 observations: HP Ratio, Turn Count, Player Level, Damage Dealt Ratio, QTE Accuracy, Resource Depletion, Area Progress, Current Difficulty
+- 6 observations: HP Ratio, Turn Count, Player Level, Damage Dealt Ratio, QTE Accuracy, Resource Depletion
 - 5 discrete actions: Very Easy (0), Easy (1), Normal (2), Hard (3), Very Hard (4)
-- Reward: parabolic sweet spot at HP 50% (1.0 max), linear decay outside 40-60%, loss = -1.0, run bonus = +0.5/-0.1, death penalty = -0.5
+- Reward: Gaussian RBF peak at HP 50% ($e^{-8(r-0.5)^2}$), loss area = -0.5, run bonus = +0.5/-0.3, death penalty = -0.5
 - Terminal steps: area 12 completed (run won) or player dies (HP = 0)
 
-**Difficulty** (`DifficultySettings.cs`):
-- 5 levels: Very Easy (0.75x), Easy (0.875x), Normal (1.0x), Hard (1.125f), Very Hard (1.25x)
+**Difficulty** (`DifficultySettings.cs` / `DefaultDifficultySettings.asset`):
+- 5 levels: Very Easy (0.70x), Easy (0.85x), Normal (1.00x), Hard (1.15x), Very Hard (1.30x)
 - Multipliers apply to both HP and Damage
-- Agent changes difficulty by ±1 level per action
+- Step interval: 0.15 per level
+- Agent sets difficulty directly by action index (0-4)
 
 **Training simulator** (`TrainingBattleSimulator.cs`):
 - `_instantMode = true`: entire run completes in ~2-3 frames (yields only before battle areas for Academy processing)
@@ -164,13 +165,13 @@ public class FiniteStateMachine<T> where T : IState {
 | Setting | Current | Notes |
 |---------|---------|-------|
 | `trainer_type` | `ddqn` | Custom plugin |
-| `learning_rate` | 0.0001 | |
+| `learning_rate` | 0.0001 | Constant schedule |
 | `batch_size` | 128 | |
-| `buffer_size` | 50000 | |
-| `gamma` | 0.90 | |
-| `exploration_decay_steps` | 350000 | |
-| `max_steps` | 500000 | |
-| `num_envs` | 1 | Bottleneck — increase to 4-8 for speed |
+| `buffer_size` | 10000 | Experience replay buffer |
+| `gamma` | 0.999 | Discount factor |
+| `exploration_decay_steps` | 300000 | Epsilon decay 1.0 -> 0.3 |
+| `max_steps` | 1000000 | |
+| `num_envs` | 1 | Increase to 4-8 for speed |
 | `time_scale` | 100 | Unity time scale during training |
 | `no_graphics` | true | Headless training |
 
